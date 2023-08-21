@@ -1,0 +1,15 @@
+# Request definition
+# A string that describes the object to be detected
+string id
+
+# A string containing additional information which may be used for generating detection results.
+string payload
+
+---
+
+# TODO(kp): Defaulting to success to be compatible with existing drivers.
+# A bool to feedback whether the detection has been successful, e.g. if inspection has passed or failed
+bool success true
+
+# Result definition
+vision_msgs/Detection3DArray detections

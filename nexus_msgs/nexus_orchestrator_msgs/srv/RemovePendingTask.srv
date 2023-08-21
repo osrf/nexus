@@ -1,0 +1,10 @@
+# Task id
+string task_id
+
+---
+
+# Whether the request succeeded
+bool success
+
+# error message if success is false.
+string message

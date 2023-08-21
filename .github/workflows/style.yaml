@@ -1,0 +1,27 @@
+name: style
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+defaults:
+  run:
+    shell: bash
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        docker_image: ['ros:humble-ros-base']
+    container:
+      image: ${{ matrix.docker_image }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: uncrustify
+        run: |
+          sudo apt update && sudo apt install -y ros-humble-rmf-utils
+          /ros_entrypoint.sh ament_uncrustify -c /opt/ros/humble/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
+      - name: pycodestyle
+        run: |
+          sudo apt update && sudo apt install -y pycodestyle curl
+          pycodestyle nexus_network_configuration/

@@ -1,0 +1,61 @@
+# Service to request for a motion plan from the motion planner server
+
+# Name of the robot to obtain a plan for
+string robot_name
+
+# Specify the type of start to use for generating a motion plan
+uint32 start_type
+# Use the robot's current state as start.
+uint32 START_TYPE_CURRENT=0
+# Use the 6D pose specified in goal_pose
+uint32 START_TYPE_POSE=1
+# Use the joint information specified in goal_joints
+uint32 START_TYPE_JOINTS=2
+
+# [Optional] Starting pose of the robot end effector, used when
+# start_type is set to START_TYPE_POSE
+geometry_msgs/PoseStamped start_pose
+
+# [Optional] Starting pose of the robot end effector, used when
+# start_type is set to START_TYPE_JOINTS
+moveit_msgs/JointConstraint[] start_joints
+
+# Specify the type of goal to use for generating a motion plan
+uint32 goal_type
+# Use the 6D pose specified in goal_pose
+uint32 GOAL_TYPE_POSE=0
+# Use the joint information specified in goal_joints
+uint32 GOAL_TYPE_JOINTS=1
+
+# Goal pose of end effector, used when goal_type is GOAL_TYPE_POSE
+geometry_msgs/PoseStamped goal_pose
+
+# Goal joint information, used when goal_type is GOAL_TYPE_JOINTS
+moveit_msgs/JointConstraint[] goal_joints
+
+# Set to true if cartesian plan is required. The planner will aim to generate
+# a motion plan such that the end-effector of the move group will move along
+# a cartesian path from start to goal.
+bool cartesian
+
+# [Optional] This field encapsulates any custom requests, that will
+# be parsed by the motion planner server. Schema is to be decided in
+# a future implementation
+string payload
+
+# Scaling factors for optionally reducing the maximum joint velocities and
+# accelerations.  Allowed values are in (0,1].  The maximum joint velocity and
+# acceleration specified in the robot model are multiplied by their respective
+# factors.  If either are outside their valid ranges (importantly, this
+# includes being set to 0.0), the factor is set to the default value of 1.0
+# internally (i.e., maximum joint velocity or maximum joint acceleration).
+float64 max_velocity_scaling_factor
+float64 max_acceleration_scaling_factor
+
+---
+
+# Motion planning result
+moveit_msgs/MotionPlanResponse result
+
+# Message for debugging or indicating cause of failure
+string message

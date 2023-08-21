@@ -1,0 +1,10 @@
+string work_order_id
+
+---
+
+bool success
+
+# Description of the error if success == false.
+string message
+
+WorkOrderState work_order_state

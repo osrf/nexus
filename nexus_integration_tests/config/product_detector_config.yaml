@@ -1,0 +1,7 @@
+frame_id: pallet
+keys:
+  - productA
+productA:
+  detected_units: 1
+  position: [[0.0, 0.0, -0.15]]
+  rotation: [[0, 0, 0, 1]]

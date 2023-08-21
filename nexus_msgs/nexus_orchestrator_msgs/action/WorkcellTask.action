@@ -1,0 +1,22 @@
+# Action to send task request to a workcell
+
+WorkcellTask task
+
+# A list of signals to be set when the task is started
+string[] start_signals
+
+---
+
+# True if task is successfully executed by workcell
+bool success
+
+# [OPTIONAL] message for debugging or indicating cause of success/failure
+string message
+
+# Result of the task
+string result
+
+---
+
+# Feedback indicating progress of task
+TaskState state

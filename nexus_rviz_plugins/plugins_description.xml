@@ -1,0 +1,9 @@
+<library path="nexus_rviz_plugins">
+
+  <class name="nexus_rviz_plugins/NEXUSPanel"
+         type="nexus_rviz_plugins::NEXUSPanel"
+         base_class_type="rviz_common::Panel">
+    <description>The NEXUS Rviz2 panel.</description>
+  </class>
+
+</library>

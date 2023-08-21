@@ -1,0 +1,5 @@
+<library path="mock_transporter">
+  <class type="nexus_transporter::MockTransporter" base_class_type="nexus_transporter::Transporter">
+    <description>Mock transporter plugin.</description>
+  </class>
+</library>

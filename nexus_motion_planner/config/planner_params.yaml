@@ -1,0 +1,58 @@
+motion_planner_server:
+  ros__parameters:
+    # List of robots to generate motion plans for
+    manipulators: ["abb_irb1300"]
+    # The default moveit group for each manipulator
+    default_group_name: "manipulator"
+    # Seconds to wait to connect to an action or service server
+    timeout_duration: 5
+    # Configure the planner_server to query motion plans directly from a move_group
+    # node that is running by initializing a move_group_interface.
+    # When set to false, the planner_server will initialize planning pipelines
+    # to directly compute plans but this has not been implemented yet.
+    use_move_group_interfaces: true
+    # When planning for multiple robots, set this to true.
+    use_namespace: false
+    # Tolerance for goal position.
+    goal_tolerance: 0.005
+    # Maximum seconds to generate a plan.
+    planning_time: 1.0
+    # Maximum number of replanning attempts
+    replan_attempts: 10
+    # If true, the cartesian interpolator will check for collisions.
+    collision_aware_cartesian_path: false
+    # The value of the max_step parameter used in cartesian interpolation.
+    cartesian_max_step: 0.001
+    # The value of the jump_threshold parameter used in cartesian interpolation.
+    cartesian_jump_threshold: 0.0
+    # Set true if trajectory should be executed after a plan is generated.
+    # The execution is a blocking event.
+    execute_trajectory: false
+    # The min_x of workspace bounding box.
+    workspace_min_x: -1.0
+    # The min_y of workspace bounding box.
+    workspace_min_y: -1.0
+    # The min_z of workspace bounding box.
+    workspace_min_z: -1.0
+    # The max_x of workspace bounding box.
+    workspace_max_x: 1.0
+    # The max_y of workspace bounding box.
+    workspace_max_y: 1.0
+      # The max_z of workspace bounding box.
+    workspace_max_z: 1.0
+    # The seconds within which the current robot state should be valid.
+    get_state_wait_seconds: 0.01
+    # Namespaced parameters for each robot when use_namespace is true.
+    # Is important to ensure move_group, robot_state_publisher and
+    # joint_state broadcaster all have the same namespace.
+    # Note: If use_namespace is false, pass these parameters directly.
+    abb_irb1300:
+      robot_description: ""
+      robot_description_semantic: ""
+      group_name: "manipulator"
+      # Group specific kinematic properties.
+      manipulator:
+        kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
+        kinematics_solver_search_resolution: 0.005
+        kinematics_solver_timeout: 0.005
+        kinematics_solver_attempts: 3

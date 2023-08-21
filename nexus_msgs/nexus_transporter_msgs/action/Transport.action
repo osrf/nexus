@@ -1,0 +1,17 @@
+# Goal definition
+TransportationRequest request
+
+---
+
+# Result definition
+# True if the transportation completed successfully
+bool success
+
+# An optional string message with details on completion or failure
+string message
+
+---
+
+# Feedback definition
+# The state of the transporter fulfilling the request
+TransporterState state

@@ -1,0 +1,16 @@
+# Check if a transporter is available to transport to fulfil a request
+
+# Request
+TransportationRequest request
+
+---
+# Response
+# True if the request can be fulfilled
+bool available
+
+# The name of the transporter that can fulfil this request
+string transporter
+
+# An estimate of when the transportation will complete. This may be used to
+# decide which transporter to award the job to if multiple exist
+builtin_interfaces/Time estimated_finish_time

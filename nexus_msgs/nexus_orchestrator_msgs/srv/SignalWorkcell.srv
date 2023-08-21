@@ -1,0 +1,13 @@
+# Id of the task
+string task_id
+
+# The signal to send as a string
+string signal
+
+---
+
+# true if the signal has been accepted, false otherwise
+bool success
+
+# [OPTIONAL] if success is false, this contains a description of the error
+string message

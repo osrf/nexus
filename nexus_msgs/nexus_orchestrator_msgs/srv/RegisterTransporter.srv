@@ -1,0 +1,19 @@
+# Service to register a transporter with the system orchestrator
+
+# Description provided by the workcell for registration
+WorkcellDescription description
+
+---
+
+# [TODO] To add the system orchestrator endpoints for reporting states/exceptions.
+
+# True if workcell is added successfully
+bool success
+
+int32 error_code
+int32 ERROR_UNKNOWN=0
+# System orchestrator is not ready to perform registrations
+int32 ERROR_NOT_READY=1
+
+# [OPTIONAL] message for debugging or indicating cause of success/failure
+string message

@@ -1,0 +1,21 @@
+<library path="nexus_builtin_capabilities">
+  <class type="nexus::capabilities::DetectionCapability" base_class_type="nexus::Capability">
+    <description>Detection capability.</description>
+  </class>
+
+  <class type="nexus::capabilities::DispenseItemCapability" base_class_type="nexus::Capability">
+    <description>DispenseItem capability.</description>
+  </class>
+
+  <class type="nexus::capabilities::ExecuteTrajectoryCapability" base_class_type="nexus::Capability">
+    <description>ExecuteTrajectory capability.</description>
+  </class>
+
+  <class type="nexus::capabilities::GripperCapability" base_class_type="nexus::Capability">
+    <description>Gripper capability.</description>
+  </class>
+
+  <class type="nexus::capabilities::PlanMotionCapability" base_class_type="nexus::Capability">
+    <description>PlanMotion capability.</description>
+  </class>
+</library>

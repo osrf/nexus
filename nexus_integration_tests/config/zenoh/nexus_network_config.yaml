@@ -1,0 +1,33 @@
+# Mode of Zenoh bridge, specified as either 'client' or 'peer'.
+# Use 'client' when there is an available Zenoh router, otherwise
+# use 'peer' for a distributed system.
+mode: peer
+# When true, discovery info is forwarded to the remote plugins/bridges
+forward_discovery: false
+# When true, activates a REST API used to administer Zenoh Bridge configurations
+enable_rest_api: true
+# Additional endpoints to allow, these could be endpoints not defined in REDF but are necessary for lifecycle transitions
+add_allowed_endpoints: ["/list_workcells", "/.*/workcell_state", "/.*/is_task_doable", "/.*/request", "/.*/queue_task", "/.*/remove_pending_task", "/register_workcell", "/register_transporter", ".*/available", ".*/transport", "/estop", "/.*/pause", "/.*/get_state", "/.*/change_state", "/.*/signal"]
+
+system_orchestrators:
+  - ros_namespace: system_orchestrator # ROS Namespace of the endpoints
+    # ROS Domain ID
+    domain_id: 14
+    # Listening TCP Address of Zenoh bridge
+    tcp_listen: ["0.0.0.0:7447"]
+    # HTTP Port for the REST API
+    rest_api_http_port: 8000
+
+workcell_orchestrators:
+  - ros_namespace: workcell_1
+    domain_id: 15
+    tcp_connect: ["0.0.0.0:7447"]
+    rest_api_http_port: 8001
+  - ros_namespace: workcell_2
+    domain_id: 16
+    tcp_connect: ["0.0.0.0:7447"]
+    rest_api_http_port: 8002
+  - ros_namespace: workcell_3
+    domain_id: 17
+    tcp_connect: ["0.0.0.0:7447"]
+    rest_api_http_port: 8003

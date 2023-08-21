@@ -1,0 +1,6 @@
+bool pause
+---
+bool success
+
+# If success is false, this indicates the reason for failure.
+string message

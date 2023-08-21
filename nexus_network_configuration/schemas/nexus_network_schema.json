@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/osrf/nexus/main/nexus_network_configuration/schemas/nexus_network_schema.json",
+  "title": "NEXUS Network Configuration",
+  "description": "A network configuration of the NEXUS Orchestrators",
+  "type": "object",
+  "required": [
+    "mode",
+    "forward_discovery",
+    "enable_rest_api",
+    "add_allowed_endpoints",
+    "system_orchestrators",
+    "workcell_orchestrators"
+  ],
+  "properties": {
+    "mode":{
+      "description": "Mode of Zenoh bridge, specified as either 'client' or 'peer'. Use 'client' when there is an available Zenoh router, otherwise use 'peer' for a distributed system.",
+      "type": "string",
+      "enum": ["peer", "client"]
+    },
+    "forward_discovery": {
+      "description": "When true, discovery info is forwarded to the remote plugins/bridges",
+      "type": "boolean"
+    },
+    "enable_rest_api":{
+      "description": "When true, activates a REST API used to administer Zenoh Bridge configurations",
+      "type": "boolean"
+    },
+    "add_allowed_endpoints":{
+      "description": "Additional endpoints to allow, these could be endpoints not defined in REDF but are necessary for lifecycle transitions",
+      "type": "array"
+    },
+    "system_orchestrators": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/system_orchestrator_unit"}
+    },
+    "workcell_orchestrators": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workcell_orchestrator_unit"}
+    }
+  },
+
+  "$defs": {
+    "system_orchestrator_unit": {
+      "type": "object",
+      "required": ["ros_namespace", "domain_id", "tcp_listen"],
+      "properties": {
+        "ros_namespace":{
+          "$ref": "#/$defs/ros_namespace"
+        },
+        "domain_id":{
+          "$ref": "#/$defs/domain_id"
+        },
+        "tcp_listen":{
+          "$ref": "#/$defs/tcp_listen"
+        },
+        "rest_api_http_port":{
+          "$ref": "#/$defs/rest_api_http_port"
+        }
+      }
+    },
+    "workcell_orchestrator_unit": {
+      "type": "object",
+      "required": ["ros_namespace", "domain_id", "tcp_connect"],
+      "properties": {
+        "ros_namespace":{
+          "$ref": "#/$defs/ros_namespace"
+        },
+        "domain_id":{
+          "$ref": "#/$defs/domain_id"
+        },
+        "tcp_connect":{
+          "$ref": "#/$defs/tcp_connect"
+        },
+        "rest_api_http_port":{
+          "$ref": "#/$defs/rest_api_http_port"
+        }
+      }
+    },
+    "ros_namespace":{
+      "description": "ROS Namespace of the endpoints",
+      "type": "string"
+    },
+    "domain_id":{
+      "description": "ROS Domain ID",
+      "type": "integer",
+      "minimum": 0,
+      "maxmimum": 232
+    },
+    "tcp_connect":{
+      "description": "TCP Address of system orchestrator Zenoh bridge",
+      "type": "array"
+    },
+    "tcp_listen":{
+      "description": "TCP Address of system orchestrator Zenoh bridge",
+      "type": "array"
+    },
+    "rest_api_http_port":{
+      "description": "HTTP Port for the REST API",
+      "type": "integer",
+      "minimum": 0,
+      "maxmimum": 65535
+    }
+  }
+}

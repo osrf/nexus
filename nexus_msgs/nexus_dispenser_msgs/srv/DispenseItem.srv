@@ -1,0 +1,14 @@
+# Request
+string requester
+
+# A payload with information for the dispenser
+string payload
+
+# Additional serialized binary information for the dispenser
+uint8[] data
+
+---
+
+# Result
+bool success
+string message

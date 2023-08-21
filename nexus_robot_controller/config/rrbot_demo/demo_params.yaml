@@ -1,0 +1,3 @@
+robot_controller_server:
+  ros__parameters:
+    managed_controllers: ["joint_state_broadcaster", "forward_position_controller"]

@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+<!--
+  Load this file into Groot before opening any behvaior trees.
+-->
+<root>
+  <TreeNodesModel>
+    <!-- ############################### ACTION NODES ################################# -->
+    <Action ID="IsPauseTriggered">
+      <output_port name="paused">Whether the system is paused</output_port>
+    </Action>
+
+    <Action ID="BidTransporter">
+      <input_port name="destination">Destination to transport to</input_port>
+      <output_port name="result">Id of the transporter assigned</output_port>
+    </Action>
+
+    <Action ID="TransporterRequest">
+      <input_port name="transporter">The transporter to use</input_port>
+      <input_port name="destination">A map between task id and it's transporter session</input_port>
+    </Action>
+
+    <Action ID="WorkcellRequest">
+      <input_port name="workcell">Workcell to use</input_port>
+      <output_port name="task">The task to execute</output_port>
+    </Action>
+
+    <Action ID="detection.DetectAllItems">
+      <input_port name="detector">Id of the detector</input_port>
+      <output_port name="items">Items to detect</output_port>
+      <output_port name="result">Detected items</output_port>
+    </Action>
+
+    <Action ID="dispense_item.DispenseItem">
+      <input_port name="dispenser">OPTIONAL. Id of the dispenser to use to perform the action. If not provided, the first dispenser is used.</input_port>
+      <input_port name="item">The item data for dispensing</input_port>
+    </Action>
+
+    <Action ID="MakePose">
+      <input_port name="pos_x">The X coordinate of the pose</input_port>
+      <input_port name="pos_y">The Y coordinate of the pose</input_port>
+      <input_port name="pos_z">The Z coordinate of the pose</input_port>
+      <input_port name="rot_x">The X quaternion of the pose</input_port>
+      <input_port name="rot_y">The Y quaternion of the pose</input_port>
+      <input_port name="rot_z">The Z quaternion of the pose</input_port>
+      <input_port name="rot_w">The W quaternion of the pose</input_port>
+      <output_port name="pose">The constructed pose</output_port>
+    </Action>
+
+    <Action ID="plan_motion.PlanMotion">
+      <input_port name="robot_name">The name of the robot to plan for</input_port>
+      <input_port name="goal">The goal pose</input_port>
+      <input_port name="scale_speed">An optional fraction [0,1] to scale the acceleraton and speed of the generated trajectory</input_port>
+      <input_port name="cartesian">True if a cartesian plan is required</input_port>
+      <input_port name="start_constraints">If provided the joint_constraints will be used as the start state of the robot. By default the current state is set as start</input_port>
+      <output_port name="result">The generated motion plan</output_port>
+    </Action>
+
+    <Action ID="plan_motion.FrameToPose">
+      <input_port name="frame_id">The name of the TF frame to be set in the PoseStamped output</input_port>
+      <output_port name="pose">The PoseStamped msg with the frame_id provided</output_port>
+    </Action>
+
+    <Action ID="execute_trajectory.ExecuteTrajectory">
+      <input_port name="trajectory">The robot trajectory as a moveit_msgs::msg::RobotTrajectory</input_port>
+    </Action>
+
+    <Action ID="gripper.GripperControl">
+      <input_port name="gripper">The ID of the gripper to control</input_port>
+      <input_port name="position">The position to command the gripper to</input_port>
+      <input_port name="max_effort">The max effort for the command</input_port>
+    </Action>
+
+    <Action ID="detection.DetectOffset">
+      <input_port name="detector">The name of the detector</input_port>
+      <output_port name="result">The detected offset</output_port>
+    </Action>
+
+    <Action ID="detection.MergeOffset">
+      <input_port name="offset1">The first offset to merge</input_port>
+      <input_port name="offset2">The second offset to merge</input_port>
+      <output_port name="result">The merged offset</output_port>
+    </Action>
+
+    <Action ID="SerializeDetections">
+      <input_port name="detections">vision_msgs::msg::Detection3DArray</input_port>
+      <output_port name="result">std::string</output_port>
+    </Action>
+
+    <Action ID="DeserializeDetections">
+      <input_port name="yaml">std::string</input_port>
+      <output_port name="result">vision_msgs::msg::Detection3DArray</output_port>
+    </Action>
+
+    <Action ID="GetJointConstraints">
+      <input_port name="trajectory">The robot trajectory as a moveit_msgs::msg::RobotTrajectory</input_port>
+      <input_port name="index">Optional. The index of the TrajectoryPoint in the trajectory. Defaults to last index</input_port>
+      <output_port name="joint_constraints">A vector of moveit_msgs::msg::JointConstraint</output_port>
+    </Action>
+
+    <Action ID="ExecuteTask">
+      <input_port name="task">The task to execute in the form of an nexus_orchestrator_msgs::msg::WorkcellTask</input_port>
+      <input_port name="workcell">The workcell that should execute the task</input_port>
+    </Action>
+
+    <Action ID="SendSignal">
+      <input_port name="task">The task the signal is tied to</input_port>
+      <input_port name="signal">The signal to send as an std::string</input_port>
+    </Action>
+
+    <Action ID="SetResult">
+      <input_port name="key">An std::string key for storing the result of a task</input_port>
+      <input_port name="value">An std::string serialization of the results</input_port>
+    </Action>
+
+    <Action ID="WaitForSignal">
+      <input_port name="signal">An std::string signal to wait for</input_port>
+      <input_port name="clear">Optional. If true the signal will clear once the node finishes ticking</input_port>
+    </Action>
+
+    <Action ID="SetSignal">
+      <input_port name="signal">An std::string signal to set within a workcell</input_port>
+    </Action>
+
+    <Action ID="TransformPoseLocal">
+      <input_port name="base_pose">The pose to apply input offsets to</input_port>
+      <input_port name="x">The translation along X-Axis</input_port>
+      <input_port name="y">The translation along Y-Axis</input_port>
+      <input_port name="y">The translation along Y-Axis</input_port>
+      <input_port name="z">The translation along Z-Axis</input_port>
+      <input_port name="qx">The qw component of quaternion rotation</input_port>
+      <input_port name="qy">The qy component of quaternion rotation</input_port>
+      <input_port name="qz">The qz component of quaternion rotation</input_port>
+      <input_port name="qw">The qw component of quaternion rotation</input_port>
+      <input_port name="transform_from_pose">A geometry_msgs::msg::Pose which defines the desired transfrom</input_port>
+      <input_port name="transform_from_pose_stamped">Takes precedence over transform_from_pose</input_port>
+      <input_port name="reverse">Applies the mirror of the transform. Defaults to false</input_port>
+      <output_port name="result">The desired transform as a geometry_msgs::msg::Transform</output_port>
+    </Action>
+
+    <Action ID="detection.GetDetection">
+      <input_port name="detections">An array of detections in the form of a vision_msgs::msg::Detection3DArray</input_port>
+      <input_port name="idx">The index of the detection to retrieve. Ignored if id is provided</input_port>
+      <input_port name="id">The id of the detection to retrieve</input_port>
+      <output_port name="result">The detection result of interest as a vision_msgs::msg::Detection3D</output_port>
+    </Action>
+
+    <Action ID="detection.GetDetectionPose">
+      <input_port name="detection">A vision_msgs::msg::Detection3D</input_port>
+      <output_port name="result">The detection converted to a geometry_msgs::msg::PoseStamped</output_port>
+    </Action>
+
+    <Action ID="StringToVector">
+      <input_port name="string">The string that will be split into a vector of strings</input_port>
+      <input_port name="delimiter">The delimiter to split the string. Defaults to "","</input_port>
+      <output_port name="strings">The resulting list of strings after the split</output_port>
+    </Action>
+
+    <!-- ############################### CONDITION NODES ############################## -->
+
+
+    <!-- ############################### CONTROL NODES ################################ -->
+
+    <Control ID="PausableSequence">
+      <input_port name="pause">Whether the system is paused</input_port>
+    </Control>
+
+    <!-- ############################### DECORATOR NODES ############################## -->
+    <Decorator ID="ForEachTask">
+      <output_port name="task">The current task being processed</output_port>
+      <output_port name="workcell">The workcell id assigned to the task</output_port>
+    </Decorator>
+
+  </TreeNodesModel>
+</root>

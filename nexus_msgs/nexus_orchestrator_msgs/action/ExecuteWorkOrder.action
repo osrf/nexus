@@ -1,0 +1,16 @@
+# A new work order for the system orchestrator to execute from MES
+
+# Goal definition
+# TODO: Define schema
+# Contains process recipe and constraints
+WorkOrder order
+
+---
+
+# Result definition
+string message
+
+---
+
+# Feedback of all task states when a task makes progress.
+TaskState[] task_states

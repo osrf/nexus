@@ -1,0 +1,152 @@
+title: NEXUS Endpoints
+description: NEXUS
+version: 0.0.1
+maintainers:
+  - name: Teo Koon Peng
+    email: koonpeng@openrobotics.org
+license: Apache License 2.0
+cpp_namespace: nexus::endpoints
+endpoints:
+  - title: List Workcells Service
+    description: List of all registered workcells
+    type: service
+    service_name: /list_workcells
+    service_type: nexus_orchestrator_msgs/srv/ListWorkcells
+  - title: Workcell State Topic
+    type: topic
+    description: Current state of a workcell
+    topic_name: /{workcell_id}/workcell_state
+    message_type: nexus_orchestrator_msgs/msg/WorkcellState
+    qos: {durability: "transient_local", reliability: "reliable"}
+  # Work Order
+  - title: Work Order Action
+    description: Request for a work order to be executed in the NEXUS system
+    type: action
+    action_name: /system_orchestrator/execute_order
+    action_type: nexus_orchestrator_msgs/action/ExecuteWorkOrder
+  - title: Work Order States Topic
+    description: States of work orders
+    type: topic
+    topic_name: /work_order_states
+    message_type: nexus_orchestrator_msgs/msg/WorkOrderState
+  - title: Get Work Order State Service
+    description: Get the state of a work order
+    type: service
+    service_name: /get_work_order_state
+    service_type: nexus_orchestrator_msgs/srv/GetWorkOrderState
+  - title: Is Task Doable Service
+    description: Checks if a task can be performed.
+    type: service
+    service_name: /{workcell_id}/is_task_doable
+    service_type: nexus_orchestrator_msgs/srv/IsTaskDoable
+  # Workcell Request
+  - title: Workcell Request Action
+    description: Request a workcell to do some work. If the task is not already queued, it will be added to the back of the queue.
+    type: action
+    action_name: '{workcell_id}/request'
+    action_type: nexus_orchestrator_msgs/action/WorkcellTask
+  - title: Queue Workcell Task Service
+    description: Queue a task on the workcell, the task can be started later with a call to "Workcell Request" with the same task id.
+    type: service
+    service_name: '{workcell_id}/queue_task'
+    service_type: nexus_orchestrator_msgs/srv/QueueWorkcellTask
+  - title: Remove Pending Task Service
+    description: Remove a pending workcell task.
+    type: service
+    service_name: '{workcell_id}/remove_pending_task'
+    service_type: nexus_orchestrator_msgs/srv/RemovePendingTask
+  - title: Register Workcell Service
+    description: Register a workcell
+    type: service
+    service_name: /register_workcell
+  # Robot Arm Controller
+    service_type: nexus_orchestrator_msgs/srv/RegisterWorkcell
+  - title: Controller Robot Trajectory Action
+    description: Send a controller action goal to a robot arm
+    type: action
+    action_name: /joint_trajectory_controller/follow_joint_trajectory
+    action_type: control_msgs/action/FollowJointTrajectory
+  - title: Controller Robot Trajectory Topic
+    description: Send a controller trajectory to a robot arm via topic
+    type: topic
+    topic_name: /joint_trajectory_position_controller/joint_trajectory
+    message_type: trajectory_msgs/msg/JointTrajectory
+  # Transporter
+  - title: Register Transporter Service
+    description: Register a system that provides transportation services with the System Orchestrator
+    type: service
+    service_name: /register_transporter
+    service_type: nexus_orchestrator_msgs/srv/RegisterTransporter
+  - title: List Transporter Service
+    description: List of transporters registered
+    type: service
+    service_name: /list_transporters
+    service_type: nexus_orchestrator_msgs/srv/ListTransporters
+  - title: Is Transporter Available Service
+    description: Query a transporter to check if it can fulfil a request
+    type: service
+    service_name: '{transporter_id}/available'
+    service_type: nexus_transporter_msgs/srv/IsTransporterAvailable
+  - title: Transport Action
+    description: Send a transporter an action goal
+    type: action
+    action_name: '{transporter_id}/transport'
+    action_type: nexus_transporter_msgs/action/Transport
+  # Detector
+  - title: Detector Service
+    description: Get 3D poses of objects detected by a detector
+    type: service
+    service_name: '{detector_id}/detect'
+    service_type: nexus_detector_msgs/srv/Detect
+  # Gripper
+  - title: GripperCommand Action
+    description: Send a command to a gripper
+    type: action
+    action_name: '{gripper_id}/command'
+    action_type: control_msgs/action/GripperCommand
+  # Motion Planner Server
+  - title: Get Motion Plan Service
+    description: Get a motion plan from the motion planner server
+    type: service
+    service_name: /motion_planner_server/plan
+    service_type: nexus_motion_planner_msgs/srv/GetMotionPlan
+  # Emergency stop
+  - title: Emergency Stop Topic
+    description: |
+      Emergency stop alarm.
+
+      When this is triggered, all workcells will cancel their current action as soon as possible, all current work orders will fail and new work orders will not be accepted until it is cleared.
+    type: topic
+    topic_name: /estop
+    message_type: nexus_alarm_msgs/msg/EmergencyStop
+  - title: Pause System Service
+    description: Pause execution of all workcells
+    type: service
+    service_name: /pause
+    service_type: nexus_orchestrator_msgs/srv/PauseSystem
+  - title: Pause Workcell Service
+    description: |
+      Pause execution of a workcell.
+
+      When a workcell receives a pause request, it will complete it's current action and stop processing furthur actions until it is unpaused.
+    type: service
+    service_name: /{workcell_id}/pause
+    service_type: nexus_orchestrator_msgs/srv/PauseWorkcell
+    qos: {durability: "transient_local", reliability: "reliable"}
+  - title: Signal Workcell Service
+    description: Sends a signal to a workcell.
+    type: service
+    service_name: /{workcell_id}/signal
+    service_type: nexus_orchestrator_msgs/srv/SignalWorkcell
+  # Dispenser Service
+  - title: Dispenser Service
+    description: Send a request to a dispenser
+    type: service
+    service_name: '{dispenser_id}/dispense'
+    service_type: nexus_dispenser_msgs/srv/DispenseItem
+  # Calibration
+  - title: Extrinsic Calibration Service
+    description: Get extrinsic calibration results from a workcell
+    type: service
+    service_name: '/{workcell_id}/calibrate_extrinsics'
+    service_type: nexus_calibration_msgs/srv/CalibrateExtrinsics

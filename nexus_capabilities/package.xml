@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nexus_capabilities</name>
+  <version>0.0.1</version>
+  <description>Utilities to describe and validate hardware capabilities</description>
+  <maintainer email="yadunund@openrobotics.org">Yadunund</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>behaviortree_cpp_v3</depend>
+  <depend>nexus_common</depend>
+  <depend>nexus_endpoints</depend>
+  <depend>nexus_orchestrator_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>rmf_utils</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>yaml-cpp</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

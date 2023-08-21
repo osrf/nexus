@@ -1,0 +1,11 @@
+# The desired reference frame in which the calibration results should be reported.
+string frame_id
+
+---
+
+# True if the calibration was successful
+bool success
+
+# The calibration data containing transforms of workcell components wrt frame_id.
+# Note: The header.frame_id in each result should match frame_id in the request.
+geometry_msgs/TransformStamped[] results
