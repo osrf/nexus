@@ -13,15 +13,6 @@ For details on architecture and concepts [see](./docs/concepts.md).
 
 ## Setup
 
-### Install system dependencies
-It is recommended to build the workspace with clang as compiler and lld as linker.
-Hence we install these dependencies along with some `colcon-mixin` shortcuts to simplify build instructions.
-```bash
-sudo apt update && sudo apt install -y clang clang-tools lld libstdc++-12-dev
-colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
-colcon mixin update default
-```
-
 ### Setup the NEXUS workspace
 
 ```bash
@@ -35,10 +26,8 @@ rosdep install --from-paths src --ignore-src --rosdistro humble -y -r
 
 ### Build the NEXUS workspace
 ```bash
-export CX=clang
-export CXX=clang++
 source /opt/ros/humble/setup.bash
-colcon build --mixin release lld
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 ## Configuration
