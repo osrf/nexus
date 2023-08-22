@@ -57,8 +57,8 @@ target_link_libraries(${PROJECT_NAME}_plugin PUBLIC
   tf2::tf2
   tf2_ros::tf2_ros
   yaml-cpp
-  ${vision_msgs_LIBRARIES}
-  ${geometry_msgs_LIBRARIES}
+  ${vision_msgs_TARGETS}
+  ${geometry_msgs_TARGETS}
 )
 target_compile_features(${PROJECT_NAME}_plugin PUBLIC cxx_std_17)
 target_compile_definitions(${PROJECT_NAME}_plugin PUBLIC "COMPOSITION_BUILDING_DLL")

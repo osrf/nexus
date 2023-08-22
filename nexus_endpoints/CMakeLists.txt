@@ -29,15 +29,15 @@ target_include_directories(nexus_endpoints INTERFACE
   ${trajectory_msgs_INCLUDE_DIRS}
 )
 target_link_libraries(nexus_endpoints INTERFACE rclcpp::rclcpp rclcpp_action::rclcpp_action
-  ${control_msgs_LIBRARIES}
-  ${nexus_alarm_msgs_LIBRARIES}
-  ${nexus_calibration_msgs_LIBRARIES}
-  ${nexus_detector_msgs_LIBRARIES}
-  ${nexus_dispenser_msgs_LIBRARIES}
-  ${nexus_motion_planner_msgs_LIBRARIES}
-  ${nexus_orchestrator_msgs_LIBRARIES}
-  ${nexus_transporter_msgs_LIBRARIES}
-  ${trajectory_msgs_LIBRARIES}
+  ${control_msgs_TARGETS}
+  ${nexus_alarm_msgs_TARGETS}
+  ${nexus_calibration_msgs_TARGETS}
+  ${nexus_detector_msgs_TARGETS}
+  ${nexus_dispenser_msgs_TARGETS}
+  ${nexus_motion_planner_msgs_TARGETS}
+  ${nexus_orchestrator_msgs_TARGETS}
+  ${nexus_transporter_msgs_TARGETS}
+  ${trajectory_msgs_TARGETS}
 )
 set_target_properties(nexus_endpoints PROPERTIES PUBLIC_HEADER nexus_endpoints.hpp)
 

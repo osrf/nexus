@@ -74,8 +74,8 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
     nexus_common::nexus_common
     nexus_endpoints::nexus_endpoints
-    ${geometry_msgs_LIBRARIES}
-    ${nexus_orchestrator_msgs_LIBRARIES}
+    ${geometry_msgs_TARGETS}
+    ${nexus_orchestrator_msgs_TARGETS}
     BT::behaviortree_cpp_v3
     rclcpp::rclcpp
     rclcpp_lifecycle::rclcpp_lifecycle
