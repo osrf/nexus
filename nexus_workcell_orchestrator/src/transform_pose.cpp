@@ -22,11 +22,12 @@
 
 #include <rclcpp/logging.hpp>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Transform.h>
 
 namespace nexus::workcell_orchestrator {
 
-BT::NodeStatus TransformPoseLocal::tick()
+BT::NodeStatus ApplyPoseOffset::tick()
 {
   auto base_pose = this->getInput<geometry_msgs::msg::PoseStamped>("base_pose");
   if (!base_pose)
@@ -43,43 +44,11 @@ BT::NodeStatus TransformPoseLocal::tick()
     base_pose->pose.position.z));
 
   tf2::Transform t;
-  tf2::Transform target_t = tf2::Transform::getIdentity();
-  auto maybe_pose = this->getInput<geometry_msgs::msg::Pose>(
-    "transform_from_pose");
-  auto maybe_pose_stamped = this->getInput<geometry_msgs::msg::PoseStamped>(
-    "transform_from_pose_stamped");
+  auto maybe_tf = this->getInput<geometry_msgs::msg::Transform>("transform");
 
-  auto reverse = this->getInput<bool>("reverse").value_or(false);
-  if (maybe_pose_stamped)
+  if (maybe_tf)
   {
-    const auto& pose = *maybe_pose_stamped;
-    t = this->_pose_to_tf(pose.pose, reverse);
-    try
-    {
-      auto transform_msg = this->_tf2_buffer->lookupTransform(
-        pose.header.frame_id, pose.header.stamp,
-        base_pose->header.frame_id, base_pose->header.stamp,
-        pose.header.frame_id);
-      target_t =
-        tf2::Transform(tf2::Quaternion(transform_msg.transform.rotation.x,
-          transform_msg.transform.rotation.y,
-          transform_msg.transform.rotation.z,
-          transform_msg.transform.rotation.w),
-          tf2::Vector3(transform_msg.transform.translation.x,
-          transform_msg.transform.translation.y,
-          transform_msg.transform.translation.z)) * base_trans.inverse();
-    }
-    catch (const tf2::TransformException& e)
-    {
-      RCLCPP_ERROR(
-        this->_node.get_logger(), "[%s]: Failed to get transform [%s]",
-        this->name().c_str(), e.what());
-      return BT::NodeStatus::FAILURE;
-    }
-  }
-  else if (maybe_pose)
-  {
-    t = this->_pose_to_tf(*maybe_pose);
+    tf2::fromMsg(*maybe_tf, t);
   }
   else
   {
@@ -104,7 +73,16 @@ BT::NodeStatus TransformPoseLocal::tick()
         tf2::Vector3(*x, *y, *z));
   }
 
-  auto result_trans = base_trans * target_t.inverse() * t * target_t;
+  tf2::Transform  result_trans;
+  const auto maybe_local = this->getInput<bool>("local");
+  if (maybe_local && *maybe_local)
+  {
+    result_trans = base_trans * t;
+  }
+  else
+  {
+    result_trans = t * base_trans;
+  }
   geometry_msgs::msg::PoseStamped result_pose = *base_pose;
   result_pose.pose.position.x = result_trans.getOrigin().x();
   result_pose.pose.position.y = result_trans.getOrigin().y();
@@ -124,25 +102,75 @@ BT::NodeStatus TransformPoseLocal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
-tf2::Transform TransformPoseLocal::_pose_to_tf(
-  const geometry_msgs::msg::Pose& pose, bool reverse)
+static tf2::Transform _pose_to_tf(const geometry_msgs::msg::Pose& pose)
 {
-  if (!reverse)
+  return tf2::Transform(tf2::Quaternion(pose.orientation.x,
+      pose.orientation.y, pose.orientation.z,
+      pose.orientation.w),
+      tf2::Vector3(pose.position.x, pose.position.y,
+      pose.position.z));
+}
+
+BT::NodeStatus GetPoseOffset::tick()
+{
+  const auto base_pose = this->getInput<geometry_msgs::msg::PoseStamped>(
+    "base_pose");
+  if (!base_pose)
   {
-    return tf2::Transform(tf2::Quaternion(pose.orientation.x,
-        pose.orientation.y, pose.orientation.z,
-        pose.orientation.w),
-        tf2::Vector3(pose.position.x, pose.position.y,
-        pose.position.z));
+    RCLCPP_ERROR(
+      this->_node.get_logger(), "[%s]: [base_pose] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  const auto base_tf = _pose_to_tf(base_pose->pose);
+  const auto target_pose = this->getInput<geometry_msgs::msg::PoseStamped>(
+    "target_pose");
+  if (!target_pose)
+  {
+    RCLCPP_ERROR(
+      this->_node.get_logger(), "[%s]: [target_pose] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  const auto target_tf = _pose_to_tf(target_pose->pose);
+
+  rclcpp::Time lookup_time;
+  const auto maybe_time = this->getInput<rclcpp::Time>("time");
+  if (maybe_time)
+  {
+    lookup_time = *maybe_time;
   }
   else
   {
-    return tf2::Transform(tf2::Quaternion(pose.orientation.x,
-        pose.orientation.y, pose.orientation.z,
-        pose.orientation.w).inverse(),
-        tf2::Vector3(-pose.position.x, -pose.position.y,
-        -pose.position.z));
+    lookup_time = this->_node.now();
   }
+
+  const auto tf_msg = this->_tf2_buffer->lookupTransform(
+    base_pose->header.frame_id, target_pose->header.frame_id,
+    lookup_time);
+  tf2::Transform frame_tf;
+  tf2::fromMsg(tf_msg.transform, frame_tf);
+
+  const auto maybe_local = this->getInput<bool>("local");
+  tf2::Transform result_tf;
+  if (maybe_local && *maybe_local)
+  {
+    result_tf = base_tf.inverse() * target_tf * frame_tf;
+  }
+  else
+  {
+    result_tf = target_tf * frame_tf * base_tf.inverse();
+  }
+  RCLCPP_INFO_STREAM(
+    this->_node.get_logger(),
+    "[" << this->name() << "]" << std::endl <<
+      "Base pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
+      "Target pose: " << target_pose->pose << "frame: " << target_pose->header.frame_id << std::endl <<
+      "Result: " << result_tf;
+  );
+  this->setOutput("result", tf2::toMsg(result_tf));
+
+  return BT::NodeStatus::SUCCESS;
 }
 
 }

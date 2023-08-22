@@ -4,7 +4,7 @@
     <Sequence name="root_sequence">
       <dispense_item.DispenseItem name="dispense_item" item="productA" />
 
-      <TransformPoseLocal base_pose="pickup_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{pickup_top_goal}" />
+      <ApplyPoseOffset base_pose="pickup_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
       <plan_motion.PlanMotion name="plan_to_pickup_top" robot_name="abb_irb910sc" goal="{pickup_top_goal}" scale_speed="0.5" result="{pickup_top_traj}" />
       <GetJointConstraints trajectory="{pickup_top_traj}" joint_constraints="{joint_constraints}" />
       <execute_trajectory.ExecuteTrajectory name="execute_pickup_top" trajectory="{pickup_top_traj}" />

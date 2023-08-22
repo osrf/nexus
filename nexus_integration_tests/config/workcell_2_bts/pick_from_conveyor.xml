@@ -8,7 +8,7 @@
       <detection.GetDetection detections="{all_products}" idx="0" result="{current_product_detection}" />
       <detection.GetDetectionPose detection="{current_product_detection}" result="{current_product_pose}" />
 
-      <TransformPoseLocal base_pose="{current_product_pose}" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{pickup_top_goal}" />
+      <ApplyPoseOffset base_pose="{current_product_pose}" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
       <plan_motion.PlanMotion name="plan_to_pickup_top" robot_name="abb_irb1300" goal="{pickup_top_goal}" scale_speed="0.5" result="{pickup_top_traj}" />
       <GetJointConstraints trajectory="{pickup_top_traj}" joint_constraints="{joint_constraints}" />
       <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_top_traj}" />

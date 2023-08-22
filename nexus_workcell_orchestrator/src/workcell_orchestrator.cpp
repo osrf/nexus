@@ -570,11 +570,17 @@ auto WorkcellOrchestrator::_configure(
     });
 
   this->_bt_factory->registerNodeType<MakeTransform>("MakeTransform");
-  this->_bt_factory->registerBuilder<TransformPoseLocal>(
-    "TransformPoseLocal",
+  this->_bt_factory->registerBuilder<ApplyPoseOffset>(
+    "ApplyPoseOffset",
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
-      return std::make_unique<TransformPoseLocal>(name, config, *this,
+      return std::make_unique<ApplyPoseOffset>(name, config, *this);
+    });
+  this->_bt_factory->registerBuilder<GetPoseOffset>(
+    "GetPoseOffset",
+    [this](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<GetPoseOffset>(name, config, *this,
       this->_tf2_buffer);
     });
 
