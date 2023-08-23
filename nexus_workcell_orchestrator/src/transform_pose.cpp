@@ -142,7 +142,7 @@ BT::NodeStatus GetPoseOffset::tick()
   }
   else
   {
-    lookup_time = this->_node.now();
+    lookup_time = rclcpp::Time(0);  // Get latest available transforms
   }
 
   const auto tf_msg = this->_tf2_buffer->lookupTransform(

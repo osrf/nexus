@@ -21,6 +21,7 @@
 #include <behaviortree_cpp_v3/action_node.h>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nexus_capabilities/conversions/pose_stamped.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <tf2_ros/buffer.h>
 
