@@ -123,6 +123,7 @@ add_library(nexus_builtin_capabilities SHARED
   src/capabilities/execute_trajectory.cpp
   src/capabilities/gripper_capability.cpp
   src/capabilities/gripper_control.cpp
+  src/capabilities/log_message_capability.cpp
   src/capabilities/plan_motion_capability.cpp
   src/capabilities/plan_motion.cpp
 )
