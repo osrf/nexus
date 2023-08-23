@@ -58,11 +58,11 @@ Job::Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
     });
 
   this->_bt_factory.registerNodeType<MakeTransform>("MakeTransform");
-  this->_bt_factory.registerBuilder<TransformPoseLocal>(
-    "TransformPoseLocal",
+  this->_bt_factory.registerBuilder<ApplyPoseOffset>(
+    "ApplyPoseOffset",
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
-      return std::make_unique<TransformPoseLocal>(name, config,
+      return std::make_unique<ApplyPoseOffset>(name, config,
       *this->_node.lock(),
       this->_tf2_buffer);
     });

@@ -18,7 +18,7 @@
       <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_traj}" />
       <gripper.GripperControl name="pickup_product" gripper="workcell_2_mock_gripper" position="0.0" max_effort="1.0" />
 
-      <TransformPoseLocal base_pose="dropoff_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{dropoff_top_goal}" />
+      <ApplyPoseOffset base_pose="dropoff_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{dropoff_top_goal}" />
       <plan_motion.PlanMotion name="plan_to_dropoff_top" robot_name="abb_irb1300" goal="{dropoff_top_goal}" scale_speed="0.5" result="{dropoff_top_traj}" />
       <GetJointConstraints trajectory="{dropoff_top_traj}" joint_constraints="{joint_constraints}" />
       <execute_trajectory.ExecuteTrajectory name="execute_dropoff_top" trajectory="{dropoff_top_traj}" />
