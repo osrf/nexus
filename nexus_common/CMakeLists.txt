@@ -43,9 +43,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rclcpp_lifecycle::rclcpp_lifecycle
   tf2::tf2
   yaml-cpp
-  ${lifecycle_msgs_LIBRARIES}
-  ${geometry_msgs_LIBRARIES}
-  ${vision_msgs_LIBRARIES}
+  ${lifecycle_msgs_TARGETS}
+  ${geometry_msgs_TARGETS}
+  ${vision_msgs_TARGETS}
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -111,8 +111,8 @@ if(BUILD_TESTING)
       rclcpp_action::rclcpp_action
       BT::behaviortree_cpp_v3
       rmf_utils::rmf_utils
-      ${example_interfaces_LIBRARIES}
-      ${std_msgs_LIBRARIES}
+      ${example_interfaces_TARGETS}
+      ${std_msgs_TARGETS}
     )
   endfunction()
 

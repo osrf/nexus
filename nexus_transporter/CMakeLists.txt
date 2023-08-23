@@ -32,10 +32,10 @@ add_library(nexus_transporter SHARED
 
 target_link_libraries(nexus_transporter
   PUBLIC
-    ${nexus_transporter_msgs_LIBRARIES}
+    ${nexus_transporter_msgs_TARGETS}
     rclcpp::rclcpp
-    ${rclcpp_action_LIBRARIES}
-    ${rclcpp_lifecycle_LIBRARIES}
+    ${rclcpp_action_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
     rmf_utils::rmf_utils
 )
 
@@ -61,13 +61,13 @@ target_link_libraries(nexus_transporter_component
   PUBLIC
     nexus_endpoints::nexus_endpoints
     nexus_transporter
-    ${nexus_transporter_msgs_LIBRARIES}
-    ${geometry_msgs_LIBRARIES}
+    ${nexus_transporter_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
     pluginlib::pluginlib
     rclcpp::rclcpp
-    ${rclcpp_components_LIBRARIES}
-    ${rclcpp_lifecycle_LIBRARIES}
-    ${tf2_ros_LIBRARIES}
+    ${rclcpp_components_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
+    ${tf2_ros_TARGETS}
 )
 
 target_include_directories(nexus_transporter_component

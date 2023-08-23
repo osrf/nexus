@@ -34,8 +34,8 @@ target_link_libraries(mock_detection PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
-  ${yaml_cpp_vendor_LIBRARIES}
-  ${tf2_ros_LIBRARIES}
+  ${yaml_cpp_vendor_TARGETS}
+  ${tf2_ros_TARGETS}
 )
 target_include_directories(mock_detection PRIVATE
   ${tf2_ros_INCLUDE_DIRS}
@@ -48,7 +48,7 @@ add_library(mock_emergency_alarm_component SHARED src/mock_emergency_alarm.cpp)
 target_link_libraries(mock_emergency_alarm_component
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
-  ${rclcpp_components_LIBRARIES}
+  ${rclcpp_components_TARGETS}
   rclcpp_lifecycle::rclcpp_lifecycle
 )
 ament_target_dependencies(mock_emergency_alarm_component
@@ -93,7 +93,7 @@ target_link_libraries(mock_printer PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
-  ${rclcpp_components_LIBRARIES}
+  ${rclcpp_components_TARGETS}
 )
 target_compile_features(mock_printer INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_printer
@@ -163,9 +163,9 @@ if(BUILD_TESTING)
       rclcpp_action::rclcpp_action
       rclcpp_lifecycle::rclcpp_lifecycle
       rcpputils::rcpputils
-      ${yaml_cpp_vendor_LIBRARIES}
+      ${yaml_cpp_vendor_TARGETS}
       rmf_utils::rmf_utils
-      ${tf2_ros_LIBRARIES}
+      ${tf2_ros_TARGETS}
     )
     target_include_directories(test_mocks PUBLIC
       ${yaml_cpp_vendor_INCLUDE_DIRS}
