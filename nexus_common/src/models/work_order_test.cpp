@@ -66,7 +66,7 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
       const auto item = work_order.item();
       CHECK(item.sku_id() == "1001");
       CHECK(item.description() == "dummy_sku");
-      CHECK(item.unit() == "dumy_unit");
+      CHECK(item.unit() == "dummy_unit");
       CHECK(item.quantity() == 1);
       CHECK(item.quantity_per_pallet() == 1);
       REQUIRE(work_order.steps().size() == 3);
