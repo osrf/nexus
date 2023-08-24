@@ -2,7 +2,7 @@ repositories:
   thirdparty/moveit/moveit_msgs:
     type: git
     url: https://github.com/ros-planning/moveit_msgs.git
-    version: ros2
+    version: 2.2.1
   thirdparty/moveit/moveit2:
     type: git
     url: https://github.com/koonpeng/moveit2.git
