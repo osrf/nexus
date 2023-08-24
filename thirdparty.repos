@@ -1,0 +1,21 @@
+repositories:
+  thirdparty/moveit/moveit_msgs:
+    type: git
+    url: https://github.com/ros-planning/moveit_msgs.git
+    version: 2.2.2
+  thirdparty/moveit/moveit2:
+    type: git
+    url: https://github.com/koonpeng/moveit2.git
+    version: kp/scale_get_cartesian_path_humble
+  thirdparty/moveit/moveit_resources:
+    type: git
+    url: https://github.com/ros-planning/moveit_resources.git
+    version: humble
+  thirdparty/moveit/object_recognition_msgs:
+    type: git
+    url: https://github.com/wg-perception/object_recognition_msgs
+    version: ros2
+  thirdparty/PickNikRobotics/pick_ik:
+    type: git
+    url: https://github.com/picknikrobotics/pick_ik
+    version: 1.0.0
