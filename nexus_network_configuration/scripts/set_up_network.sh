@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # This script does the following:
-# 1. Install CycloneDDS (Humble dist.) if not already installed
+# 1. Install CycloneDDS (Iron dist.) if not already installed
 # 2. Change RMW_IMPLEMENTATION to CycloneDDS
 # 3. Enable multicast on loopback interface
 
-RMW_PACKAGE="ros-humble-rmw-cyclonedds-cpp"
+RMW_PACKAGE="ros-iron-rmw-cyclonedds-cpp"
 
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $RMW_PACKAGE|grep "install ok installed")
 

@@ -269,8 +269,8 @@ bool MotionPlannerServer::initialize_move_group_interfaces()
       MoveGroupInterface::Options options{std::move(group_name)};
       if (_use_namespace)
       {
-        options.move_group_namespace_ = name;
-        options.robot_description_ = name + ".robot_description";
+        options.move_group_namespace = name;
+        options.robot_description = name + ".robot_description";
       }
       try
       {
@@ -520,9 +520,9 @@ void MotionPlannerServer::plan_with_move_group(
   {
     MoveGroupInterface::Plan plan;
     res->result.error_code = interface->plan(plan);
-    res->result.trajectory_start = std::move(plan.start_state_);
-    res->result.trajectory = std::move(plan.trajectory_);
-    res->result.planning_time = std::move(plan.planning_time_);
+    res->result.trajectory_start = std::move(plan.start_state);
+    res->result.trajectory = std::move(plan.trajectory);
+    res->result.planning_time = std::move(plan.planning_time);
   }
   if (_execute_trajectory)
   {

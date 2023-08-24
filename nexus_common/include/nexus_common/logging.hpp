@@ -177,8 +177,10 @@ public: static std::string to_string(const BtLogging::LogReport& report);
  * @param log_level The log level to set to, if not provided it will be read from
  * NEXUS_LOG_LEVEL environment variable. If the log level is invalid, it will be ignored.
  *
- * Note: ros2 humble still does not support externally setting log level, using env var
- * best supports scenarios like `ros2 launch`.
+ * Note: ROS Iron only supports externally setting log level using the
+ * `--log-level` CLI flag.
+ * This function allows it to be set via an environment variable
+ * `NEXUS_LOG_LEVEl`.
  */
 template<typename NodePtrT>
 void configure_logging(NodePtrT node,
