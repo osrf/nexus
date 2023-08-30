@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(nexus_zenoh_bridge_dds_vendor VERSION 0.6.0)
+project(nexus_zenoh_bridge_dds_vendor)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)

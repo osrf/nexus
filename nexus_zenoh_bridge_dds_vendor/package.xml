@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>nexus_zenoh_bridge_dds_vendor</name>
-  <version>0.5.0</version>
+  <version>0.0.1</version>
   <description>Newer version of zenoh_bridge_dds for NEXUS</description>
   <maintainer email="koonpeng@openrobotics.org">Teo Koon Peng</maintainer>
   <license>Apache License 2.0</license>
