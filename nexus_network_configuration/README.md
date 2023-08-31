@@ -54,5 +54,3 @@ workcell_orchestrators:
 ```bash
 ros2 run nexus_network_configuration nexus_network_configuration -n <PATH_TO_NEXUS_NETWORK_CONFIG> -r <PATH_TO_REDF_CONFIGS> -o <ZENOH_CONFIGS_OUTPUT_DIRECTORY>
 ```
-
-> Note: The latest version of [zenoh-plugin-dds](https://github.com/eclipse-zenoh/zenoh-plugin-dds) does not require a custom CycloneDDS configuration to listen to DDS traffic on the loopback interface, and this could simply be toggled by using either `ROS_LOCALHOST_ONLY=1` or specifying the `dds-localhost-only` flag. However, the humble binary does have have these changes in as of 2/10/2022

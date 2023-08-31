@@ -196,10 +196,9 @@ def launch_setup(context, *args, **kwargs):
                 IncludeLaunchDescription(
                     [
                         PathJoinSubstitution([
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("abb_bringup"),
                             'launch',
-                            'include',
-                            'nexus_control.launch.py',
+                            'abb_control.launch.py',
                         ])
                     ],
                     launch_arguments=[
@@ -271,7 +270,6 @@ def launch_setup(context, *args, **kwargs):
             condition=IfCondition(use_zenoh_bridge),
         ),
         activate_node_service("motion_planner_server", ros_domain_id.perform(context)),
-        activate_node_service("robot_controller_server", ros_domain_id.perform(context)),
     ]
 
 

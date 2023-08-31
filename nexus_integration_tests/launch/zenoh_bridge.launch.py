@@ -24,7 +24,10 @@ from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
 )
-from launch_ros.substitutions import FindPackageShare
+from launch_ros.substitutions import (
+    ExecutableInPackage,
+    FindPackageShare,
+)
 
 
 def launch_setup(context, *args, **kwargs):
@@ -35,28 +38,27 @@ def launch_setup(context, *args, **kwargs):
     log_level = LaunchConfiguration("log_level")
     ros_domain_id = LaunchConfiguration("ros_domain_id")
 
-    dds_localhost_only_text = ""
+    cmd = [
+        ExecutableInPackage(
+            executable="zenoh_bridge_dds",
+            package="nexus_zenoh_bridge_dds_vendor",
+        ),
+        "--config",
+        PathJoinSubstitution([
+            FindPackageShare(zenoh_config_package),
+            zenoh_config_filename
+        ]),
+        "--domain",
+        ros_domain_id,
+    ]
 
     if IfCondition(dds_localhost_only).evaluate(context):
-        dds_localhost_only_text = " --dds-localhost-only"
+        cmd.append("--dds-localhost-only")
 
     zenoh_bridge_exec = ExecuteProcess(
-        cmd=[
-            "RUST_LOG="+log_level.perform(context),
-            FindExecutable(name="ros2"),
-            "run",
-            "nexus_zenoh_bridge_dds_vendor",
-            "zenoh_bridge_dds",
-            "--config",
-            PathJoinSubstitution([
-                FindPackageShare(zenoh_config_package),
-                zenoh_config_filename
-            ]),
-            "--domain",
-            ros_domain_id,
-            dds_localhost_only_text,
-        ],
+        cmd=cmd,
         shell=True,
+        additional_env={"RUST_LOG": log_level.perform(context)},
     )
 
     return [zenoh_bridge_exec]

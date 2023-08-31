@@ -9,7 +9,7 @@ A ROS 2 framework which enables configuration and orchestration of process workf
 For details on architecture and concepts [see](./docs/concepts.md).
 
 ## Requirements
-* [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html) on `Ubuntu 22.04`
+* [ROS 2 Iron](https://docs.ros.org/en/iron/Installation/Ubuntu-Install-Debians.html) on `Ubuntu 22.04`
 
 ## Setup
 
@@ -21,12 +21,12 @@ cd ~/ws_nexus/src/
 git clone git@github.com:OpenSourceRobotics/nexus
 vcs import . < nexus/abb.repos
 cd ~/ws_nexus
-rosdep install --from-paths src --ignore-src --rosdistro humble -y -r
+rosdep install --from-paths src --ignore-src --rosdistro iron -y -r
 ```
 
 ### Build the NEXUS workspace
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/iron/setup.bash
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
@@ -90,10 +90,10 @@ The linter of choice is `uncrustify` and the configuration used may be reference
 Instead of invoking `uncrustify` directly, use `ament_uncrustify` instead which is a wrapper around a specific version of `uncrustify`.
 You may locally run the linter as follows
 ```bash
-sudo apt update && sudo apt install -y ros-humble-rmf-utils # This is a one-time step
-source /opt/ros/humble/setup.bash
+sudo apt update && sudo apt install -y ros-iron-rmf-utils # This is a one-time step
+source /opt/ros/iron/setup.bash
 cd ~/ws_nexus/src/nexus
-ament_uncrustify -c /opt/ros/humble/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
+ament_uncrustify -c /opt/ros/iron/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
 ```
 To automatically reformat the code, append `--reformat` to the `ament_uncrustify` line above.
 It is highly recommended to audit the changes by the linter before committing.
@@ -105,12 +105,12 @@ A linter such as `pycodestyle` may be used for linting.
 ## Known Issues
 
 ### Unable to scale speeds of cartesian motions in Humble
-The `humble` version of `moveit2` [lacks support](https://github.com/ros-planning/moveit2/issues/1967) for scaling velocity and accelerations of motion plans generated from cartesian interpolation.
-The fixes are likely to land in further distro releases.
+`moveit2` version 2.7.4 and below has a bug that prevents using `cached_ik_kinematics_plugin/CachedKDLKinematicsPlugin`.
+The fixes will be available when [a new release into ROS Iron is made](https://github.com/ros-planning/moveit2/issues/2327).
 
-The workaround for now is to rely on fixes incorporated into custom forks of `moveit2` packages which are compatible with `humble`.
+The workaround for now is to use the `iron` branch on the upstream repository directly.
 
->Note: First make sure all `moveit2` binaries are purged from the system via `sudo apt purge ros-humble-moveit*`.
+>Note: First make sure all `moveit2` binaries are purged from the system via `sudo apt purge ros-iron-moveit*`.
 
 Then as part of the workspace setup, clone in repositories from the [thirdparty.repos](./thirdparty.repos) file.
 Follow the reset of the Setup and Build instructions from above.

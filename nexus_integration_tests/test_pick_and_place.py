@@ -25,11 +25,20 @@ from rclpy import Future
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle, GoalStatus
 from ros_testcase import RosTestCase
-
+import subprocess
 
 class PickAndPlaceTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
+        # todo(YV): Find a better fix to the problem below.
+        # zenoh-bridge was bumped to 0.72 as part of the upgrade to
+        # ROS 2 Iron. However with this upgrade, the bridge does not clearly
+        # terminate when a SIGINT is received leaving behind zombie bridge
+        # processes from previous test cases. As a result, workcell registration
+        # fails for this testcase due to multiple bridges remaining active.
+        # Hence we explicitly kill any zenoh processes before launching the test.
+        subprocess.Popen('pkill -9 -f zenoh', shell=True)
+
         self.proc = managed_process(
             ("ros2", "launch", "nexus_integration_tests", "launch.py"),
         )
