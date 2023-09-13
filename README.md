@@ -13,6 +13,18 @@ For details on architecture and concepts [see](./docs/concepts.md).
 
 ## Setup
 
+### Install system dependencies
+While `cargo` and `rustc` can be installed via rosdep, the version that available is
+v1.66 on most target platforms. However most dependencies require newer versions of `cargo` and `rustc`.
+Hence for now, we will install the latest version manually.
+TODO: Consider adding this dep back for J turtle if Ubuntu 24.04 has the newer.
+cargo and rustc pkgs.
+
+```bash
+sudo apt update && sudo apt install curl
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
 ### Setup the NEXUS workspace
 
 ```bash
