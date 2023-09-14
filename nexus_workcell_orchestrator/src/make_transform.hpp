@@ -23,7 +23,7 @@
 namespace nexus::workcell_orchestrator {
 
 /**
- * Creates a pose and write it to an output port
+ * Creates a transform and write it to an output port
  *
  * Input Ports:
  *   x |double|
