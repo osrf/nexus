@@ -121,8 +121,8 @@
       <input_port name="signal">An std::string signal to set within a workcell</input_port>
     </Action>
 
-    <Action ID="TransformPoseLocal">
-      <input_port name="base_pose">The pose to apply input offsets to</input_port>
+    <Action ID="ApplyTransform">
+      <input_port name="base_pose">The geometry_msgs::msg::PoseStamped pose to apply input offsets to</input_port>
       <input_port name="x">The translation along X-Axis</input_port>
       <input_port name="y">The translation along Y-Axis</input_port>
       <input_port name="y">The translation along Y-Axis</input_port>
@@ -131,10 +131,17 @@
       <input_port name="qy">The qy component of quaternion rotation</input_port>
       <input_port name="qz">The qz component of quaternion rotation</input_port>
       <input_port name="qw">The qw component of quaternion rotation</input_port>
-      <input_port name="transform_from_pose">A geometry_msgs::msg::Pose which defines the desired transfrom</input_port>
-      <input_port name="transform_from_pose_stamped">Takes precedence over transform_from_pose</input_port>
-      <input_port name="reverse">Applies the mirror of the transform. Defaults to false</input_port>
-      <output_port name="result">The desired transform as a geometry_msgs::msg::Transform</output_port>
+      <input_port name="transform">A geometry_msgs::msg::Transform which defines the desired transform. Overrides the direct values if defined.</input_port>
+      <input_port name="local">Perform a local transform instead, wrt. the frame of the base_pose. Defaults to false</input_port>
+      <output_port name="result">The pose with the offset applied as a geometry_msgs::msg::PoseStamped</output_port>
+    </Action>
+
+    <Action ID="GetTransform">
+      <input_port name="base_pose">The geometry_msgs::msg::PoseStamped pose at the start of the offset</input_port>
+      <input_port name="target_pose">The geometry_msgs::msg::PoseStamped pose at the end of the offset</input_port>
+      <input_port name="time">OPTIONAL, rclcpp::Time timepoint to lookup on, if not provided, the current time is used</input_port>
+      <input_port name="local">OPTIONAL, if true, return t such that `target_pose = base_pose * t`</input_port>
+      <output_port name="result">The geometry_msgs::msg::Transform offset that transforms base_pose to target_pose</input_port>
     </Action>
 
     <Action ID="detection.GetDetection">

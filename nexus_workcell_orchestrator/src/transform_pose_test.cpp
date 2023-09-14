@@ -30,25 +30,21 @@
 
 namespace nexus::workcell_orchestrator::test {
 
-TEST_CASE("TransformPoseLocal") {
+TEST_CASE("ApplyTransform") {
   common::test::RosFixture<rclcpp_lifecycle::LifecycleNode> fixture;
-  auto tf2_buffer =
-    std::make_shared<tf2_ros::Buffer>(fixture.node->get_clock());
   BT::BehaviorTreeFactory factory;
-  factory.registerBuilder<TransformPoseLocal>("TransformPoseLocal",
+  factory.registerBuilder<ApplyTransform>("ApplyTransform",
     [&](const std::string& name, const BT::NodeConfiguration& config)
     {
-      return std::make_unique<TransformPoseLocal>(name, config, *fixture.node,
-      tf2_buffer);
+      return std::make_unique<ApplyTransform>(name, config, *fixture.node);
     });
 
-  SECTION(
-    "transform without frame should implicitly uses the frame of base pose") {
+  SECTION("local transform") {
     auto bt = factory.createTreeFromText(
       R"(
       <root>
         <BehaviorTree>
-          <TransformPoseLocal base_pose="{base_pose}" transform_from_pose="{transform_from_pose}" result="{result}" />
+          <ApplyTransform base_pose="{base_pose}" transform="{transform}" local="true" result="{result}" />
         </BehaviorTree>
       </root>
     )");
@@ -63,16 +59,15 @@ TEST_CASE("TransformPoseLocal") {
     base_pose.pose.orientation.z = 0;
     base_pose.pose.orientation.w = 0;
     bt.blackboard_stack.front()->set("base_pose", base_pose);
-    geometry_msgs::msg::Pose transform_from_pose;
-    transform_from_pose.position.x = 3;
-    transform_from_pose.position.y = 2;
-    transform_from_pose.position.z = 1;
-    transform_from_pose.orientation.x = -1;
-    transform_from_pose.orientation.y = 0;
-    transform_from_pose.orientation.z = 0;
-    transform_from_pose.orientation.w = 0;
-    bt.blackboard_stack.front()->set("transform_from_pose",
-      transform_from_pose);
+    geometry_msgs::msg::Transform transform;
+    transform.translation.x = 3;
+    transform.translation.y = 2;
+    transform.translation.z = 1;
+    transform.rotation.x = -1;
+    transform.rotation.y = 0;
+    transform.rotation.z = 0;
+    transform.rotation.w = 0;
+    bt.blackboard_stack.front()->set("transform", transform);
     REQUIRE(bt.tickRoot() == BT::NodeStatus::SUCCESS);
     auto result =
       bt.blackboard_stack.front()->get<geometry_msgs::msg::PoseStamped>(
@@ -87,18 +82,18 @@ TEST_CASE("TransformPoseLocal") {
     CHECK(result.pose.orientation.w == Approx(1));
   }
 
-  SECTION("transform from pose stamped") {
+  SECTION("parent frame transform") {
     auto bt = factory.createTreeFromText(
       R"(
       <root>
         <BehaviorTree>
-          <TransformPoseLocal base_pose="{base_pose}" transform_from_pose_stamped="{transform_from_pose_stamped}" result="{result}" />
+          <ApplyTransform base_pose="{base_pose}" transform="{transform}" local="false" result="{result}" />
         </BehaviorTree>
       </root>
     )");
 
     geometry_msgs::msg::PoseStamped base_pose;
-    base_pose.header.frame_id = "test_a";
+    base_pose.header.frame_id = "test";
     base_pose.pose.position.x = 1;
     base_pose.pose.position.y = 2;
     base_pose.pose.position.z = 3;
@@ -107,59 +102,96 @@ TEST_CASE("TransformPoseLocal") {
     base_pose.pose.orientation.z = 0;
     base_pose.pose.orientation.w = 0;
     bt.blackboard_stack.front()->set("base_pose", base_pose);
-    geometry_msgs::msg::PoseStamped transform_from_pose_stamped;
-    transform_from_pose_stamped.header.frame_id = "test_b";
-    transform_from_pose_stamped.pose.position.x = 3;
-    transform_from_pose_stamped.pose.position.y = 2;
-    transform_from_pose_stamped.pose.position.z = 1;
-    transform_from_pose_stamped.pose.orientation.x = -1;
-    transform_from_pose_stamped.pose.orientation.y = 0;
-    transform_from_pose_stamped.pose.orientation.z = 0;
-    transform_from_pose_stamped.pose.orientation.w = 0;
-    bt.blackboard_stack.front()->set("transform_from_pose_stamped",
-      transform_from_pose_stamped);
-
-    SECTION("fail when target frame cannot be found") {
-      geometry_msgs::msg::TransformStamped test_a;
-      test_a.header.frame_id = "base_link";
-      test_a.child_frame_id = "test_a";
-      tf2_buffer->setTransform(test_a, "test");
-      CHECK(bt.tickRoot() == BT::NodeStatus::FAILURE);
-    }
-
-    SECTION("fail when base frame cannot be found") {
-      geometry_msgs::msg::TransformStamped test_b;
-      test_b.header.frame_id = "base_link";
-      test_b.child_frame_id = "test_b";
-      tf2_buffer->setTransform(test_b, "test");
-      CHECK(bt.tickRoot() == BT::NodeStatus::FAILURE);
-    }
-
-    SECTION("success when both base and target frame is available") {
-      geometry_msgs::msg::TransformStamped test_a;
-      test_a.header.frame_id = "base_link";
-      test_a.child_frame_id = "test_a";
-      tf2_buffer->setTransform(test_a, "test");
-
-      geometry_msgs::msg::TransformStamped test_b;
-      test_b.header.frame_id = "base_link";
-      test_b.child_frame_id = "test_b";
-      tf2_buffer->setTransform(test_b, "test");
-
-      REQUIRE(bt.tickRoot() == BT::NodeStatus::SUCCESS);
-      auto result =
-        bt.blackboard_stack.front()->get<geometry_msgs::msg::PoseStamped>(
-        "result");
-      CHECK(result.header.frame_id == "test_a");
-      CHECK(result.pose.position.x == Approx(4));
-      CHECK(result.pose.position.y == Approx(0));
-      CHECK(result.pose.position.z == Approx(-2));
-      CHECK(result.pose.orientation.x == Approx(0));
-      CHECK(result.pose.orientation.y == Approx(0));
-      CHECK(result.pose.orientation.z == Approx(0));
-      CHECK(result.pose.orientation.w == Approx(1));
-    }
+    geometry_msgs::msg::Transform transform;
+    transform.translation.x = 3;
+    transform.translation.y = 2;
+    transform.translation.z = 1;
+    transform.rotation.x = -1;
+    transform.rotation.y = 0;
+    transform.rotation.z = 0;
+    transform.rotation.w = 0;
+    bt.blackboard_stack.front()->set("transform", transform);
+    REQUIRE(bt.tickRoot() == BT::NodeStatus::SUCCESS);
+    auto result =
+      bt.blackboard_stack.front()->get<geometry_msgs::msg::PoseStamped>(
+      "result");
+    CHECK(result.header.frame_id == "test");
+    CHECK(result.pose.position.x == Approx(4));
+    CHECK(result.pose.position.y == Approx(0));
+    CHECK(result.pose.position.z == Approx(-2));
+    CHECK(result.pose.orientation.x == Approx(0));
+    CHECK(result.pose.orientation.y == Approx(0));
+    CHECK(result.pose.orientation.z == Approx(0));
+    CHECK(result.pose.orientation.w == Approx(1));
   }
+}
+
+TEST_CASE("GetTransform") {
+  common::test::RosFixture<rclcpp_lifecycle::LifecycleNode> fixture;
+  auto tf2_buffer =
+    std::make_shared<tf2_ros::Buffer>(fixture.node->get_clock());
+  rclcpp::Time lookup_time(0);
+  geometry_msgs::msg::TransformStamped target_tf;
+  target_tf.header.stamp = lookup_time;
+  target_tf.header.frame_id = "test_base";
+  target_tf.child_frame_id = "test_target";
+  target_tf.transform.translation.x = 1;
+  target_tf.transform.translation.y = 2;
+  target_tf.transform.translation.z = 3;
+  target_tf.transform.rotation.x = 0;
+  target_tf.transform.rotation.y = 0;
+  target_tf.transform.rotation.z = 0;
+  target_tf.transform.rotation.w = 1;
+  tf2_buffer->setTransform(target_tf, fixture.node->get_name());
+  BT::BehaviorTreeFactory factory;
+  factory.registerBuilder<GetTransform>("GetTransform",
+    [&](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<GetTransform>(name, config, *fixture.node,
+      tf2_buffer);
+    });
+
+  auto bt = factory.createTreeFromText(
+    R"(
+      <root>
+        <BehaviorTree>
+          <GetTransform base_pose="{base_pose}" target_pose="{target_pose}" time="{lookup_time}" result="{result}" />
+        </BehaviorTree>
+      </root>
+    )");
+  bt.blackboard_stack.front()->set("lookup_time", lookup_time);
+
+  geometry_msgs::msg::PoseStamped base_pose;
+  base_pose.header.frame_id = "test_base";
+  base_pose.pose.position.x = 1;
+  base_pose.pose.position.y = 0;
+  base_pose.pose.position.z = 0;
+  base_pose.pose.orientation.x = 0;
+  base_pose.pose.orientation.y = 0;
+  base_pose.pose.orientation.z = 0;
+  base_pose.pose.orientation.w = 1;
+  bt.blackboard_stack.front()->set("base_pose", base_pose);
+  geometry_msgs::msg::PoseStamped target_pose;
+  target_pose.header.frame_id = "test_target";
+  target_pose.pose.position.x = 1;
+  target_pose.pose.position.y = 0;
+  target_pose.pose.position.z = 0;
+  target_pose.pose.orientation.x = 0;
+  target_pose.pose.orientation.y = 0;
+  target_pose.pose.orientation.z = 0;
+  target_pose.pose.orientation.w = 1;
+  bt.blackboard_stack.front()->set("target_pose", target_pose);
+  REQUIRE(bt.tickRoot() == BT::NodeStatus::SUCCESS);
+  auto result =
+    bt.blackboard_stack.front()->get<geometry_msgs::msg::Transform>(
+    "result");
+  CHECK(result.translation.x == Approx(1));
+  CHECK(result.translation.y == Approx(2));
+  CHECK(result.translation.z == Approx(3));
+  CHECK(result.rotation.x == Approx(0));
+  CHECK(result.rotation.y == Approx(0));
+  CHECK(result.rotation.z == Approx(0));
+  CHECK(result.rotation.w == Approx(1));
 }
 
 }

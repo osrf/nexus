@@ -21,6 +21,7 @@
 #include <behaviortree_cpp_v3/action_node.h>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nexus_capabilities/conversions/pose_stamped.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <tf2_ros/buffer.h>
 
@@ -29,18 +30,8 @@ namespace nexus::workcell_orchestrator {
 /**
  * Transform a stamped pose.
  *
- * When the inputs ((x,y,z),(qx,qy,qz,qw)) or transform_from_pose are used
- * this node assumes the input poses are expressed in the frame defined by
- * base_pose. The node transforms the input into the parent frame of
- * base_pose. For example, if base_pose is ((1, 0, 0), (0, 0, 0, 1)) in frame
- * "map" and the input is ((2, 0, 0), (0, 0, 0, 1)) then the output of the
- * node is ((3, 0, 0), (0, 0, 0, 1)) in frame "map".
- *
- * When transform_from_pose_stamped is used, the meaning of the output
- * transformation is different from above, but it's frame ID is set to the
- * frame of the base_pose.
- * The behavior being different from the above may change in the future, and
- * it probably shouldn't be relied on.
+ * When `transform_from_pose` is used, the pose is treated as a transform with the
+ * position as translation and the orientation as rotation (in quaternion).
  *
  * Input Ports:
  *   base_pose |geometry_msgs::msg::PoseStamped| Used as a pose to transform inputs into.
@@ -51,14 +42,12 @@ namespace nexus::workcell_orchestrator {
  *   qy |double|
  *   qz |double|
  *   qw |double|
- *   transform_from_pose |geometry_msgs::msg::Pose| Use the pose as the transform parameters.
- *      The direct values are ignored if this is provided.
- *   transform_from_pose_stamped |geometry_msgs::msg::PoseStamped| Takes precedence of `transform_from_pose`.
- *   reverse |bool| Applies reverse of the transform instead, defaults to `false`. Only valid when `transform_from_pose` or `transform_from_pose_stamped` is given.
+ *   transform |geometry_msgs::msg::Transform| The direct values are ignored if this is provided.
+ *   local |bool| Perform a local transform instead of wrt to the parent frame.
  * Output Ports:
- *   result |geometry_msgs::msg::Transform|
+ *   result |geometry_msgs::msg::PoseStamped|
  */
-class TransformPoseLocal : public BT::SyncActionNode
+class ApplyTransform : public BT::SyncActionNode
 {
 public: static BT::PortsList providedPorts()
   {
@@ -71,18 +60,43 @@ public: static BT::PortsList providedPorts()
       BT::InputPort<double>("qy"),
       BT::InputPort<double>("qz"),
       BT::InputPort<double>("qw"),
-      BT::InputPort<geometry_msgs::msg::Pose>("transform_from_pose",
-        "Use the pose as the transform parameters. The direct values are ignored if this is provided."),
-      BT::InputPort<geometry_msgs::msg::PoseStamped>(
-        "transform_from_pose_stamped",
-        "Takes precedence of `transform_from_pose`."),
-      BT::InputPort<bool>("reverse",
-        "Applies reverse of the transform instead, defaults to `false`. Only valid when `transform_from_pose` or `transform_from_pose_stamped` is given."),
+      BT::InputPort<geometry_msgs::msg::Transform>("transform",
+        "The direct values are ignored if this is provided."),
+      BT::InputPort<bool>("local"),
       BT::OutputPort<geometry_msgs::msg::PoseStamped>("result"),
     };
   }
 
-public: TransformPoseLocal(const std::string& name,
+public: ApplyTransform(const std::string& name,
+    const BT::NodeConfiguration& config,
+    rclcpp_lifecycle::LifecycleNode& node)
+  : BT::SyncActionNode(name, config), _node(node) {}
+
+public: BT::NodeStatus tick() override;
+
+private: rclcpp_lifecycle::LifecycleNode& _node;
+};
+
+/**
+ * Given a `base_pose` and `target_pose`, get the transform `t` such that
+ * `target_pose = t * base_pose`.
+ */
+class GetTransform : public BT::SyncActionNode
+{
+public: static BT::PortsList providedPorts()
+  {
+    return {
+      BT::InputPort<geometry_msgs::msg::PoseStamped>("base_pose"),
+      BT::InputPort<geometry_msgs::msg::PoseStamped>("target_pose"),
+      BT::InputPort<rclcpp::Time>("time",
+        "OPTIONAL, timepoint to lookup on, if not provided, the current time is used."),
+      BT::InputPort<bool>("local",
+        "OPTIONAL, if true, return t such that `target_pose = base_pose * t`."),
+      BT::OutputPort<geometry_msgs::msg::Transform>("result"),
+    };
+  }
+
+public: GetTransform(const std::string& name,
     const BT::NodeConfiguration& config,
     rclcpp_lifecycle::LifecycleNode& node,
     std::shared_ptr<tf2_ros::Buffer> tf2_buffer)
@@ -93,9 +107,6 @@ public: BT::NodeStatus tick() override;
 
 private: rclcpp_lifecycle::LifecycleNode& _node;
 private: std::shared_ptr<tf2_ros::Buffer> _tf2_buffer;
-
-private: tf2::Transform _pose_to_tf(const geometry_msgs::msg::Pose& pose,
-    bool reverse = false);
 };
 
 }
