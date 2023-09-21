@@ -162,6 +162,98 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     "Setting parameter get_state_wait_seconds to [%.3f]",
     _get_state_wait_seconds
   );
+
+  // Motion plan cache params
+  _use_motion_plan_cache = this->declare_parameter(
+    "use_motion_plan_cache", true);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter use_motion_plan_cache to [%s]",
+    _use_motion_plan_cache ? "True" : "False"
+  );
+
+  _only_use_cached_plans = this->declare_parameter(
+    "only_use_cached_plans", false);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter only_use_cached_plans to [%s]",
+    _only_use_cached_plans ? "True" : "False"
+  );
+
+  _cache_db_plugin = this->declare_parameter(
+    "cache_db_plugin", "warehouse_ros_sqlite::DatabaseConnection");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_db_plugin to [%s]", _cache_db_plugin.c_str()
+  );
+
+  _cache_db_host = this->declare_parameter("cache_db_host", ":memory:");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_db_host to [%s]", _cache_db_host.c_str()
+  );
+
+  _cache_db_port = this->declare_parameter<int>("cache_db_port", 0);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_db_port to [%d]", _cache_db_port
+  );
+
+  _cache_exact_match_tolerance = this->declare_parameter(
+    "cache_exact_match_tolerance", 0.025);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_exact_match_tolerance to [%.2e]",
+    _cache_exact_match_tolerance
+  );
+
+  _cache_start_match_tolerance = this->declare_parameter(
+    "cache_start_match_tolerance", 0.025);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_start_match_tolerance to [%.5f]",
+    _cache_start_match_tolerance
+  );
+
+  _cache_goal_match_tolerance = this->declare_parameter(
+    "cache_goal_match_tolerance", 0.001);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter cache_goal_match_tolerance to [%.5f]",
+    _cache_goal_match_tolerance
+  );
+
+  if (_use_motion_plan_cache)
+  {
+    auto cache_node_options = rclcpp::NodeOptions();
+    cache_node_options.automatically_declare_parameters_from_overrides(true);
+    cache_node_options.use_global_arguments(false);
+    _internal_cache_node = std::make_shared<rclcpp::Node>(
+      "motion_planner_server_internal_cache_node", cache_node_options);
+    _cache_spin_thread = std::thread(
+      [this]()
+      {
+        while (rclcpp::ok())
+        {
+          rclcpp::spin_some(_internal_cache_node);
+        }
+      });
+
+    // Push warehouse_ros parameters to internal cache node
+    // This must happen BEFORE the MotionPlanCache is created!
+    _internal_cache_node->declare_parameter<std::string>(
+      "warehouse_plugin", _cache_db_plugin);
+
+    _internal_cache_node->declare_parameter<std::string>(
+      "warehouse_host", _cache_db_host);
+
+    _internal_cache_node->declare_parameter<int>(
+      "warehouse_port", _cache_db_port);
+
+    _motion_plan_cache =
+      std::make_shared<nexus::motion_planner::MotionPlanCache>(
+      _internal_cache_node);
+  }
 }
 
 //==============================================================================
@@ -171,6 +263,11 @@ MotionPlannerServer::~MotionPlannerServer()
   {
     _spin_thread.join();
   }
+
+  if (_cache_spin_thread.joinable())
+  {
+    _cache_spin_thread.join();
+  }
 }
 
 //==============================================================================
@@ -178,6 +275,21 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Configuring...");
+  if (!_use_motion_plan_cache && _only_use_cached_plans)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "use_motion_plan_cache must be true if only_use_cached_plans is true."
+    );
+    return CallbackReturn::ERROR;
+  }
+
+  if (_use_motion_plan_cache)
+  {
+    _motion_plan_cache->init(
+      _cache_db_host, _cache_db_port, _cache_exact_match_tolerance);
+  }
+
   if (_use_move_group_interfaces)
   {
     auto ok = initialize_move_group_interfaces();
@@ -461,6 +573,7 @@ void MotionPlannerServer::plan_with_move_group(
   interface->setMaxVelocityScalingFactor(vel_scale);
   interface->setMaxAccelerationScalingFactor(acc_scale);
   moveit::core::MoveItErrorCode error;
+  moveit_msgs::msg::MotionPlanRequest plan_req_msg;  // For caching
   if (req.cartesian)
   {
     std::vector<geometry_msgs::msg::Pose> waypoints;
@@ -486,24 +599,66 @@ void MotionPlannerServer::plan_with_move_group(
     else
     {
       res->result.error_code.val = 1;
-
     }
   }
   else
   {
     MoveGroupInterface::Plan plan;
-    res->result.error_code = interface->plan(plan);
+    interface->constructMotionPlanRequest(plan_req_msg);
+
+    if (!_only_use_cached_plans)
+    {
+      res->result.error_code = interface->plan(plan);
+    }
+    else
+    {
+      auto fetched_plan = _motion_plan_cache->fetchBestMatchingPlan(
+        *interface, robot_name, plan_req_msg,
+        _cache_start_match_tolerance, _cache_goal_match_tolerance);
+      if (fetched_plan)
+      {
+        plan.start_state = plan_req_msg.start_state;
+        plan.trajectory = *fetched_plan;
+        plan.planning_time = 0;  // ???
+        res->result.error_code.val =
+          moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+      }
+      else
+      {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "only_use_cached_plans was true, and could not find cached plan for "
+          "plan request: \n\n%s",
+          moveit_msgs::msg::to_yaml(plan_req_msg).c_str());
+        res->result.error_code.val =
+          moveit_msgs::msg::MoveItErrorCodes::FAILURE;
+        return;
+      }
+    }
     res->result.trajectory_start = std::move(plan.start_state);
     res->result.trajectory = std::move(plan.trajectory);
     res->result.planning_time = std::move(plan.planning_time);
   }
   if (_execute_trajectory)
   {
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Executing trajectory!");
+    RCLCPP_INFO(this->get_logger(), "Executing trajectory!");
+
+    auto exec_start = this->now();
     // This is a blocking call.
-    interface->execute(res->result.trajectory);
+    // interface->execute(res->result.trajectory);
+    auto exec_end = this->now();
+
+    if (_use_motion_plan_cache && !req.cartesian)
+    {
+      bool plan_put_ok = _motion_plan_cache->putPlan(
+        *interface, robot_name,
+        std::move(plan_req_msg), std::move(res->result.trajectory),
+        (exec_end - exec_start).seconds(), true);
+      if (!plan_put_ok)
+      {
+        RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");
+      }
+    }
   }
   return;
 }

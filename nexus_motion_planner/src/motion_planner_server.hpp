@@ -35,6 +35,9 @@
 // NEXUS messages
 #include <nexus_endpoints.hpp>
 
+// NEXUS motion plan cache
+#include "motion_plan_cache.hpp"
+
 //==============================================================================
 class MotionPlannerServer : public rclcpp_lifecycle::LifecycleNode
 {
@@ -69,6 +72,10 @@ private:
   rclcpp::Node::SharedPtr _internal_node;
   std::thread _spin_thread;
 
+  rclcpp::Node::SharedPtr _internal_cache_node;
+  std::thread _cache_spin_thread;
+
+  // MoveIt planning
   std::vector<std::string> _manipulators;
   bool _use_move_group_interfaces;
   bool _use_namespace;
@@ -87,6 +94,18 @@ private:
   double _workspace_max_x;
   double _workspace_max_y;
   double _workspace_max_z;
+
+  // Motion plan caching
+  std::shared_ptr<nexus::motion_planner::MotionPlanCache> _motion_plan_cache;
+
+  bool _use_motion_plan_cache;
+  bool _only_use_cached_plans;
+  std::string _cache_db_plugin;
+  std::string _cache_db_host;
+  int _cache_db_port;
+  double _cache_exact_match_tolerance;
+  double _cache_start_match_tolerance;
+  double _cache_goal_match_tolerance;
 
   rclcpp::Service<GetMotionPlanService::ServiceType>::SharedPtr _plan_srv;
 

@@ -17,6 +17,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(warehouse_ros REQUIRED)
+find_package(warehouse_ros_sqlite REQUIRED)
 
 include_directories(include)
 
@@ -28,6 +29,7 @@ set (motion_planner_server_dependencies
   rclcpp_action
   rclcpp_lifecycle
   warehouse_ros
+  warehouse_ros_sqlite
   tf2
   tf2_ros
 )
@@ -45,7 +47,7 @@ set(LIBRARY_NAME motion_planner_server_core)
 set(EXECUTABLE_NAME motion_planner_server)
 
 # Server executable
-add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp)
+add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp src/motion_plan_cache.cpp)
 ament_target_dependencies(${EXECUTABLE_NAME} ${motion_planner_server_dependencies})
 
 # Test executable
