@@ -113,21 +113,3 @@ It is highly recommended to audit the changes by the linter before committing.
 #### Python
 The NEXUS codebase adheres to [PEP8](https://peps.python.org/pep-0008/) style format for python scripts.
 A linter such as `pycodestyle` may be used for linting.
-
-## Known Issues
-
-### Unable to scale speeds of cartesian motions in Humble
-`moveit2` version 2.7.4 and below has a bug that prevents using `cached_ik_kinematics_plugin/CachedKDLKinematicsPlugin`.
-The fixes will be available when [a new release into ROS Iron is made](https://github.com/ros-planning/moveit2/issues/2327).
-
-The workaround for now is to use the `iron` branch on the upstream repository directly.
-
->Note: First make sure all `moveit2` binaries are purged from the system via `sudo apt purge ros-iron-moveit*`.
-
-Then as part of the workspace setup, clone in repositories from the [thirdparty.repos](./thirdparty.repos) file.
-Follow the reset of the Setup and Build instructions from above.
-
-```bash
-cd ws_nexus/src/
-vcs import . < nexus/thirdparty.repos
-```
