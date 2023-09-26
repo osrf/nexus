@@ -74,7 +74,7 @@ public:
       moveit_msgs::msg::RobotTrajectory
     >::ConstPtr
   >
-  fetchAllMatchingPlans(
+  fetch_all_matching_plans(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -83,13 +83,13 @@ public:
   warehouse_ros::MessageWithMetadata<
     moveit_msgs::msg::RobotTrajectory
   >::ConstPtr
-  fetchBestMatchingPlan(
+  fetch_best_matching_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
     double start_tolerance, double goal_tolerance, bool metadata_only = false);
 
-  bool putPlan(
+  bool put_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -98,25 +98,25 @@ public:
     bool overwrite = true);
 
   // QUERY CONSTRUCTION ========================================================
-  bool extractAndAppendStartToQuery(
+  bool extract_and_append_start_to_query(
     warehouse_ros::Query& query,
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
     double match_tolerance);
 
-  bool extractAndAppendGoalToQuery(
+  bool extract_and_append_goal_to_query(
     warehouse_ros::Query& query,
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
     double match_tolerance);
 
   // METADATA CONSTRUCTION =====================================================
-  bool extractAndAppendStartToMetadata(
+  bool extract_and_append_start_to_metadata(
     warehouse_ros::Metadata& metadata,
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const moveit_msgs::msg::MotionPlanRequest& plan_request);
 
-  bool extractAndAppendGoalToMetadata(
+  bool extract_and_append_goal_to_metadata(
     warehouse_ros::Metadata& metadata,
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const moveit_msgs::msg::MotionPlanRequest& plan_request);

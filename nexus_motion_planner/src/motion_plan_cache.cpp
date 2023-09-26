@@ -54,7 +54,7 @@ void MotionPlanCache::init(
 
 // TOP LEVEL OPS ===============================================================
 std::vector<MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr>
-MotionPlanCache::fetchAllMatchingPlans(
+MotionPlanCache::fetch_all_matching_plans(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -65,9 +65,9 @@ MotionPlanCache::fetchAllMatchingPlans(
 
   Query::Ptr query = coll.createQuery();
 
-  bool start_ok = this->extractAndAppendStartToQuery(
+  bool start_ok = this->extract_and_append_start_to_query(
     *query, move_group, plan_request, start_tolerance);
-  bool goal_ok = this->extractAndAppendGoalToQuery(
+  bool goal_ok = this->extract_and_append_goal_to_query(
     *query, move_group, plan_request, goal_tolerance);
 
   if (!start_ok || !goal_ok)
@@ -81,7 +81,7 @@ MotionPlanCache::fetchAllMatchingPlans(
 }
 
 MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
-MotionPlanCache::fetchBestMatchingPlan(
+MotionPlanCache::fetch_best_matching_plan(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -89,7 +89,7 @@ MotionPlanCache::fetchBestMatchingPlan(
 {
   // First find all matching, but metadata only.
   // Then use the ID metadata of the best plan to pull the actual message.
-  auto matching_plans = this->fetchAllMatchingPlans(
+  auto matching_plans = this->fetch_all_matching_plans(
     move_group, move_group_namespace,
     plan_request, start_tolerance, goal_tolerance,
     true);
@@ -113,7 +113,7 @@ MotionPlanCache::fetchBestMatchingPlan(
 }
 
 bool
-MotionPlanCache::putPlan(
+MotionPlanCache::put_plan(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -155,10 +155,10 @@ MotionPlanCache::putPlan(
   // overwrite.
   Query::Ptr exact_query = coll.createQuery();
 
-  bool start_query_ok = this->extractAndAppendStartToQuery(
+  bool start_query_ok = this->extract_and_append_start_to_query(
     *exact_query, move_group,
     plan_request, exact_match_precision_);
-  bool goal_query_ok = this->extractAndAppendGoalToQuery(
+  bool goal_query_ok = this->extract_and_append_goal_to_query(
     *exact_query, move_group,
     plan_request, exact_match_precision_);
 
@@ -208,9 +208,9 @@ MotionPlanCache::putPlan(
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
-    bool start_meta_ok = this->extractAndAppendStartToMetadata(
+    bool start_meta_ok = this->extract_and_append_start_to_metadata(
       *insert_metadata, move_group, plan_request);
-    bool goal_meta_ok = this->extractAndAppendGoalToMetadata(
+    bool goal_meta_ok = this->extract_and_append_goal_to_metadata(
       *insert_metadata, move_group, plan_request);
     insert_metadata->append("execution_time_s", execution_time_s);
 
@@ -242,7 +242,7 @@ MotionPlanCache::putPlan(
 
 // QUERY CONSTRUCTION ==========================================================
 bool
-MotionPlanCache::extractAndAppendStartToQuery(
+MotionPlanCache::extract_and_append_start_to_query(
   Query& query,
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -302,7 +302,7 @@ MotionPlanCache::extractAndAppendStartToQuery(
     // NOTE: methyldragon -
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
-    //   apply the joint states after as well.
+    //   apply the joint states as offsets as well.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -348,7 +348,7 @@ MotionPlanCache::extractAndAppendStartToQuery(
 }
 
 bool
-MotionPlanCache::extractAndAppendGoalToQuery(
+MotionPlanCache::extract_and_append_goal_to_query(
   Query& query,
   const moveit::planning_interface::MoveGroupInterface& /* move_group */,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -591,7 +591,7 @@ MotionPlanCache::extractAndAppendGoalToQuery(
 
 // METADATA CONSTRUCTION =======================================================
 bool
-MotionPlanCache::extractAndAppendStartToMetadata(
+MotionPlanCache::extract_and_append_start_to_metadata(
   Metadata& metadata,
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const moveit_msgs::msg::MotionPlanRequest& plan_request)
@@ -647,7 +647,7 @@ MotionPlanCache::extractAndAppendStartToMetadata(
     // NOTE: methyldragon -
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
-    //   apply the joint states after as well.
+    //   apply the joint states as offsets as well.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -690,7 +690,7 @@ MotionPlanCache::extractAndAppendStartToMetadata(
 }
 
 bool
-MotionPlanCache::extractAndAppendGoalToMetadata(
+MotionPlanCache::extract_and_append_goal_to_metadata(
   Metadata& metadata,
   const moveit::planning_interface::MoveGroupInterface& /* move_group */,
   const moveit_msgs::msg::MotionPlanRequest& plan_request)

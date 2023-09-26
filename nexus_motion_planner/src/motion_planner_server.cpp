@@ -612,7 +612,7 @@ void MotionPlannerServer::plan_with_move_group(
     }
     else
     {
-      auto fetched_plan = _motion_plan_cache->fetchBestMatchingPlan(
+      auto fetched_plan = _motion_plan_cache->fetch_best_matching_plan(
         *interface, robot_name, plan_req_msg,
         _cache_start_match_tolerance, _cache_goal_match_tolerance);
       if (fetched_plan)
@@ -650,7 +650,7 @@ void MotionPlannerServer::plan_with_move_group(
 
     if (_use_motion_plan_cache && !req.cartesian)
     {
-      bool plan_put_ok = _motion_plan_cache->putPlan(
+      bool plan_put_ok = _motion_plan_cache->put_plan(
         *interface, robot_name,
         std::move(plan_req_msg), std::move(res->result.trajectory),
         (exec_end - exec_start).seconds(), true);
