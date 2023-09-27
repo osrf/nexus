@@ -612,11 +612,16 @@ void MotionPlannerServer::plan_with_move_group(
   else
   {
     MoveGroupInterface::Plan plan;
+    bool plan_is_from_cache = false;
     interface->constructMotionPlanRequest(plan_req_msg);
 
     if (!_only_use_cached_plans)
     {
       res->result.error_code = interface->plan(plan);
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Plan status: %d, planning time: %es",
+        res->result.error_code.val, plan.planning_time);
     }
     else
     {
@@ -627,6 +632,7 @@ void MotionPlannerServer::plan_with_move_group(
       auto fetch_end = this->now();
       if (fetched_plan)
       {
+        plan_is_from_cache = true;
         plan.start_state = plan_req_msg.start_state;
         plan.trajectory = *fetched_plan;
         plan.planning_time = (fetch_end - fetch_start).seconds();
@@ -634,8 +640,9 @@ void MotionPlannerServer::plan_with_move_group(
           moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
         RCLCPP_INFO(
           this->get_logger(),
-          "Cache fetch took %es, fetched plan planning time was: %es",
-          (fetch_end - fetch_start).seconds(), plan.planning_time);
+          "Cache fetch took %es, planning time was: %es",
+          (fetch_end - fetch_start).seconds(),
+          fetched_plan->lookupDouble("planning_time_s"));
       }
       else
       {
@@ -663,7 +670,9 @@ void MotionPlannerServer::plan_with_move_group(
       return;
     }
 
-    if (_use_motion_plan_cache)
+    // Make sure we check if the plan we have was fetched (so we don't have
+    // duplicate caches.)
+    if (_use_motion_plan_cache && !plan_is_from_cache)
     {
       if (!_motion_plan_cache->put_plan(
           *interface, robot_name,
@@ -672,6 +681,7 @@ void MotionPlannerServer::plan_with_move_group(
             res->result.trajectory.joint_trajectory.points.back()
             .time_from_start
           ).seconds(),
+          plan.planning_time,
           _overwrite_worse_plans))
       {
         RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");

@@ -95,6 +95,7 @@ public:
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
     const moveit_msgs::msg::RobotTrajectory& plan,
     double execution_time_s,
+    double planning_time_s,
     bool overwrite = true);
 
   // QUERY CONSTRUCTION ========================================================

@@ -119,6 +119,7 @@ MotionPlanCache::put_plan(
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
   const moveit_msgs::msg::RobotTrajectory& plan,
   double execution_time_s,
+  double planning_time_s,
   bool overwrite)
 {
   // Check pre-conditions
@@ -213,6 +214,7 @@ MotionPlanCache::put_plan(
     bool goal_meta_ok = this->extract_and_append_goal_to_metadata(
       *insert_metadata, move_group, plan_request);
     insert_metadata->append("execution_time_s", execution_time_s);
+    insert_metadata->append("planning_time_s", planning_time_s);
 
     if (!start_meta_ok || !goal_meta_ok)
     {
