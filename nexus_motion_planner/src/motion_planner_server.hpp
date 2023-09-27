@@ -99,7 +99,7 @@ private:
   std::shared_ptr<nexus::motion_planner::MotionPlanCache> _motion_plan_cache;
 
   bool _use_motion_plan_cache;
-  bool _only_use_cached_plans;
+  bool _use_cached_plans_instead_of_planning;
   bool _overwrite_worse_plans;
   std::string _cache_db_plugin;
   std::string _cache_db_host;

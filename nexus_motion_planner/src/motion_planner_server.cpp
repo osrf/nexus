@@ -172,12 +172,12 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     _use_motion_plan_cache ? "True" : "False"
   );
 
-  _only_use_cached_plans = this->declare_parameter(
-    "only_use_cached_plans", false);
+  _use_cached_plans_instead_of_planning = this->declare_parameter(
+    "use_cached_plans_instead_of_planning", false);
   RCLCPP_INFO(
     this->get_logger(),
-    "Setting parameter only_use_cached_plans to [%s]",
-    _only_use_cached_plans ? "True" : "False"
+    "Setting parameter use_cached_plans_instead_of_planning to [%s]",
+    _use_cached_plans_instead_of_planning ? "True" : "False"
   );
 
   _overwrite_worse_plans = this->declare_parameter(
@@ -208,7 +208,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
   );
 
   _cache_exact_match_tolerance = this->declare_parameter(
-    "cache_exact_match_tolerance", 0.00001);
+    "cache_exact_match_tolerance", 0.0005);  // ~0.028 degrees per joint
   RCLCPP_INFO(
     this->get_logger(),
     "Setting parameter cache_exact_match_tolerance to [%.2e]",
@@ -283,11 +283,12 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Configuring...");
-  if (!_use_motion_plan_cache && _only_use_cached_plans)
+  if (!_use_motion_plan_cache && _use_cached_plans_instead_of_planning)
   {
     RCLCPP_ERROR(
       this->get_logger(),
-      "use_motion_plan_cache must be true if only_use_cached_plans is true."
+      "use_motion_plan_cache must be true if "
+      "use_cached_plans_instead_of_planning is true."
     );
     return CallbackReturn::ERROR;
   }
@@ -615,7 +616,7 @@ void MotionPlannerServer::plan_with_move_group(
     bool plan_is_from_cache = false;
     interface->constructMotionPlanRequest(plan_req_msg);
 
-    if (!_only_use_cached_plans)
+    if (!_use_cached_plans_instead_of_planning)
     {
       res->result.error_code = interface->plan(plan);
       RCLCPP_INFO(
@@ -640,7 +641,7 @@ void MotionPlannerServer::plan_with_move_group(
           moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
         RCLCPP_INFO(
           this->get_logger(),
-          "Cache fetch took %es, planning time was: %es",
+          "Cache fetch took %es, planning time of fetched plan was: %es",
           (fetch_end - fetch_start).seconds(),
           fetched_plan->lookupDouble("planning_time_s"));
       }
@@ -648,8 +649,8 @@ void MotionPlannerServer::plan_with_move_group(
       {
         RCLCPP_ERROR(
           this->get_logger(),
-          "only_use_cached_plans was true, and could not find cached plan for "
-          "plan request: \n\n%s",
+          "use_cached_plans_instead_of_planning was true, and could not find "
+          "cached plan for plan request: \n\n%s",
           moveit_msgs::msg::to_yaml(plan_req_msg).c_str());
         res->result.error_code.val =
           moveit_msgs::msg::MoveItErrorCodes::FAILURE;
