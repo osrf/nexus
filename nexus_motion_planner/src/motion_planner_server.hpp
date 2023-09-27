@@ -100,6 +100,7 @@ private:
 
   bool _use_motion_plan_cache;
   bool _only_use_cached_plans;
+  bool _overwrite_worse_plans;
   std::string _cache_db_plugin;
   std::string _cache_db_host;
   int _cache_db_port;

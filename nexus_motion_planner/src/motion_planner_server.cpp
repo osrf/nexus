@@ -180,6 +180,14 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     _only_use_cached_plans ? "True" : "False"
   );
 
+  _overwrite_worse_plans = this->declare_parameter(
+    "overwrite_worse_plans", true);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter overwrite_worse_plans to [%s]",
+    _overwrite_worse_plans ? "True" : "False"
+  );
+
   _cache_db_plugin = this->declare_parameter(
     "cache_db_plugin", "warehouse_ros_sqlite::DatabaseConnection");
   RCLCPP_INFO(
@@ -200,7 +208,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
   );
 
   _cache_exact_match_tolerance = this->declare_parameter(
-    "cache_exact_match_tolerance", 0.025);
+    "cache_exact_match_tolerance", 0.00001);
   RCLCPP_INFO(
     this->get_logger(),
     "Setting parameter cache_exact_match_tolerance to [%.2e]",
@@ -664,7 +672,7 @@ void MotionPlannerServer::plan_with_move_group(
             res->result.trajectory.joint_trajectory.points.back()
             .time_from_start
           ).seconds(),
-          true))
+          _overwrite_worse_plans))
       {
         RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");
       }
