@@ -612,16 +612,22 @@ void MotionPlannerServer::plan_with_move_group(
     }
     else
     {
+      auto fetch_start = this->now();
       auto fetched_plan = _motion_plan_cache->fetch_best_matching_plan(
         *interface, robot_name, plan_req_msg,
         _cache_start_match_tolerance, _cache_goal_match_tolerance);
+      auto fetch_end = this->now();
       if (fetched_plan)
       {
         plan.start_state = plan_req_msg.start_state;
         plan.trajectory = *fetched_plan;
-        plan.planning_time = 0;  // ???
+        plan.planning_time = (fetch_end - fetch_start).seconds();
         res->result.error_code.val =
           moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Cache fetch took %es, fetched plan planning time was: %es",
+          (fetch_end - fetch_start).seconds(), plan.planning_time);
       }
       else
       {
@@ -635,30 +641,40 @@ void MotionPlannerServer::plan_with_move_group(
         return;
       }
     }
+
     res->result.trajectory_start = std::move(plan.start_state);
     res->result.trajectory = std::move(plan.trajectory);
     res->result.planning_time = std::move(plan.planning_time);
-  }
-  if (_execute_trajectory)
-  {
-    RCLCPP_INFO(this->get_logger(), "Executing trajectory!");
 
-    auto exec_start = this->now();
-    // This is a blocking call.
-    // interface->execute(res->result.trajectory);
-    auto exec_end = this->now();
-
-    if (_use_motion_plan_cache && !req.cartesian)
+    if (res->result.error_code.val !=
+      moveit_msgs::msg::MoveItErrorCodes::SUCCESS)
     {
-      bool plan_put_ok = _motion_plan_cache->put_plan(
-        *interface, robot_name,
-        std::move(plan_req_msg), std::move(res->result.trajectory),
-        (exec_end - exec_start).seconds(), true);
-      if (!plan_put_ok)
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Planning did not succeed: %d", res->result.error_code.val);
+      return;
+    }
+
+    if (_use_motion_plan_cache)
+    {
+      if (!_motion_plan_cache->put_plan(
+          *interface, robot_name,
+          std::move(plan_req_msg), std::move(res->result.trajectory),
+          rclcpp::Duration(
+            res->result.trajectory.joint_trajectory.points.back()
+            .time_from_start
+          ).seconds(),
+          true))
       {
         RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");
       }
     }
+  }
+  if (_execute_trajectory)
+  {
+    RCLCPP_INFO(this->get_logger(), "Executing trajectory!");
+    // This is a blocking call.
+    interface->execute(res->result.trajectory);
   }
   return;
 }
