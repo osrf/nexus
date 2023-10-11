@@ -18,33 +18,33 @@
 #ifndef NEXUS_WORKCELL_ORCHESTRATOR__JOB_HPP
 #define NEXUS_WORKCELL_ORCHESTRATOR__JOB_HPP
 
-#include <nexus_workcell_orchestrator/capability.hpp>
-#include <nexus_workcell_orchestrator/context.hpp>
+#include <nexus_capabilities/context.hpp>
+#include <nexus_common/logging.hpp>
+#include <nexus_endpoints.hpp>
+#include <nexus_orchestrator_msgs/msg/task_state.hpp>
 
 #include <behaviortree_cpp_v3/bt_factory.h>
 
-#include <rclcpp_lifecycle/lifecycle_node.hpp>
-#include <tf2_ros/buffer.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+
+#include <filesystem>
 
 namespace nexus::workcell_orchestrator {
 
-class Job
+struct Job
 {
-public: Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
-    tf2_ros::Buffer::SharedPtr tf2_buffer);
+  using TaskState = nexus_orchestrator_msgs::msg::TaskState;
+  using GoalHandlePtr =
+    std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>;
 
-public: void pause() { this->_paused = true; }
-public: void unpause() { this->_paused = false; }
-public: void load_capability(const Capability& cap);
-
-private: rclcpp_lifecycle::LifecycleNode::WeakPtr _node;
-private: tf2_ros::Buffer::SharedPtr _tf2_buffer;
-private: BT::BehaviorTreeFactory _bt_factory;
-private: std::shared_ptr<Context> _ctx;
-private: bool _paused;
+  std::shared_ptr<Context> ctx;
+  std::optional<BT::Tree> bt;
+  GoalHandlePtr goal_handle;
+  std::optional<common::BtLogging> bt_logging;
+  TaskState task_state = TaskState();
+  uint64_t tick_count = 0;
 };
 
 }
 
 #endif
-

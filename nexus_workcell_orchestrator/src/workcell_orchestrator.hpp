@@ -18,6 +18,7 @@
 #ifndef NEXUS_WORKCELL_ORCHESTRATOR__WORKCELL_ORCHESTRATOR_HPP
 #define NEXUS_WORKCELL_ORCHESTRATOR__WORKCELL_ORCHESTRATOR_HPP
 
+#include "job_manager.hpp"
 #include "task_parser.hpp"
 
 #include <nexus_capabilities/capability.hpp>
@@ -119,27 +120,17 @@ private: rclcpp::Service<endpoints::RemovePendingTaskService::ServiceType>::
   SharedPtr
     _remove_pending_task_srv;
 private: std::atomic<bool> _paused;
-private: std::list<std::shared_ptr<Context>> _ctxs;
-private: std::shared_ptr<ContextManager> _ctx_mgr;
 private: std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{
     nullptr};
 private: std::filesystem::path _bt_path;
   // mapping of mapped task type and the original
 private: std::unordered_map<std::string, std::string> _task_remaps;
 private: TaskParser _task_parser;
+private: std::optional<JobManager> _job_mgr;
 
 
 private: CallbackReturn _configure(
     const rclcpp_lifecycle::State& previous_state);
-
-  /**
-   * Tick a behavior tree.
-   */
-private: void _tick_bt(const std::shared_ptr<Context>& ctx);
-
-private: void _tick_all_bts();
-
-private: void _cancel_all_tasks();
 
   /**
    * Register this workcell to the system orchestrator.

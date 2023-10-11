@@ -29,7 +29,7 @@ BT::NodeStatus GetResult::tick()
   if (!key)
   {
     RCLCPP_ERROR(
-      this->_node.get_logger(), "%s: port [key] is required",
+      ctx->node->get_logger(), "%s: port [key] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -41,7 +41,7 @@ BT::NodeStatus GetResult::tick()
   catch (const YAML::Exception& e)
   {
     RCLCPP_ERROR(
-      this->_node.get_logger(), "[%s]: Failed to read result [%s]",
+      ctx->node->get_logger(), "[%s]: Failed to read result [%s]",
       this->name().c_str(), e.what());
     return BT::NodeStatus::FAILURE;
   }

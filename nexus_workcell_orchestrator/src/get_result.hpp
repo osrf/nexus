@@ -42,14 +42,12 @@ public: static BT::PortsList providedPorts()
   }
 
 public: GetResult(const std::string& name, const BT::NodeConfiguration& config,
-    std::shared_ptr<const ContextManager> ctx_mgr,
-    rclcpp_lifecycle::LifecycleNode& node)
-  : BT::SyncActionNode{name, config}, _ctx_mgr{ctx_mgr}, _node{node} {}
+    std::shared_ptr<const ContextManager> ctx_mgr)
+  : BT::SyncActionNode{name, config}, _ctx_mgr{ctx_mgr} {}
 
 public: BT::NodeStatus tick() override;
 
 private: std::shared_ptr<const ContextManager> _ctx_mgr;
-private: rclcpp_lifecycle::LifecycleNode& _node;
 };
 
 }
