@@ -171,6 +171,10 @@ TEST_CASE("JobManager") {
     job_mgr.tick();
     // test1 and test2 should be finished
     CHECK(job_mgr.jobs().size() == 1);
+
+    job_mgr.tick();
+    // test3 should now be finished
+    CHECK(job_mgr.jobs().size() == 0);
   }
 }
 
