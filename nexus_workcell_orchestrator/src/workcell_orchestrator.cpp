@@ -319,70 +319,15 @@ auto WorkcellOrchestrator::_configure(
       auto ctx = std::make_shared<Context>(this->shared_from_this());
       ctx->task = this->_task_parser.parse_task(goal_handle->get_goal()->task);
       auto bt = this->_create_bt(ctx);
-      this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
-
-      // std::shared_ptr<Context> ctx = nullptr;
-      // const auto it =
-      // std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
-      // [&goal_handle](const std::shared_ptr<Context>& ctx)
-      // {
-      //   return ctx->task.id == goal_handle->get_goal()->task.id;
-      // });
-      // if (it != this->_ctxs.end())
-      // {
-      //   ctx = *it;
-      // }
-      // else
-      // {
-      //   ctx = std::make_shared<Context>(*this);
-      // }
-      // ctx->goal_handle = goal_handle;
-      // const auto goal = goal_handle->get_goal();
-      // try
-      // {
-      //   ctx->task = this->_task_parser.parse_task(goal->task);
-      //   if (!this->_can_perform_task(
-      //     ctx->task))
-      //   {
-      //     auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
-      //     result->message = "Workcell cannot perform task " + ctx->task.type;
-      //     result->success = false;
-      //     RCLCPP_ERROR_STREAM(this->get_logger(), result->message);
-      //     goal_handle->abort(
-      //       result);
-      //     return;
-      //   }
-      //   ctx->task_state.workcell_id = this->get_name();
-      //   ctx->task_state.task_id = ctx->task.id;
-      //   ctx->bt = this->_create_bt(ctx);
-      //   ctx->bt_logging = std::make_unique<common::BtLogging>(ctx->bt,
-      //   this->shared_from_this());
-      // }
-      // catch (const std::exception& e)
-      // {
-      //   std::ostringstream oss;
-      //   auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
-      //   oss << "Failed to create task: " << e.what();
-      //   result->message = oss.str();
-      //   result->success = false;
-      //   RCLCPP_ERROR_STREAM(this->get_logger(), result->message);
-      //   goal_handle->abort(result);
-      //   // make sure to clear previously queued task
-      //   this->_ctxs.erase(it);
-      //   return;
-      // }
-
-      // RCLCPP_INFO(this->get_logger(), "Queuing task [%s]",
-      // goal->task.id.c_str());
-      // ctx->task_state.status = TaskState::STATUS_QUEUED;
-      // auto fb = std::make_shared<WorkcellRequest::Feedback>();
-      // fb->state = ctx->task_state;
-      // goal_handle->publish_feedback(fb);
-
-      // if (it == this->_ctxs.end())
-      // {
-      //   this->_ctxs.emplace_back(ctx);
-      // }
+      try
+      {
+        this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
+      }
+      catch (const JobError& e)
+      {
+        RCLCPP_ERROR(this->get_logger(), "Failed to queue task [%s]: %s",
+        goal_handle->get_goal()->task.id.c_str(), e.what());
+      }
     });
 
   this->_wc_state_pub =
@@ -435,16 +380,18 @@ auto WorkcellOrchestrator::_configure(
       ConstSharedPtr req,
       endpoints::QueueWorkcellTaskService::ServiceType::Response::SharedPtr resp)
       {
-        const auto [_job, err] = this->_job_mgr->assign_task(req->task_id);
-        if (!err.empty())
+        try
         {
-          resp->message = err;
-          resp->success = false;
-          return;
+          this->_job_mgr->assign_task(req->task_id);
+          resp->success = true;
         }
-
-        resp->success = true;
-        return;
+        catch (const JobError& e)
+        {
+          resp->success = false;
+          resp->message = e.what();
+          RCLCPP_ERROR(this->get_logger(), "Failed to assign task [%s]: %s",
+          req->task_id.c_str(), e.what());
+        }
       });
 
   this->_remove_pending_task_srv =
@@ -456,16 +403,19 @@ auto WorkcellOrchestrator::_configure(
       {
         RCLCPP_DEBUG(this->get_logger(),
         "received request to remove pending task [%s]", req->task_id.c_str());
-        const auto [_job,
-        err] = this->_job_mgr->remove_assigned_task(req->task_id);
-        if (!err.empty())
+        try
         {
-          resp->success = false;
-          resp->message = err;
-          return;
+          this->_job_mgr->remove_assigned_task(req->task_id);
+          resp->success = true;
         }
-        resp->success = true;
-        return;
+        catch (const JobError& e)
+        {
+          RCLCPP_WARN(this->get_logger(),
+          "Failed to remove assigned task [%s]: %s", req->task_id.c_str(),
+          e.what());
+          resp->success = false;
+          resp->message = e.what();
+        }
       });
 
   this->_tf2_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());

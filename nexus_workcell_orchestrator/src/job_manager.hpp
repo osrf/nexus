@@ -26,13 +26,18 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
+#include <exception>
 #include <list>
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include <utility>
 
 namespace nexus::workcell_orchestrator {
+
+class JobError : public std::runtime_error
+{
+public: using std::runtime_error::runtime_error;
+};
 
 /**
  * Manage execution of jobs according to the nexus task lifecycle design.
@@ -47,14 +52,25 @@ public: JobManager(rclcpp_lifecycle::LifecycleNode::SharedPtr node,
     size_t max_concurrent)
   : _node(std::move(node)), _max_concurrent(max_concurrent) {}
 
-public: std::pair<JobIterator, std::string> assign_task(
-    const std::string& task_id);
+  /**
+   * Assigns a task.
+   * @throw JobError
+  */
+public: Job& assign_task(const std::string& task_id);
 
-public: std::string queue_task(const GoalHandlePtr& goal_handle,
+  /**
+   * Queue a task. The task must already be assigned. If there is an error, the goal will
+   * immediately be aborted.
+   * @throw JobError
+   */
+public: Job& queue_task(const GoalHandlePtr& goal_handle,
     const std::shared_ptr<Context>& ctx, BT::Tree&& bt);
 
-public: std::pair<JobIterator, std::string> remove_assigned_task(
-    const std::string& task_id);
+  /**
+   * Remove a assigned task.
+   * @throw JobError
+   */
+public: void remove_assigned_task(const std::string& task_id);
 
   /**
    * Forcefully stop and clear all jobs. Jobs will be stopped as soon as possible, unlike
@@ -87,7 +103,8 @@ public: std::shared_ptr<const ContextManager> context_manager() const
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: size_t _max_concurrent;
 private: std::list<Job> _jobs;
-private: std::shared_ptr<ContextManager> _ctx_mgr;
+private: std::shared_ptr<ContextManager> _ctx_mgr =
+    std::make_shared<ContextManager>();
 
 private: void _tick_bt(Job& job);
 private: uint8_t _tick_job(Job& job);

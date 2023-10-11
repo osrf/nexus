@@ -92,13 +92,13 @@ uint8_t JobManager::_tick_job(Job& job)
   {
     case TaskState::STATUS_ASSIGNED: {
       RCLCPP_INFO_THROTTLE(
-        job.ctx->node->get_logger(),
-        *job.ctx->node->get_clock(),
+        this->_node->get_logger(),
+        *this->_node->get_clock(),
         std::chrono::milliseconds(1000).count(),
         "Task [%s] is pending, call \"%s\" to start this task",
-        job.ctx->task.id.c_str(),
+        job.task_state.task_id.c_str(),
         endpoints::WorkcellRequestAction::action_name(
-          job.ctx->node->get_name()).c_str());
+          this->_node->get_name()).c_str());
       break;
     }
     case TaskState::STATUS_QUEUED:
@@ -129,59 +129,49 @@ uint8_t JobManager::_tick_job(Job& job)
   return task_status;
 }
 
-std::pair<JobManager::JobIterator, std::string> JobManager::assign_task(
+Job& JobManager::assign_task(
   const std::string& task_id)
 {
   const auto it =
     std::find_if(this->_jobs.begin(), this->_jobs.end(), [&task_id](
         const Job& j)
       {
-        return j.ctx->task.id == task_id;
+        return j.task_state.task_id == task_id;
       });
-  if (it == this->_jobs.end())
+  if (it != this->_jobs.end())
   {
-    std::ostringstream oss;
-    oss << "Failed to assign task [" << task_id <<
-      "]: Another task with the same id already exist";
-    std::string err_msg = oss.str();
-    RCLCPP_ERROR_STREAM(this->_node->get_logger(), err_msg);
-    return {it, err_msg};
+    throw JobError("Another task with the same id already exist");
   }
 
   auto& j = this->_jobs.emplace_back(Job{nullptr, std::nullopt, nullptr,
         std::nullopt});
-  j.task_state.task_id = j.ctx->task.id;
-  j.task_state.workcell_id = j.ctx->node->get_name();
+  j.task_state.task_id = task_id;
+  j.task_state.workcell_id = this->_node->get_name();
   j.task_state.status = TaskState::STATUS_ASSIGNED;
 
   RCLCPP_INFO(
     this->_node->get_logger(), "Assigned task [%s]",
     task_id.c_str());
-  return {it, ""};
+  return j;
 }
 
-std::string JobManager::queue_task(const GoalHandlePtr& goal_handle,
+Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
   const std::shared_ptr<Context>& ctx, BT::Tree&& bt)
 {
   const auto& job_id = goal_handle->get_goal()->task.id;
   const auto it =
     std::find_if(this->_jobs.begin(), this->_jobs.end(), [&job_id](const Job& j)
       {
-        return j.ctx->task.id == job_id;
+        return j.task_state.task_id == job_id;
       });
   if (it == this->_jobs.end())
   {
-    std::ostringstream oss;
-    oss << "Error queuing task [" << job_id << "]: Task not found";
-    std::string err_msg = oss.str();
-    RCLCPP_ERROR_STREAM(this->_node->get_logger(), err_msg);
-
-    // abort the goal
+    // abort the goal and throw error
     const auto result = std::make_shared<WorkcellRequest::Result>();
     result->success = false;
     result->message = "Task not found";
     goal_handle->abort(result);
-    return "Task not found";
+    throw JobError("Task not found");
   }
 
   it->ctx = ctx;
@@ -189,11 +179,10 @@ std::string JobManager::queue_task(const GoalHandlePtr& goal_handle,
   it->bt_logging.emplace(common::BtLogging(*it->bt, this->_node));
   it->goal_handle = goal_handle;
   it->task_state.status = TaskState::STATUS_QUEUED;
-  return "";
+  return *it;
 }
 
-std::pair<JobManager::JobIterator, std::string>
-JobManager::remove_assigned_task(const std::string& task_id)
+void JobManager::remove_assigned_task(const std::string& task_id)
 {
   const auto it = std::find_if(this->_jobs.begin(),
       this->_jobs.end(), [&task_id](const Job& j)
@@ -202,23 +191,13 @@ JobManager::remove_assigned_task(const std::string& task_id)
       });
   if (it == this->_jobs.end())
   {
-    std::ostringstream oss;
-    oss << "Failed to remove assigned task [" << task_id << "]: Task not found";
-    std::string err_msg = oss.str();
-    RCLCPP_WARN_STREAM(this->_node->get_logger(), err_msg);
-    return {it, err_msg};
+    return;
   }
   if (it->task_state.status != TaskState::STATUS_ASSIGNED)
   {
-    std::ostringstream oss;
-    oss << "Failed to remove assigned task [" << task_id <<
-      "]: Task is not assigned";
-    std::string err_msg = oss.str();
-    RCLCPP_WARN_STREAM(this->_node->get_logger(), err_msg);
-    return {this->_jobs.end(), err_msg};
+    throw JobError("Task is not assigned");
   }
   this->_jobs.erase(it);
-  return {it, ""};
 }
 
 void JobManager::halt_all_jobs()
@@ -258,15 +237,18 @@ void JobManager::tick()
 {
   size_t i = 0;
   auto it = this->_jobs.begin();
-  for (auto& j = *it; i < this->_max_concurrent && it != this->_jobs.end();
-    ++it, ++i)
+  for (; i < this->_max_concurrent && it != this->_jobs.end(); ++i)
   {
-    const auto task_status = this->_tick_job(j);
+    const auto task_status = this->_tick_job(*it);
     if (task_status == TaskState::STATUS_FAILED ||
       task_status == TaskState::STATUS_FINISHED)
     {
-      this->_jobs.erase(it);
+      it = this->_jobs.erase(it);
       continue;
+    }
+    else
+    {
+      ++it;
     }
   }
 }
