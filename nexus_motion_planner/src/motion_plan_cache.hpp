@@ -50,7 +50,15 @@ namespace motion_planner {
  * how long they took to execute. This allows for the lookup and reuse of the
  * best performing plans found so far.
  *
- * WARNING: This cache does NOT yet support collision detection!
+ * WARNING:
+ *   This cache does NOT support collision detection!
+ *   Plans will be put into and fetched from the cache IGNORING collision.
+ *   If your planning scene is expected to change between cache lookups, do NOT
+ *   use this cache, fetched plans are likely to result in collision then.
+ *
+ *   To handle collisions this class will need to hash the planning scene world
+ *   msg (after zeroing out std_msgs/Header timestamps and sequences) and do an
+ *   appropriate lookup.
  *
  * Relevant ROS Parameters:
  *   - `warehouse_plugin`: What database to use
