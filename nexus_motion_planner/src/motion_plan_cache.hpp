@@ -35,6 +35,7 @@
 
 // moveit modules
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit_msgs/srv/get_cartesian_path.hpp>
 
 // NEXUS messages
 #include <nexus_endpoints.hpp>
@@ -148,6 +149,63 @@ public:
     warehouse_ros::Metadata& metadata,
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const moveit_msgs::msg::MotionPlanRequest& plan_request);
+
+  // ===========================================================================
+  // CARTESIAN PLAN CACHING
+  // ===========================================================================
+  // TOP LEVEL OPS
+  std::vector<
+    warehouse_ros::MessageWithMetadata<
+      moveit_msgs::msg::RobotTrajectory
+    >::ConstPtr
+  >
+  fetch_all_matching_cartesian_plans(
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const std::string& move_group_namespace,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+
+  warehouse_ros::MessageWithMetadata<
+    moveit_msgs::msg::RobotTrajectory
+  >::ConstPtr
+  fetch_best_matching_cartesian_plan(
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const std::string& move_group_namespace,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+
+  bool put_cartesian_plan(
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const std::string& move_group_namespace,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    const moveit_msgs::msg::RobotTrajectory& plan,
+    double execution_time_s,
+    double planning_time_s,
+    bool overwrite = true);
+
+  // QUERY CONSTRUCTION
+  bool extract_and_append_cartesian_plan_start_to_query(
+    warehouse_ros::Query& query,
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double match_tolerance);
+
+  bool extract_and_append_cartesian_plan_goal_to_query(
+    warehouse_ros::Query& query,
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double match_tolerance);
+
+  // METADATA CONSTRUCTION
+  bool extract_and_append_cartesian_plan_start_to_metadata(
+    warehouse_ros::Metadata& metadata,
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request);
+
+  bool extract_and_append_cartesian_plan_goal_to_metadata(
+    warehouse_ros::Metadata& metadata,
+    const moveit::planning_interface::MoveGroupInterface& move_group,
+    const moveit_msgs::srv::GetCartesianPath::Request& plan_request);
 
 private:
   rclcpp::Node::SharedPtr node_;
