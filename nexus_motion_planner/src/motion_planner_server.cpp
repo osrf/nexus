@@ -14,6 +14,9 @@
 
 #include "motion_planner_server.hpp"
 
+namespace nexus {
+namespace motion_planner {
+
 //==============================================================================
 MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
 : rclcpp_lifecycle::LifecycleNode("motion_planner_server", options)
@@ -697,3 +700,6 @@ void MotionPlannerServer::plan_with_move_group(
   }
   return;
 }
+
+}  // namespace planning_interface
+}  // namespace moveit

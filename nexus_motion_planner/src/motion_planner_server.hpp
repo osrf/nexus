@@ -38,6 +38,9 @@
 // NEXUS motion plan cache
 #include "motion_plan_cache.hpp"
 
+namespace nexus {
+namespace motion_planner {
+
 //==============================================================================
 class MotionPlannerServer : public rclcpp_lifecycle::LifecycleNode
 {
@@ -121,5 +124,8 @@ private:
     const GetMotionPlanService::ServiceType::Request& req,
     Response res);
 }; // class MotionPlannerServer
+
+}  // namespace planning_interface
+}  // namespace moveit
 
 #endif // SRC__MOTION_PLANNER_SERVER_HPP
