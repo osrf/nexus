@@ -68,7 +68,7 @@ namespace motion_planner {
  *     - Final pose (wrt. `planning_frame` (usually `base_link`))
  *     - Final robot joint states
  *
- * Motion plans may be looked up with some tolerance.
+ * Motion plans may be looked up with some tolerance at call time.
  */
 class MotionPlanCache
 {
@@ -80,7 +80,7 @@ public:
   void init(
     const std::string& db_path = ":memory:",
     uint32_t db_port = 0,
-    double exact_match_precision = 0.00001);
+    double exact_match_precision = 1e-6);
 
   // TOP LEVEL OPS =============================================================
   std::vector<
@@ -140,7 +140,7 @@ private:
   rclcpp::Node::SharedPtr node_;
   warehouse_ros::DatabaseConnection::Ptr db_;
 
-  double exact_match_precision_ = 0;
+  double exact_match_precision_ = 1e-6;
 
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
