@@ -14,8 +14,56 @@
 
 #include "motion_planner_server.hpp"
 
+std::string str_tolower(std::string s)
+{
+  std::transform(s.begin(), s.end(), s.begin(),
+    [](unsigned char c) { return std::tolower(c); }
+  );
+  return s;
+}
+
 namespace nexus {
 namespace motion_planner {
+
+constexpr bool cache_mode_is_execute(PlannerDatabaseMode mode)
+{
+  return mode == PlannerDatabaseMode::ExecuteBestEffort ||
+    mode == PlannerDatabaseMode::ExecuteReadOnly;
+}
+
+constexpr bool cache_mode_is_training(PlannerDatabaseMode mode)
+{
+  return mode == PlannerDatabaseMode::TrainingOverwrite ||
+    mode == PlannerDatabaseMode::TrainingAppendOnly;
+}
+
+// Convert planner database string param to PlannerDatabaseMode enum values.
+PlannerDatabaseMode str_to_planner_database_mode(std::string s)
+{
+  std::string s_lower = str_tolower(s);
+
+  // Using a switch-case here is... inconvenient (needs constexpr hashing or a map), so we don't.
+  if (s_lower == "training_overwrite" || s_lower == "trainingoverwrite")
+  {
+    return PlannerDatabaseMode::TrainingOverwrite;
+  }
+  else if (s_lower == "training_append_only" || s_lower == "trainingappendonly")
+  {
+    return PlannerDatabaseMode::TrainingAppendOnly;
+  }
+  else if (s_lower == "execute_best_effort" || s_lower == "executebesteffort")
+  {
+    return PlannerDatabaseMode::ExecuteBestEffort;
+  }
+  else if (s_lower == "execute_read_only" || s_lower == "executereadonly")
+  {
+    return PlannerDatabaseMode::ExecuteReadOnly;
+  }
+  else
+  {
+    return PlannerDatabaseMode::Unset;
+  }
+}
 
 //==============================================================================
 MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
@@ -167,29 +215,15 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
   );
 
   // Motion plan cache params
-  _use_motion_plan_cache = this->declare_parameter(
-    "use_motion_plan_cache", true);
+  // unset, training, training_append_only, execute_best_effort, execute_read_only
+  _planner_database_mode = this->declare_parameter(
+    "planner_database_mode", "unset");
   RCLCPP_INFO(
     this->get_logger(),
-    "Setting parameter use_motion_plan_cache to [%s]",
-    _use_motion_plan_cache ? "True" : "False"
+    "Setting parameter planner_database_mode to [%s]",
+    _planner_database_mode.c_str()
   );
-
-  _use_cached_plans_instead_of_planning = this->declare_parameter(
-    "use_cached_plans_instead_of_planning", false);
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Setting parameter use_cached_plans_instead_of_planning to [%s]",
-    _use_cached_plans_instead_of_planning ? "True" : "False"
-  );
-
-  _overwrite_worse_plans = this->declare_parameter(
-    "overwrite_worse_plans", true);
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Setting parameter overwrite_worse_plans to [%s]",
-    _overwrite_worse_plans ? "True" : "False"
-  );
+  _cache_mode = str_to_planner_database_mode(_planner_database_mode);
 
   _cache_db_plugin = this->declare_parameter(
     "cache_db_plugin", "warehouse_ros_sqlite::DatabaseConnection");
@@ -234,36 +268,21 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     _cache_goal_match_tolerance
   );
 
-  if (_use_motion_plan_cache)
+  if (_cache_mode != PlannerDatabaseMode::Unset)
   {
-    auto cache_node_options = rclcpp::NodeOptions();
-    cache_node_options.automatically_declare_parameters_from_overrides(true);
-    cache_node_options.use_global_arguments(false);
-    _internal_cache_node = std::make_shared<rclcpp::Node>(
-      "motion_planner_server_internal_cache_node", cache_node_options);
-    _cache_spin_thread = std::thread(
-      [this]()
-      {
-        while (rclcpp::ok())
-        {
-          rclcpp::spin_some(_internal_cache_node);
-        }
-      });
-
-    // Push warehouse_ros parameters to internal cache node
+    // Push warehouse_ros parameters to internal node
     // This must happen BEFORE the MotionPlanCache is created!
-    _internal_cache_node->declare_parameter<std::string>(
+    _internal_node->declare_parameter<std::string>(
       "warehouse_plugin", _cache_db_plugin);
 
-    _internal_cache_node->declare_parameter<std::string>(
+    _internal_node->declare_parameter<std::string>(
       "warehouse_host", _cache_db_host);
 
-    _internal_cache_node->declare_parameter<int>(
+    _internal_node->declare_parameter<int>(
       "warehouse_port", _cache_db_port);
 
     _motion_plan_cache =
-      std::make_unique<nexus::motion_planner::MotionPlanCache>(
-      _internal_cache_node);
+      std::make_unique<nexus::motion_planner::MotionPlanCache>(_internal_node);
   }
 }
 
@@ -286,17 +305,8 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Configuring...");
-  if (!_use_motion_plan_cache && _use_cached_plans_instead_of_planning)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "use_motion_plan_cache must be true if "
-      "use_cached_plans_instead_of_planning is true."
-    );
-    return CallbackReturn::ERROR;
-  }
 
-  if (_use_motion_plan_cache)
+  if (_cache_mode != PlannerDatabaseMode::Unset)
   {
     _motion_plan_cache->init(
       _cache_db_host, _cache_db_port, _cache_exact_match_tolerance);
@@ -619,21 +629,15 @@ void MotionPlannerServer::plan_with_move_group(
     bool plan_is_from_cache = false;
     interface->constructMotionPlanRequest(plan_req_msg);
 
-    if (!_use_cached_plans_instead_of_planning)
-    {
-      res->result.error_code = interface->plan(plan);
-      RCLCPP_INFO(
-        this->get_logger(),
-        "Plan status: %d, planning time: %es",
-        res->result.error_code.val, plan.planning_time);
-    }
-    else
+    // Fetch if in execute mode.
+    if (cache_mode_is_execute(_cache_mode))
     {
       auto fetch_start = this->now();
       auto fetched_plan = _motion_plan_cache->fetch_best_matching_plan(
         *interface, robot_name, plan_req_msg,
         _cache_start_match_tolerance, _cache_goal_match_tolerance);
       auto fetch_end = this->now();
+      // Set plan if a cached plan was fetched.
       if (fetched_plan)
       {
         plan_is_from_cache = true;
@@ -648,17 +652,31 @@ void MotionPlannerServer::plan_with_move_group(
           (fetch_end - fetch_start).seconds(),
           fetched_plan->lookupDouble("planning_time_s"));
       }
-      else
+      // Fail if ReadOnly mode and no cached plan was fetched.
+      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly)
       {
         RCLCPP_ERROR(
           this->get_logger(),
-          "use_cached_plans_instead_of_planning was true, and could not find "
+          "Cache mode was ExecuteReadOnly, and could not find "
           "cached plan for plan request: \n\n%s",
           moveit_msgs::msg::to_yaml(plan_req_msg).c_str());
         res->result.error_code.val =
           moveit_msgs::msg::MoveItErrorCodes::FAILURE;
         return;
       }
+    }
+
+    // Plan if needed.
+    // This is if we didn't fetch a plan from the cache.
+    // (In training or unset mode we never attempt to fetch, so it will always
+    // plan.)
+    if (!plan_is_from_cache)
+    {
+      res->result.error_code = interface->plan(plan);
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Plan status: %d, planning time: %es",
+        res->result.error_code.val, plan.planning_time);
     }
 
     res->result.trajectory_start = std::move(plan.start_state);
@@ -674,9 +692,10 @@ void MotionPlannerServer::plan_with_move_group(
       return;
     }
 
+    // Put plan if in training mode.
     // Make sure we check if the plan we have was fetched (so we don't have
     // duplicate caches.)
-    if (_use_motion_plan_cache && !plan_is_from_cache)
+    if (cache_mode_is_training(_cache_mode) && !plan_is_from_cache)
     {
       if (!_motion_plan_cache->put_plan(
           *interface, robot_name,
@@ -686,7 +705,7 @@ void MotionPlannerServer::plan_with_move_group(
             .time_from_start
           ).seconds(),
           plan.planning_time,
-          _overwrite_worse_plans))
+          _cache_mode == PlannerDatabaseMode::TrainingOverwrite))
       {
         RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");
       }
