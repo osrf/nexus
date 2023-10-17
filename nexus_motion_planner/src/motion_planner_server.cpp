@@ -262,7 +262,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
       "warehouse_port", _cache_db_port);
 
     _motion_plan_cache =
-      std::make_shared<nexus::motion_planner::MotionPlanCache>(
+      std::make_unique<nexus::motion_planner::MotionPlanCache>(
       _internal_cache_node);
   }
 }

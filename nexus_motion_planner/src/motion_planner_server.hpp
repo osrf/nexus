@@ -99,7 +99,7 @@ private:
   double _workspace_max_z;
 
   // Motion plan caching
-  std::shared_ptr<nexus::motion_planner::MotionPlanCache> _motion_plan_cache;
+  std::unique_ptr<nexus::motion_planner::MotionPlanCache> _motion_plan_cache;
 
   bool _use_motion_plan_cache;
   bool _use_cached_plans_instead_of_planning;
