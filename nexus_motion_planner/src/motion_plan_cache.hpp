@@ -154,6 +154,14 @@ public:
   // CARTESIAN PLAN CACHING
   // ===========================================================================
   // TOP LEVEL OPS
+  // This mimics the move group computeCartesianPath signature (without path
+  // constraints).
+  moveit_msgs::srv::GetCartesianPath::Request
+  construct_get_cartesian_plan_request(
+    moveit::planning_interface::MoveGroupInterface& move_group,
+    const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
+    double jump_threshold, bool avoid_collisions = true);
+
   std::vector<
     warehouse_ros::MessageWithMetadata<
       moveit_msgs::msg::RobotTrajectory
