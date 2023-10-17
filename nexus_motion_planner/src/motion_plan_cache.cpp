@@ -36,8 +36,6 @@ using warehouse_ros::Query;
 MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {
-  // TODO: methyldragon -
-  //   Declare or pass in these in the motion_planner_server instead?
   if (!node_->has_parameter("warehouse_plugin"))
   {
     node_->declare_parameter<std::string>(
@@ -66,7 +64,10 @@ void MotionPlanCache::init(
   db_->connect();
 }
 
-// TOP LEVEL OPS ===============================================================
+// =============================================================================
+// MOTION PLAN CACHING
+// =============================================================================
+// MOTION PLAN CACHING: TOP LEVEL OPS
 std::vector<MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr>
 MotionPlanCache::fetch_all_matching_plans(
   const moveit::planning_interface::MoveGroupInterface& move_group,
@@ -79,9 +80,9 @@ MotionPlanCache::fetch_all_matching_plans(
 
   Query::Ptr query = coll.createQuery();
 
-  bool start_ok = this->extract_and_append_start_to_query(
+  bool start_ok = this->extract_and_append_plan_start_to_query(
     *query, move_group, plan_request, start_tolerance);
-  bool goal_ok = this->extract_and_append_goal_to_query(
+  bool goal_ok = this->extract_and_append_plan_goal_to_query(
     *query, move_group, plan_request, goal_tolerance);
 
   if (!start_ok || !goal_ok)
@@ -170,10 +171,10 @@ MotionPlanCache::put_plan(
   // overwrite.
   Query::Ptr exact_query = coll.createQuery();
 
-  bool start_query_ok = this->extract_and_append_start_to_query(
+  bool start_query_ok = this->extract_and_append_plan_start_to_query(
     *exact_query, move_group,
     plan_request, exact_match_precision_);
-  bool goal_query_ok = this->extract_and_append_goal_to_query(
+  bool goal_query_ok = this->extract_and_append_plan_goal_to_query(
     *exact_query, move_group,
     plan_request, exact_match_precision_);
 
@@ -223,9 +224,9 @@ MotionPlanCache::put_plan(
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
-    bool start_meta_ok = this->extract_and_append_start_to_metadata(
+    bool start_meta_ok = this->extract_and_append_plan_start_to_metadata(
       *insert_metadata, move_group, plan_request);
-    bool goal_meta_ok = this->extract_and_append_goal_to_metadata(
+    bool goal_meta_ok = this->extract_and_append_plan_goal_to_metadata(
       *insert_metadata, move_group, plan_request);
     insert_metadata->append("execution_time_s", execution_time_s);
     insert_metadata->append("planning_time_s", planning_time_s);
@@ -256,9 +257,9 @@ MotionPlanCache::put_plan(
   return false;
 }
 
-// QUERY CONSTRUCTION ==========================================================
+// MOTION PLAN CACHING: QUERY CONSTRUCTION
 bool
-MotionPlanCache::extract_and_append_start_to_query(
+MotionPlanCache::extract_and_append_plan_start_to_query(
   Query& query,
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -364,7 +365,7 @@ MotionPlanCache::extract_and_append_start_to_query(
 }
 
 bool
-MotionPlanCache::extract_and_append_goal_to_query(
+MotionPlanCache::extract_and_append_plan_goal_to_query(
   Query& query,
   const moveit::planning_interface::MoveGroupInterface& /* move_group */,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
@@ -605,9 +606,9 @@ MotionPlanCache::extract_and_append_goal_to_query(
   return true;
 }
 
-// METADATA CONSTRUCTION =======================================================
+// MOTION PLAN CACHING: METADATA CONSTRUCTION
 bool
-MotionPlanCache::extract_and_append_start_to_metadata(
+MotionPlanCache::extract_and_append_plan_start_to_metadata(
   Metadata& metadata,
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const moveit_msgs::msg::MotionPlanRequest& plan_request)
@@ -706,7 +707,7 @@ MotionPlanCache::extract_and_append_start_to_metadata(
 }
 
 bool
-MotionPlanCache::extract_and_append_goal_to_metadata(
+MotionPlanCache::extract_and_append_plan_goal_to_metadata(
   Metadata& metadata,
   const moveit::planning_interface::MoveGroupInterface& /* move_group */,
   const moveit_msgs::msg::MotionPlanRequest& plan_request)
