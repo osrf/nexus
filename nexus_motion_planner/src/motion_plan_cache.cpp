@@ -172,11 +172,9 @@ MotionPlanCache::put_plan(
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_plan_start_to_query(
-    *exact_query, move_group,
-    plan_request, exact_match_precision_);
+    *exact_query, move_group, plan_request, 0);
   bool goal_query_ok = this->extract_and_append_plan_goal_to_query(
-    *exact_query, move_group,
-    plan_request, exact_match_precision_);
+    *exact_query, move_group, plan_request, 0);
 
   if (!start_query_ok || !goal_query_ok)
   {
@@ -971,7 +969,7 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 // MotionPlanCache::fetch_all_matching_cartesian_plans(
 //   const moveit::planning_interface::MoveGroupInterface& move_group,
 //   const std::string& move_group_namespace,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request,
+//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
 //   double start_tolerance, double goal_tolerance, bool metadata_only)
 // {
 //   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
@@ -998,7 +996,7 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 // MotionPlanCache::fetch_best_matching_cartesian_plan(
 //   const moveit::planning_interface::MoveGroupInterface& move_group,
 //   const std::string& move_group_namespace,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request,
+//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
 //   double start_tolerance, double goal_tolerance, bool metadata_only)
 // {
 //   // First find all matching, but metadata only.
@@ -1030,7 +1028,7 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 // MotionPlanCache::put_cartesian_plan(
 //   const moveit::planning_interface::MoveGroupInterface& move_group,
 //   const std::string& move_group_namespace,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request,
+//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
 //   const moveit_msgs::msg::RobotTrajectory& plan,
 //   double execution_time_s,
 //   double planning_time_s,
@@ -1071,11 +1069,9 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 //   Query::Ptr exact_query = coll.createQuery();
 
 //   bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
-//     *exact_query, move_group,
-//     plan_request, exact_match_precision_);
+//     *exact_query, move_group, plan_request, 0);
 //   bool goal_query_ok = this->extract_and_append_cartesian_plan_goal_to_query(
-//     *exact_query, move_group,
-//     plan_request, exact_match_precision_);
+//     *exact_query, move_group, plan_request, 0);
 
 //   if (!start_query_ok || !goal_query_ok)
 //   {
@@ -1263,247 +1259,139 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 //   return true;
 // }
 
-// bool
-// MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
-//   Query& query,
-//   const moveit::planning_interface::MoveGroupInterface& /* move_group */,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-//   double match_tolerance)
-// {
-//   match_tolerance += exact_match_precision_;
+bool
+MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
+  Query& query,
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+  double match_tolerance)
+{
+  match_tolerance += exact_match_precision_;
 
-//   // Make ignored members explicit
-//   bool emit_position_constraint_warning = false;
-//   for (auto& constraint : plan_request.goal_constraints)
-//   {
-//     for (auto& position_constraint : constraint.position_constraints)
-//     {
-//       if (!position_constraint.constraint_region.primitives.empty())
-//       {
-//         emit_position_constraint_warning = true;
-//         break;
-//       }
-//     }
-//     if (emit_position_constraint_warning)
-//     {
-//       break;
-//     }
-//   }
-//   if (emit_position_constraint_warning)
-//   {
-//     RCLCPP_WARN(
-//       node_->get_logger(),
-//       "Ignoring goal_constraints.position_constraints.constraint_region: "
-//       "Not supported.");
-//   }
+  // Make ignored members explicit
+  if (plan_request.path_constraints.joint_constraints.empty() ||
+    plan_request.path_constraints.position_constraints.empty() ||
+    plan_request.path_constraints.orientation_constraints.empty() ||
+    plan_request.path_constraints.visibility_constraints.empty())
+  {
+    RCLCPP_WARN(
+      node_->get_logger(), "Ignoring path_constraints: Not supported.");
+  }
+  if (plan_request.avoid_collisions)
+  {
+    RCLCPP_WARN(node_->get_logger(),
+      "Ignoring avoid_collisions: Not supported.");
+  }
 
-//   // auto original = *query;  // Copy not supported.
+  // auto original = *metadata;  // Copy not supported.
 
-//   query.appendRangeInclusive(
-//     "max_velocity_scaling_factor",
-//     NEXUS_MATCH_RANGE(
-//       plan_request.max_velocity_scaling_factor, match_tolerance)
-//   );
-//   query.appendRangeInclusive(
-//     "max_acceleration_scaling_factor",
-//     NEXUS_MATCH_RANGE(
-//       plan_request.max_acceleration_scaling_factor, match_tolerance)
-//   );
-//   query.appendRangeInclusive(
-//     "max_cartesian_speed",
-//     NEXUS_MATCH_RANGE(plan_request.max_cartesian_speed, match_tolerance));
+  query.appendRangeInclusive(
+    "max_velocity_scaling_factor",
+    NEXUS_MATCH_RANGE(
+      plan_request.max_velocity_scaling_factor, match_tolerance));
+  query.appendRangeInclusive(
+    "max_acceleration_scaling_factor",
+    NEXUS_MATCH_RANGE(
+      plan_request.max_acceleration_scaling_factor, match_tolerance));
+  query.appendRangeInclusive(
+    "max_step",
+    NEXUS_MATCH_RANGE(plan_request.max_step, match_tolerance));
+  query.appendRangeInclusive(
+    "jump_threshold",
+    NEXUS_MATCH_RANGE(plan_request.jump_threshold, match_tolerance));
 
-//   // Extract constraints (so we don't have cardinality on goal_constraint idx.)
-//   std::vector<moveit_msgs::msg::JointConstraint> joint_constraints;
-//   std::vector<moveit_msgs::msg::PositionConstraint> position_constraints;
-//   std::vector<moveit_msgs::msg::OrientationConstraint> orientation_constraints;
-//   for (auto& constraint : plan_request.goal_constraints)
-//   {
-//     for (auto& joint_constraint : constraint.joint_constraints)
-//     {
-//       joint_constraints.push_back(joint_constraint);
-//     }
-//     for (auto& position_constraint : constraint.position_constraints)
-//     {
-//       position_constraints.push_back(position_constraint);
-//     }
-//     for (auto& orientation_constraint : constraint.orientation_constraints)
-//     {
-//       orientation_constraints.push_back(orientation_constraint);
-//     }
-//   }
+  // Waypoints
+  // Restating them in terms of the robot model frame (usually base_link)
+  std::string base_frame = move_group.getRobotModel()->getModelFrame();
 
-//   // Joint constraints
-//   size_t joint_idx = 0;
-//   for (auto& constraint : joint_constraints)
-//   {
-//     std::string meta_name =
-//       "goal_constraints.joint_constraints_" + std::to_string(joint_idx++);
+  // Compute offsets.
+  double x_offset = 0;
+  double y_offset = 0;
+  double z_offset = 0;
 
-//     query.append(meta_name + ".joint_name", constraint.joint_name);
-//     query.appendRangeInclusive(
-//       meta_name + ".position",
-//       NEXUS_MATCH_RANGE(constraint.position, match_tolerance));
-//     query.appendGTE(
-//       meta_name + ".tolerance_above", constraint.tolerance_above);
-//     query.appendLTE(
-//       meta_name + ".tolerance_below", constraint.tolerance_below);
-//   }
+  geometry_msgs::msg::Quaternion quat_offset;
+  quat_offset.x = 0;
+  quat_offset.y = 0;
+  quat_offset.z = 0;
+  quat_offset.w = 1;
 
-//   // Position constraints
-//   // All offsets will be "frozen" and computed wrt. the workspace frame
-//   // instead.
-//   if (!position_constraints.empty())
-//   {
-//     query.append(
-//       "goal_constraints.position_constraints.header.frame_id",
-//       plan_request.workspace_parameters.header.frame_id);
+  if (base_frame != plan_request.header.frame_id)
+  {
+    try
+    {
+      auto transform = tf_buffer_->lookupTransform(
+        plan_request.header.frame_id, base_frame, tf2::TimePointZero);
 
-//     size_t pos_idx = 0;
-//     for (auto& constraint : position_constraints)
-//     {
-//       std::string meta_name =
-//         "goal_constraints.position_constraints_" + std::to_string(pos_idx++);
+      x_offset = transform.transform.translation.x;
+      y_offset = transform.transform.translation.y;
+      z_offset = transform.transform.translation.z;
+      quat_offset = transform.transform.rotation;
+    }
+    catch (tf2::TransformException& ex)
+    {
+      RCLCPP_WARN(
+        node_->get_logger(),
+        "Skipping goal metadata append: "
+        "Could not get goal transform for %s to %s: %s",
+        base_frame.c_str(), plan_request.header.frame_id.c_str(),
+        ex.what());
 
-//       // Compute offsets wrt. to workspace frame.
-//       double x_offset = 0;
-//       double y_offset = 0;
-//       double z_offset = 0;
+      // (Can't. Copy not supported.)
+      // *metadata = original;  // Undo our changes.
+      return false;
+    }
+  }
 
-//       if (plan_request.workspace_parameters.header.frame_id !=
-//         constraint.header.frame_id)
-//       {
-//         try
-//         {
-//           auto transform = tf_buffer_->lookupTransform(
-//             constraint.header.frame_id,
-//             plan_request.workspace_parameters.header.frame_id,
-//             tf2::TimePointZero);
+  tf2::Quaternion tf2_quat_frame_offset(
+    quat_offset.x, quat_offset.y, quat_offset.z, quat_offset.w);
+  tf2_quat_frame_offset.normalize();
 
-//           x_offset = transform.transform.translation.x;
-//           y_offset = transform.transform.translation.y;
-//           z_offset = transform.transform.translation.z;
-//         }
-//         catch (tf2::TransformException& ex)
-//         {
-//           RCLCPP_WARN(
-//             node_->get_logger(),
-//             "Skipping goal query append: "
-//             "Could not get goal transform for translation %s to %s: %s",
-//             plan_request.workspace_parameters.header.frame_id.c_str(),
-//             constraint.header.frame_id.c_str(),
-//             ex.what());
+  size_t waypoint_idx = 0;
+  for (auto& waypoint : plan_request.waypoints)
+  {
+    std::string meta_name = "waypoints_" + std::to_string(waypoint_idx++);
 
-//           // (Can't. Copy not supported.)
-//           // *query = original;  // Undo our changes.
-//           return false;
-//         }
-//       }
+    // Apply offsets
+    // Position
+    query.appendRangeInclusive(
+      meta_name + ".position.x",
+      NEXUS_MATCH_RANGE(x_offset + waypoint.position.x, match_tolerance));
+    query.appendRangeInclusive(
+      meta_name + ".position.y",
+      NEXUS_MATCH_RANGE(y_offset+ waypoint.position.y, match_tolerance));
+    query.appendRangeInclusive(
+      meta_name + ".position.z",
+      NEXUS_MATCH_RANGE(z_offset+waypoint.position.z, match_tolerance));
 
-//       query.append(meta_name + ".link_name", constraint.link_name);
+    // Orientation
+    tf2::Quaternion tf2_quat_goal_offset(
+      waypoint.orientation.x,
+      waypoint.orientation.y,
+      waypoint.orientation.z,
+      waypoint.orientation.w);
+    tf2_quat_goal_offset.normalize();
 
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.x",
-//         NEXUS_MATCH_RANGE(
-//           x_offset + constraint.target_point_offset.x, match_tolerance));
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.y",
-//         NEXUS_MATCH_RANGE(
-//           y_offset + constraint.target_point_offset.y, match_tolerance));
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.z",
-//         NEXUS_MATCH_RANGE(
-//           z_offset + constraint.target_point_offset.z, match_tolerance));
-//     }
-//   }
+    auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
+    final_quat.normalize();
 
-//   // Orientation constraints
-//   // All offsets will be "frozen" and computed wrt. the workspace frame
-//   // instead.
-//   if (!orientation_constraints.empty())
-//   {
-//     query.append(
-//       "goal_constraints.orientation_constraints.header.frame_id",
-//       plan_request.workspace_parameters.header.frame_id);
+    query.appendRangeInclusive(
+      meta_name + ".orientation.x",
+      NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
+    query.appendRangeInclusive(
+      meta_name + ".orientation.y",
+      NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
+    query.appendRangeInclusive(
+      meta_name + ".orientation.z",
+      NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
+    query.appendRangeInclusive(
+      meta_name + ".orientation.w",
+      NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
+  }
 
-//     size_t ori_idx = 0;
-//     for (auto& constraint : orientation_constraints)
-//     {
-//       std::string meta_name =
-//         "goal_constraints.orientation_constraints_" + std::to_string(ori_idx++);
+  query.append("link_name", plan_request.link_name);
 
-//       // Compute offsets wrt. to workspace frame.
-//       geometry_msgs::msg::Quaternion quat_offset;
-//       quat_offset.x = 0;
-//       quat_offset.y = 0;
-//       quat_offset.z = 0;
-//       quat_offset.w = 1;
-
-//       if (plan_request.workspace_parameters.header.frame_id !=
-//         constraint.header.frame_id)
-//       {
-//         try
-//         {
-//           auto transform = tf_buffer_->lookupTransform(
-//             constraint.header.frame_id,
-//             plan_request.workspace_parameters.header.frame_id,
-//             tf2::TimePointZero);
-
-//           quat_offset = transform.transform.rotation;
-//         }
-//         catch (tf2::TransformException& ex)
-//         {
-//           RCLCPP_WARN(
-//             node_->get_logger(),
-//             "Skipping goal query append: "
-//             "Could not get goal transform for orientation %s to %s: %s",
-//             plan_request.workspace_parameters.header.frame_id.c_str(),
-//             constraint.header.frame_id.c_str(),
-//             ex.what());
-
-//           // (Can't. Copy not supported.)
-//           // *query = original;  // Undo our changes.
-//           return false;
-//         }
-//       }
-
-//       query.append(meta_name + ".link_name", constraint.link_name);
-
-//       // Orientation of constraint frame wrt. workspace frame
-//       tf2::Quaternion tf2_quat_frame_offset(
-//         quat_offset.x, quat_offset.y, quat_offset.z, quat_offset.w);
-
-//       // Added offset on top of the constraint frame's orientation stated in
-//       // the constraint.
-//       tf2::Quaternion tf2_quat_goal_offset(
-//         constraint.orientation.x,
-//         constraint.orientation.y,
-//         constraint.orientation.z,
-//         constraint.orientation.w);
-
-//       tf2_quat_frame_offset.normalize();
-//       tf2_quat_goal_offset.normalize();
-
-//       auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
-//       final_quat.normalize();
-
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.x",
-//         NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.y",
-//         NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.z",
-//         NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
-//       query.appendRangeInclusive(
-//         meta_name + ".target_point_offset.w",
-//         NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
-//     }
-//   }
-
-//   return true;
-// }
+  return true;
+}
 
 // // CARTESIAN PLAN CACHING: METADATA CONSTRUCTION
 // bool
@@ -1608,7 +1496,7 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 bool
 MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
   Metadata& metadata,
-  const moveit::planning_interface::MoveGroupInterface& /* move_group */,
+  const moveit::planning_interface::MoveGroupInterface& move_group,
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request)
 {
   // Make ignored members explicit
@@ -1623,197 +1511,93 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
   if (plan_request.avoid_collisions)
   {
     RCLCPP_WARN(node_->get_logger(),
-    "Ignoring avoid_collisions: Not supported.")
+      "Ignoring avoid_collisions: Not supported.");
   }
 
-  // // auto original = *metadata;  // Copy not supported.
+  // auto original = *metadata;  // Copy not supported.
 
-  // metadata.append("max_velocity_scaling_factor",
-  //   plan_request.max_velocity_scaling_factor);
-  // metadata.append("max_acceleration_scaling_factor",
-  //   plan_request.max_acceleration_scaling_factor);
-  // metadata.append("max_cartesian_speed", plan_request.max_cartesian_speed);
+  metadata.append("max_velocity_scaling_factor",
+    plan_request.max_velocity_scaling_factor);
+  metadata.append("max_acceleration_scaling_factor",
+    plan_request.max_acceleration_scaling_factor);
+  metadata.append("max_step", plan_request.max_step);
+  metadata.append("jump_threshold", plan_request.jump_threshold);
 
-  // // Extract constraints (so we don't have cardinality on goal_constraint idx.)
-  // std::vector<moveit_msgs::msg::JointConstraint> joint_constraints;
-  // std::vector<moveit_msgs::msg::PositionConstraint> position_constraints;
-  // std::vector<moveit_msgs::msg::OrientationConstraint> orientation_constraints;
-  // for (auto& constraint : plan_request.goal_constraints)
-  // {
-  //   for (auto& joint_constraint : constraint.joint_constraints)
-  //   {
-  //     joint_constraints.push_back(joint_constraint);
-  //   }
-  //   for (auto& position_constraint : constraint.position_constraints)
-  //   {
-  //     position_constraints.push_back(position_constraint);
-  //   }
-  //   for (auto& orientation_constraint : constraint.orientation_constraints)
-  //   {
-  //     orientation_constraints.push_back(orientation_constraint);
-  //   }
-  // }
+  // Waypoints
+  // Restating them in terms of the robot model frame (usually base_link)
+  std::string base_frame = move_group.getRobotModel()->getModelFrame();
 
-  // // Joint constraints
-  // size_t joint_idx = 0;
-  // for (auto& constraint : joint_constraints)
-  // {
-  //   std::string meta_name =
-  //     "goal_constraints.joint_constraints_" + std::to_string(joint_idx++);
+  // Compute offsets.
+  double x_offset = 0;
+  double y_offset = 0;
+  double z_offset = 0;
 
-  //   metadata.append(meta_name + ".joint_name", constraint.joint_name);
-  //   metadata.append(meta_name + ".position", constraint.position);
-  //   metadata.append(
-  //     meta_name + ".tolerance_above", constraint.tolerance_above);
-  //   metadata.append(
-  //     meta_name + ".tolerance_below", constraint.tolerance_below);
-  // }
+  geometry_msgs::msg::Quaternion quat_offset;
+  quat_offset.x = 0;
+  quat_offset.y = 0;
+  quat_offset.z = 0;
+  quat_offset.w = 1;
 
-  // // Position constraints
-  // if (!position_constraints.empty())
-  // {
-  //   // All offsets will be "frozen" and computed wrt. the workspace frame
-  //   // instead.
-  //   metadata.append(
-  //     "goal_constraints.position_constraints.header.frame_id",
-  //     plan_request.workspace_parameters.header.frame_id);
+  if (base_frame != plan_request.header.frame_id)
+  {
+    try
+    {
+      auto transform = tf_buffer_->lookupTransform(
+        plan_request.header.frame_id, base_frame, tf2::TimePointZero);
 
-  //   size_t position_idx = 0;
-  //   for (auto& constraint : position_constraints)
-  //   {
-  //     std::string meta_name =
-  //       "goal_constraints.position_constraints_"
-  //       + std::to_string(position_idx++);
+      x_offset = transform.transform.translation.x;
+      y_offset = transform.transform.translation.y;
+      z_offset = transform.transform.translation.z;
+      quat_offset = transform.transform.rotation;
+    }
+    catch (tf2::TransformException& ex)
+    {
+      RCLCPP_WARN(
+        node_->get_logger(),
+        "Skipping goal metadata append: "
+        "Could not get goal transform for %s to %s: %s",
+        base_frame.c_str(), plan_request.header.frame_id.c_str(),
+        ex.what());
 
-  //     // Compute offsets wrt. to workspace frame.
-  //     double x_offset = 0;
-  //     double y_offset = 0;
-  //     double z_offset = 0;
+      // (Can't. Copy not supported.)
+      // *metadata = original;  // Undo our changes.
+      return false;
+    }
+  }
 
-  //     if (plan_request.workspace_parameters.header.frame_id !=
-  //       constraint.header.frame_id)
-  //     {
-  //       try
-  //       {
-  //         auto transform = tf_buffer_->lookupTransform(
-  //           constraint.header.frame_id,
-  //           plan_request.workspace_parameters.header.frame_id,
-  //           tf2::TimePointZero);
+  tf2::Quaternion tf2_quat_frame_offset(
+    quat_offset.x, quat_offset.y, quat_offset.z, quat_offset.w);
+  tf2_quat_frame_offset.normalize();
 
-  //         x_offset = transform.transform.translation.x;
-  //         y_offset = transform.transform.translation.y;
-  //         z_offset = transform.transform.translation.z;
-  //       }
-  //       catch (tf2::TransformException& ex)
-  //       {
-  //         RCLCPP_WARN(
-  //           node_->get_logger(),
-  //           "Skipping goal metadata append: "
-  //           "Could not get goal transform for translation %s to %s: %s",
-  //           plan_request.workspace_parameters.header.frame_id.c_str(),
-  //           constraint.header.frame_id.c_str(),
-  //           ex.what());
+  size_t waypoint_idx = 0;
+  for (auto& waypoint : plan_request.waypoints)
+  {
+    std::string meta_name = "waypoints_" + std::to_string(waypoint_idx++);
 
-  //         // (Can't. Copy not supported.)
-  //         // *metadata = original;  // Undo our changes.
-  //         return false;
-  //       }
-  //     }
+    // Apply offsets
+    // Position
+    metadata.append(meta_name + ".position.x", x_offset + waypoint.position.x);
+    metadata.append(meta_name + ".position.y", y_offset+ waypoint.position.y);
+    metadata.append(meta_name + ".position.z", z_offset+waypoint.position.z);
 
-  //     metadata.append(meta_name + ".link_name", constraint.link_name);
+    // Orientation
+    tf2::Quaternion tf2_quat_goal_offset(
+      waypoint.orientation.x,
+      waypoint.orientation.y,
+      waypoint.orientation.z,
+      waypoint.orientation.w);
+    tf2_quat_goal_offset.normalize();
 
-  //     metadata.append(
-  //       meta_name + ".target_point_offset.x",
-  //       x_offset + constraint.target_point_offset.x);
-  //     metadata.append(
-  //       meta_name + ".target_point_offset.y",
-  //       y_offset + constraint.target_point_offset.y);
-  //     metadata.append(
-  //       meta_name + ".target_point_offset.z",
-  //       z_offset + constraint.target_point_offset.z);
-  //   }
-  // }
+    auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
+    final_quat.normalize();
 
-  // // Orientation constraints
-  // if (!orientation_constraints.empty())
-  // {
-  //   // All offsets will be "frozen" and computed wrt. the workspace frame
-  //   // instead.
-  //   metadata.append(
-  //     "goal_constraints.orientation_constraints.header.frame_id",
-  //     plan_request.workspace_parameters.header.frame_id);
+    metadata.append(meta_name + ".orientation.x", final_quat.getX());
+    metadata.append(meta_name + ".orientation.y", final_quat.getY());
+    metadata.append(meta_name + ".orientation.z", final_quat.getZ());
+    metadata.append(meta_name + ".orientation.w", final_quat.getW());
+  }
 
-  //   size_t ori_idx = 0;
-  //   for (auto& constraint : orientation_constraints)
-  //   {
-  //     std::string meta_name =
-  //       "goal_constraints.orientation_constraints_" + std::to_string(ori_idx++);
-
-  //     // Compute offsets wrt. to workspace frame.
-  //     geometry_msgs::msg::Quaternion quat_offset;
-  //     quat_offset.x = 0;
-  //     quat_offset.y = 0;
-  //     quat_offset.z = 0;
-  //     quat_offset.w = 1;
-
-  //     if (plan_request.workspace_parameters.header.frame_id !=
-  //       constraint.header.frame_id)
-  //     {
-  //       try
-  //       {
-  //         auto transform = tf_buffer_->lookupTransform(
-  //           constraint.header.frame_id,
-  //           plan_request.workspace_parameters.header.frame_id,
-  //           tf2::TimePointZero);
-
-  //         quat_offset = transform.transform.rotation;
-  //       }
-  //       catch (tf2::TransformException& ex)
-  //       {
-  //         RCLCPP_WARN(
-  //           node_->get_logger(),
-  //           "Skipping goal metadata append: "
-  //           "Could not get goal transform for orientation %s to %s: %s",
-  //           plan_request.workspace_parameters.header.frame_id.c_str(),
-  //           constraint.header.frame_id.c_str(),
-  //           ex.what());
-
-  //         // (Can't. Copy not supported.)
-  //         // *metadata = original;  // Undo our changes.
-  //         return false;
-  //       }
-  //     }
-
-  //     metadata.append(meta_name + ".link_name", constraint.link_name);
-
-  //     // Orientation of constraint frame wrt. workspace frame
-  //     tf2::Quaternion tf2_quat_frame_offset(
-  //       quat_offset.x, quat_offset.y, quat_offset.z, quat_offset.w);
-
-  //     // Added offset on top of the constraint frame's orientation stated in
-  //     // the constraint.
-  //     tf2::Quaternion tf2_quat_goal_offset(
-  //       constraint.orientation.x,
-  //       constraint.orientation.y,
-  //       constraint.orientation.z,
-  //       constraint.orientation.w);
-
-  //     tf2_quat_frame_offset.normalize();
-  //     tf2_quat_goal_offset.normalize();
-
-  //     auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
-  //     final_quat.normalize();
-
-  //     metadata.append(meta_name + ".target_point_offset.x",
-  //       final_quat.getX());
-  //     metadata.append(meta_name + ".target_point_offset.y",
-  //       final_quat.getY());
-  //     metadata.append(meta_name + ".target_point_offset.z",
-  //       final_quat.getZ());
-  //     metadata.append(meta_name + ".target_point_offset.w",
-  //       final_quat.getW());
-  //   }
-  // }
+  metadata.append("link_name", plan_request.link_name);
 
   return true;
 }
