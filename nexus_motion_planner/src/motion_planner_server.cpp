@@ -704,7 +704,7 @@ void MotionPlannerServer::plan_with_move_group(
             res->result.trajectory.joint_trajectory.points.back()
             .time_from_start
           ).seconds(),
-          plan.planning_time,
+          res->result.planning_time,
           _cache_mode == PlannerDatabaseMode::TrainingOverwrite))
       {
         RCLCPP_WARN(this->get_logger(), "Did not put plan into cache.");
