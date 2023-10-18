@@ -945,8 +945,8 @@ MotionPlanCache::construct_get_cartesian_plan_request(
   moveit_msgs::msg::MotionPlanRequest tmp;
   move_group.constructMotionPlanRequest(tmp);
 
-  out.start_state = tmp.start_state;
-  out.group_name = tmp.group_name;
+  out.start_state = std::move(tmp.start_state);
+  out.group_name = std::move(tmp.group_name);
   out.max_velocity_scaling_factor = tmp.max_velocity_scaling_factor;
   out.max_acceleration_scaling_factor = tmp.max_acceleration_scaling_factor;
 

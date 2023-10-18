@@ -695,8 +695,8 @@ void MotionPlannerServer::plan_with_move_group(
       }
     }
 
-    res->result.trajectory_start =
-      std::move(cartesian_plan_req_msg.start_state);
+    // Do NOT move this. We use the cartesian_plan_req_msg later.
+    res->result.trajectory_start = cartesian_plan_req_msg.start_state;
     res->result.trajectory = std::move(cartesian_plan);
 
     if (res->result.error_code.val !=
