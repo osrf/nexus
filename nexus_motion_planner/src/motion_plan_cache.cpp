@@ -1054,16 +1054,6 @@ MotionPlanCache::put_cartesian_plan(
       node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
     return false;
   }
-  if (plan_request.header.frame_id != plan.joint_trajectory.header.frame_id)
-  {
-    RCLCPP_ERROR(
-      node_->get_logger(),
-      "Skipping insert: "
-      "Plan request frame (%s) does not match plan frame (%s).",
-      plan_request.header.frame_id.c_str(),
-      plan.joint_trajectory.header.frame_id.c_str());
-    return false;
-  }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
@@ -1125,9 +1115,11 @@ MotionPlanCache::put_cartesian_plan(
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
-    bool start_meta_ok = this->extract_and_append_cartesian_plan_start_to_metadata(
+    bool start_meta_ok =
+      this->extract_and_append_cartesian_plan_start_to_metadata(
       *insert_metadata, move_group, plan_request);
-    bool goal_meta_ok = this->extract_and_append_cartesian_plan_goal_to_metadata(
+    bool goal_meta_ok =
+      this->extract_and_append_cartesian_plan_goal_to_metadata(
       *insert_metadata, move_group, plan_request);
     insert_metadata->append("execution_time_s", execution_time_s);
     insert_metadata->append("planning_time_s", planning_time_s);
@@ -1537,8 +1529,8 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
     // Apply offsets
     // Position
     metadata.append(meta_name + ".position.x", x_offset + waypoint.position.x);
-    metadata.append(meta_name + ".position.y", y_offset+ waypoint.position.y);
-    metadata.append(meta_name + ".position.z", z_offset+waypoint.position.z);
+    metadata.append(meta_name + ".position.y", y_offset + waypoint.position.y);
+    metadata.append(meta_name + ".position.z", z_offset + waypoint.position.z);
 
     // Orientation
     tf2::Quaternion tf2_quat_goal_offset(
@@ -1558,6 +1550,7 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
   }
 
   metadata.append("link_name", plan_request.link_name);
+  metadata.append("header.frame_id", base_frame);
 
   return true;
 }
