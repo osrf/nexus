@@ -1153,111 +1153,87 @@ MotionPlanCache::construct_get_cartesian_plan_request(
 // }
 
 // // CARTESIAN PLAN CACHING: QUERY CONSTRUCTION
-// bool
-// MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
-//   Query& query,
-//   const moveit::planning_interface::MoveGroupInterface& move_group,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-//   double match_tolerance)
-// {
-//   match_tolerance += exact_match_precision_;
+bool
+MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
+  Query& query,
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+  double match_tolerance)
+{
+  match_tolerance += exact_match_precision_;
 
-//   // Make ignored members explicit
-//   if (!plan_request.start_state.multi_dof_joint_state.joint_names.empty())
-//   {
-//     RCLCPP_WARN(
-//       node_->get_logger(),
-//       "Ignoring start_state.multi_dof_joint_states: Not supported.");
-//   }
-//   if (!plan_request.start_state.attached_collision_objects.empty())
-//   {
-//     RCLCPP_WARN(
-//       node_->get_logger(),
-//       "Ignoring start_state.attached_collision_objects: Not supported.");
-//   }
+  // Make ignored members explicit
+  if (!plan_request.start_state.multi_dof_joint_state.joint_names.empty())
+  {
+    RCLCPP_WARN(
+      node_->get_logger(),
+      "Ignoring start_state.multi_dof_joint_states: Not supported.");
+  }
+  if (!plan_request.start_state.attached_collision_objects.empty())
+  {
+    RCLCPP_WARN(
+      node_->get_logger(),
+      "Ignoring start_state.attached_collision_objects: Not supported.");
+  }
 
-//   // auto original = *query;  // Copy not supported.
+  // auto original = *metadata;  // Copy not supported.
 
-//   query.append("group_name", plan_request.group_name);
+  query.append("group_name", plan_request.group_name);
 
-//   // Workspace params
-//   // Match anything within our specified workspace limits.
-//   query.append(
-//     "workspace_parameters.header.frame_id",
-//     plan_request.workspace_parameters.header.frame_id);
-//   query.appendGTE(
-//     "workspace_parameters.min_corner.x",
-//     plan_request.workspace_parameters.min_corner.x);
-//   query.appendGTE(
-//     "workspace_parameters.min_corner.y",
-//     plan_request.workspace_parameters.min_corner.y);
-//   query.appendGTE(
-//     "workspace_parameters.min_corner.z",
-//     plan_request.workspace_parameters.min_corner.z);
-//   query.appendLTE(
-//     "workspace_parameters.max_corner.x",
-//     plan_request.workspace_parameters.max_corner.x);
-//   query.appendLTE(
-//     "workspace_parameters.max_corner.y",
-//     plan_request.workspace_parameters.max_corner.y);
-//   query.appendLTE(
-//     "workspace_parameters.max_corner.z",
-//     plan_request.workspace_parameters.max_corner.z);
+  // Joint state
+  //   Only accounts for joint_state position. Ignores velocity and effort.
+  if (plan_request.start_state.is_diff)
+  {
+    // If plan request states that the start_state is_diff, then we need to get
+    // the current state from the move_group.
 
-//   // Joint state
-//   //   Only accounts for joint_state position. Ignores velocity and effort.
-//   if (plan_request.start_state.is_diff)
-//   {
-//     // If plan request states that the start_state is_diff, then we need to get
-//     // the current state from the move_group.
+    // NOTE: methyldragon -
+    //   I think if is_diff is on, the joint states will not be populated in all
+    //   of our motion plan requests? If this isn't the case we might need to
+    //   apply the joint states as offsets as well.
+    moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
+    if (!current_state)
+    {
+      RCLCPP_WARN(
+        node_->get_logger(),
+        "Skipping start metadata append: Could not get robot state.");
+      // *metadata = original;  // Undo our changes.  // Copy not supported
+      return false;
+    }
 
-//     // NOTE: methyldragon -
-//     //   I think if is_diff is on, the joint states will not be populated in all
-//     //   of our motion plan requests? If this isn't the case we might need to
-//     //   apply the joint states as offsets as well.
-//     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-//     if (!current_state)
-//     {
-//       RCLCPP_WARN(
-//         node_->get_logger(),
-//         "Skipping start query append: Could not get robot state.");
-//       // *query = original;  // Undo our changes. (Can't. Copy not supported.)
-//       return false;
-//     }
+    moveit_msgs::msg::RobotState current_state_msg;
+    robotStateToRobotStateMsg(*current_state, current_state_msg);
 
-//     moveit_msgs::msg::RobotState current_state_msg;
-//     robotStateToRobotStateMsg(*current_state, current_state_msg);
+    for (size_t i = 0; i < current_state_msg.joint_state.name.size(); i++)
+    {
+      query.append(
+        "start_state.joint_state.name_" + std::to_string(i),
+        current_state_msg.joint_state.name.at(i));
+      query.appendRangeInclusive(
+        "start_state.joint_state.position_" + std::to_string(i),
+        NEXUS_MATCH_RANGE(
+          current_state_msg.joint_state.position.at(i), match_tolerance));
+    }
+  }
+  else
+  {
+    for (
+      size_t i = 0; i < plan_request.start_state.joint_state.name.size(); i++
+    )
+    {
+      query.append(
+        "start_state.joint_state.name_" + std::to_string(i),
+        plan_request.start_state.joint_state.name.at(i));
+      query.appendRangeInclusive(
+        "start_state.joint_state.position_" + std::to_string(i),
+        NEXUS_MATCH_RANGE(
+          plan_request.start_state.joint_state.position.at(i),
+          match_tolerance));
+    }
+  }
 
-//     for (size_t i = 0; i < current_state_msg.joint_state.name.size(); i++)
-//     {
-//       query.append(
-//         "start_state.joint_state.name_" + std::to_string(i),
-//         current_state_msg.joint_state.name.at(i));
-//       query.appendRangeInclusive(
-//         "start_state.joint_state.position_" + std::to_string(i),
-//         NEXUS_MATCH_RANGE(
-//           current_state_msg.joint_state.position.at(i), match_tolerance)
-//       );
-//     }
-//   }
-//   else
-//   {
-//     for (
-//       size_t i = 0; i < plan_request.start_state.joint_state.name.size(); i++
-//     )
-//     {
-//       query.append(
-//         "start_state.joint_state.name_" + std::to_string(i),
-//         plan_request.start_state.joint_state.name.at(i));
-//       query.appendRangeInclusive(
-//         "start_state.joint_state.position_" + std::to_string(i),
-//         NEXUS_MATCH_RANGE(
-//           plan_request.start_state.joint_state.position.at(i), match_tolerance)
-//       );
-//     }
-//   }
-//   return true;
-// }
+  return true;
+}
 
 bool
 MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
@@ -1393,105 +1369,82 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
   return true;
 }
 
-// // CARTESIAN PLAN CACHING: METADATA CONSTRUCTION
-// bool
-// MotionPlanCache::extract_and_append_cartesian_plan_start_to_metadata(
-//   Metadata& metadata,
-//   const moveit::planning_interface::MoveGroupInterface& move_group,
-//   const moveit_msgs::msg::MotionPlanRequest& plan_request)
-// {
-//   // Make ignored members explicit
-//   if (!plan_request.start_state.multi_dof_joint_state.joint_names.empty())
-//   {
-//     RCLCPP_WARN(
-//       node_->get_logger(),
-//       "Ignoring start_state.multi_dof_joint_states: Not supported.");
-//   }
-//   if (!plan_request.start_state.attached_collision_objects.empty())
-//   {
-//     RCLCPP_WARN(
-//       node_->get_logger(),
-//       "Ignoring start_state.attached_collision_objects: Not supported.");
-//   }
+// CARTESIAN PLAN CACHING: METADATA CONSTRUCTION
+bool
+MotionPlanCache::extract_and_append_cartesian_plan_start_to_metadata(
+  Metadata& metadata,
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request)
+{
+  // Make ignored members explicit
+  if (!plan_request.start_state.multi_dof_joint_state.joint_names.empty())
+  {
+    RCLCPP_WARN(
+      node_->get_logger(),
+      "Ignoring start_state.multi_dof_joint_states: Not supported.");
+  }
+  if (!plan_request.start_state.attached_collision_objects.empty())
+  {
+    RCLCPP_WARN(
+      node_->get_logger(),
+      "Ignoring start_state.attached_collision_objects: Not supported.");
+  }
 
-//   // auto original = *metadata;  // Copy not supported.
+  // auto original = *metadata;  // Copy not supported.
 
-//   metadata.append("group_name", plan_request.group_name);
+  metadata.append("group_name", plan_request.group_name);
 
-//   // Workspace params
-//   metadata.append(
-//     "workspace_parameters.header.frame_id",
-//     plan_request.workspace_parameters.header.frame_id);
-//   metadata.append(
-//     "workspace_parameters.min_corner.x",
-//     plan_request.workspace_parameters.min_corner.x);
-//   metadata.append(
-//     "workspace_parameters.min_corner.y",
-//     plan_request.workspace_parameters.min_corner.y);
-//   metadata.append(
-//     "workspace_parameters.min_corner.z",
-//     plan_request.workspace_parameters.min_corner.z);
-//   metadata.append(
-//     "workspace_parameters.max_corner.x",
-//     plan_request.workspace_parameters.max_corner.x);
-//   metadata.append(
-//     "workspace_parameters.max_corner.y",
-//     plan_request.workspace_parameters.max_corner.y);
-//   metadata.append(
-//     "workspace_parameters.max_corner.z",
-//     plan_request.workspace_parameters.max_corner.z);
+  // Joint state
+  //   Only accounts for joint_state position. Ignores velocity and effort.
+  if (plan_request.start_state.is_diff)
+  {
+    // If plan request states that the start_state is_diff, then we need to get
+    // the current state from the move_group.
 
-//   // Joint state
-//   //   Only accounts for joint_state position. Ignores velocity and effort.
-//   if (plan_request.start_state.is_diff)
-//   {
-//     // If plan request states that the start_state is_diff, then we need to get
-//     // the current state from the move_group.
+    // NOTE: methyldragon -
+    //   I think if is_diff is on, the joint states will not be populated in all
+    //   of our motion plan requests? If this isn't the case we might need to
+    //   apply the joint states as offsets as well.
+    moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
+    if (!current_state)
+    {
+      RCLCPP_WARN(
+        node_->get_logger(),
+        "Skipping start metadata append: Could not get robot state.");
+      // *metadata = original;  // Undo our changes.  // Copy not supported
+      return false;
+    }
 
-//     // NOTE: methyldragon -
-//     //   I think if is_diff is on, the joint states will not be populated in all
-//     //   of our motion plan requests? If this isn't the case we might need to
-//     //   apply the joint states as offsets as well.
-//     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
-//     if (!current_state)
-//     {
-//       RCLCPP_WARN(
-//         node_->get_logger(),
-//         "Skipping start metadata append: Could not get robot state.");
-//       // *metadata = original;  // Undo our changes.  // Copy not supported
-//       return false;
-//     }
+    moveit_msgs::msg::RobotState current_state_msg;
+    robotStateToRobotStateMsg(*current_state, current_state_msg);
 
-//     moveit_msgs::msg::RobotState current_state_msg;
-//     robotStateToRobotStateMsg(*current_state, current_state_msg);
+    for (size_t i = 0; i < current_state_msg.joint_state.name.size(); i++)
+    {
+      metadata.append(
+        "start_state.joint_state.name_" + std::to_string(i),
+        current_state_msg.joint_state.name.at(i));
+      metadata.append(
+        "start_state.joint_state.position_" + std::to_string(i),
+        current_state_msg.joint_state.position.at(i));
+    }
+  }
+  else
+  {
+    for (
+      size_t i = 0; i < plan_request.start_state.joint_state.name.size(); i++
+    )
+    {
+      metadata.append(
+        "start_state.joint_state.name_" + std::to_string(i),
+        plan_request.start_state.joint_state.name.at(i));
+      metadata.append(
+        "start_state.joint_state.position_" + std::to_string(i),
+        plan_request.start_state.joint_state.position.at(i));
+    }
+  }
 
-//     for (size_t i = 0; i < current_state_msg.joint_state.name.size(); i++)
-//     {
-//       metadata.append(
-//         "start_state.joint_state.name_" + std::to_string(i),
-//         current_state_msg.joint_state.name.at(i));
-//       metadata.append(
-//         "start_state.joint_state.position_" + std::to_string(i),
-//         current_state_msg.joint_state.position.at(i));
-//     }
-//   }
-//   else
-//   {
-//     for (
-//       size_t i = 0; i < plan_request.start_state.joint_state.name.size(); i++
-//     )
-//     {
-//       metadata.append(
-//         "start_state.joint_state.name_" + std::to_string(i),
-//         plan_request.start_state.joint_state.name.at(i));
-//       metadata.append(
-//         "start_state.joint_state.position_" + std::to_string(i),
-//         plan_request.start_state.joint_state.position.at(i));
-//     }
-//   }
-
-//   return true;
-// }
+  return true;
+}
 
 bool
 MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
