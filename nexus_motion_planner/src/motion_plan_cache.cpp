@@ -965,192 +965,199 @@ MotionPlanCache::construct_get_cartesian_plan_request(
   return out;
 }
 
-// std::vector<MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr>
-// MotionPlanCache::fetch_all_matching_cartesian_plans(
-//   const moveit::planning_interface::MoveGroupInterface& move_group,
-//   const std::string& move_group_namespace,
-//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
-//   double start_tolerance, double goal_tolerance, bool metadata_only)
-// {
-//   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
-//     "move_group_plan_cache", move_group_namespace);
+std::vector<MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr>
+MotionPlanCache::fetch_all_matching_cartesian_plans(
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const std::string& move_group_namespace,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+  double min_fraction,
+  double start_tolerance, double goal_tolerance, bool metadata_only)
+{
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_cartesian_plan_cache", move_group_namespace);
 
-//   Query::Ptr query = coll.createQuery();
+  Query::Ptr query = coll.createQuery();
 
-//   bool start_ok = this->extract_and_append_cartesian_plan_start_to_query(
-//     *query, move_group, plan_request, start_tolerance);
-//   bool goal_ok = this->extract_and_append_cartesian_plan_goal_to_query(
-//     *query, move_group, plan_request, goal_tolerance);
+  bool start_ok = this->extract_and_append_cartesian_plan_start_to_query(
+    *query, move_group, plan_request, start_tolerance);
+  bool goal_ok = this->extract_and_append_cartesian_plan_goal_to_query(
+    *query, move_group, plan_request, goal_tolerance);
 
-//   if (!start_ok || !goal_ok)
-//   {
-//     RCLCPP_ERROR(node_->get_logger(), "Could not construct plan query.");
-//     return {};
-//   }
+  if (!start_ok || !goal_ok)
+  {
+    RCLCPP_ERROR(node_->get_logger(), "Could not construct plan query.");
+    return {};
+  }
 
-//   return coll.queryList(
-//     query, metadata_only, /* sort_by */ "execution_time_s", true);
-// }
+  query->appendGTE("fraction", min_fraction);
 
-// MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
-// MotionPlanCache::fetch_best_matching_cartesian_plan(
-//   const moveit::planning_interface::MoveGroupInterface& move_group,
-//   const std::string& move_group_namespace,
-//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
-//   double start_tolerance, double goal_tolerance, bool metadata_only)
-// {
-//   // First find all matching, but metadata only.
-//   // Then use the ID metadata of the best plan to pull the actual message.
-//   auto matching_plans = this->fetch_all_matching_plans(
-//     move_group, move_group_namespace,
-//     plan_request, start_tolerance, goal_tolerance,
-//     true);
+  return coll.queryList(
+    query, metadata_only, /* sort_by */ "execution_time_s", true);
+}
 
-//   if (matching_plans.empty())
-//   {
-//     RCLCPP_INFO(node_->get_logger(), "No matching plans found.");
-//     return nullptr;
-//   }
+MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
+MotionPlanCache::fetch_best_matching_cartesian_plan(
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const std::string& move_group_namespace,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+  double min_fraction,
+  double start_tolerance, double goal_tolerance, bool metadata_only)
+{
+  // First find all matching, but metadata only.
+  // Then use the ID metadata of the best plan to pull the actual message.
+  auto matching_plans = this->fetch_all_matching_cartesian_plans(
+    move_group, move_group_namespace,
+    plan_request, min_fraction,
+    start_tolerance, goal_tolerance, true);
 
-//   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
-//     "move_group_plan_cache", move_group_namespace);
+  if (matching_plans.empty())
+  {
+    RCLCPP_INFO(node_->get_logger(), "No matching plans found.");
+    return nullptr;
+  }
 
-//   // Best plan is at first index, since the lookup query was sorted by
-//   // execution_time.
-//   int best_plan_id = matching_plans.at(0)->lookupInt("id");
-//   Query::Ptr best_query = coll.createQuery();
-//   best_query->append("id", best_plan_id);
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_plan_cache", move_group_namespace);
 
-//   return coll.findOne(best_query, metadata_only);
-// }
+  // Best plan is at first index, since the lookup query was sorted by
+  // execution_time.
+  int best_plan_id = matching_plans.at(0)->lookupInt("id");
+  Query::Ptr best_query = coll.createQuery();
+  best_query->append("id", best_plan_id);
 
-// bool
-// MotionPlanCache::put_cartesian_plan(
-//   const moveit::planning_interface::MoveGroupInterface& move_group,
-//   const std::string& move_group_namespace,
-//   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
-//   const moveit_msgs::msg::RobotTrajectory& plan,
-//   double execution_time_s,
-//   double planning_time_s,
-//   bool overwrite)
-// {
-//   // Check pre-conditions
-//   if (!plan.multi_dof_joint_trajectory.points.empty())
-//   {
-//     RCLCPP_ERROR(
-//       node_->get_logger(),
-//       "Skipping insert: Multi-DOF trajectory plans are not supported.");
-//     return false;
-//   }
-//   if (plan_request.workspace_parameters.header.frame_id.empty() ||
-//     plan.joint_trajectory.header.frame_id.empty())
-//   {
-//     RCLCPP_ERROR(
-//       node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
-//     return false;
-//   }
-//   if (plan_request.workspace_parameters.header.frame_id !=
-//     plan.joint_trajectory.header.frame_id)
-//   {
-//     RCLCPP_ERROR(
-//       node_->get_logger(),
-//       "Skipping insert: "
-//       "Plan request frame (%s) does not match plan frame (%s).",
-//       plan_request.workspace_parameters.header.frame_id.c_str(),
-//       plan.joint_trajectory.header.frame_id.c_str());
-//     return false;
-//   }
+  return coll.findOne(best_query, metadata_only);
+}
 
-//   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
-//     "move_group_plan_cache", move_group_namespace);
+bool
+MotionPlanCache::put_cartesian_plan(
+  const moveit::planning_interface::MoveGroupInterface& move_group,
+  const std::string& move_group_namespace,
+  const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+  const moveit_msgs::msg::RobotTrajectory& plan,
+  double execution_time_s,
+  double planning_time_s,
+  double fraction,
+  bool overwrite)
+{
+  // Check pre-conditions
+  if (!plan.multi_dof_joint_trajectory.points.empty())
+  {
+    RCLCPP_ERROR(
+      node_->get_logger(),
+      "Skipping insert: Multi-DOF trajectory plans are not supported.");
+    return false;
+  }
+  if (plan_request.header.frame_id.empty() ||
+    plan.joint_trajectory.header.frame_id.empty())
+  {
+    RCLCPP_ERROR(
+      node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
+    return false;
+  }
+  if (plan_request.header.frame_id != plan.joint_trajectory.header.frame_id)
+  {
+    RCLCPP_ERROR(
+      node_->get_logger(),
+      "Skipping insert: "
+      "Plan request frame (%s) does not match plan frame (%s).",
+      plan_request.header.frame_id.c_str(),
+      plan.joint_trajectory.header.frame_id.c_str());
+    return false;
+  }
 
-//   // If start and goal are "exact" match, AND the candidate plan is better,
-//   // overwrite.
-//   Query::Ptr exact_query = coll.createQuery();
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_cartesian_plan_cache", move_group_namespace);
 
-//   bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
-//     *exact_query, move_group, plan_request, 0);
-//   bool goal_query_ok = this->extract_and_append_cartesian_plan_goal_to_query(
-//     *exact_query, move_group, plan_request, 0);
+  // If start and goal are "exact" match, AND the candidate plan is better,
+  // overwrite.
+  Query::Ptr exact_query = coll.createQuery();
 
-//   if (!start_query_ok || !goal_query_ok)
-//   {
-//     RCLCPP_ERROR(
-//       node_->get_logger(),
-//       "Skipping insert: Could not construct overwrite query.");
-//     return false;
-//   }
+  bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
+    *exact_query, move_group, plan_request, 0);
+  bool goal_query_ok = this->extract_and_append_cartesian_plan_goal_to_query(
+    *exact_query, move_group, plan_request, 0);
 
-//   auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
-//   double best_execution_time_seen = std::numeric_limits<double>::infinity();
-//   if (!exact_matches.empty())
-//   {
-//     for (auto& match : exact_matches)
-//     {
-//       double match_execution_time_s =
-//         match->lookupDouble("execution_time_s");
-//       if (match_execution_time_s < best_execution_time_seen)
-//       {
-//         best_execution_time_seen = match_execution_time_s;
-//       }
+  exact_query->append("fraction", fraction);
 
-//       if (match_execution_time_s > execution_time_s)
-//       {
-//         // If we found any "exact" matches that are worse, delete them.
-//         if (overwrite)
-//         {
-//           int delete_id = match->lookupInt("id");
-//           RCLCPP_INFO(
-//             node_->get_logger(),
-//             "Overwriting plan (id: %d): "
-//             "execution_time (%es) > new plan's execution_time (%es)",
-//             delete_id, match_execution_time_s, execution_time_s);
+  if (!start_query_ok || !goal_query_ok)
+  {
+    RCLCPP_ERROR(
+      node_->get_logger(),
+      "Skipping insert: Could not construct overwrite query.");
+    return false;
+  }
 
-//           Query::Ptr delete_query = coll.createQuery();
-//           delete_query->append("id", delete_id);
-//           coll.removeMessages(delete_query);
-//         }
-//       }
-//     }
-//   }
+  auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
+  double best_execution_time_seen = std::numeric_limits<double>::infinity();
+  if (!exact_matches.empty())
+  {
+    for (auto& match : exact_matches)
+    {
+      double match_execution_time_s =
+        match->lookupDouble("execution_time_s");
+      if (match_execution_time_s < best_execution_time_seen)
+      {
+        best_execution_time_seen = match_execution_time_s;
+      }
 
-//   // Insert if candidate is best seen.
-//   if (execution_time_s < best_execution_time_seen)
-//   {
-//     Metadata::Ptr insert_metadata = coll.createMetadata();
+      if (match_execution_time_s > execution_time_s)
+      {
+        // If we found any "exact" matches that are worse, delete them.
+        if (overwrite)
+        {
+          int delete_id = match->lookupInt("id");
+          RCLCPP_INFO(
+            node_->get_logger(),
+            "Overwriting plan (id: %d): "
+            "execution_time (%es) > new plan's execution_time (%es)",
+            delete_id, match_execution_time_s, execution_time_s);
 
-//     bool start_meta_ok = this->extract_and_append_cartesian_plan_start_to_metadata(
-//       *insert_metadata, move_group, plan_request);
-//     bool goal_meta_ok = this->extract_and_append_cartesian_plan_goal_to_metadata(
-//       *insert_metadata, move_group, plan_request);
-//     insert_metadata->append("execution_time_s", execution_time_s);
-//     insert_metadata->append("planning_time_s", planning_time_s);
+          Query::Ptr delete_query = coll.createQuery();
+          delete_query->append("id", delete_id);
+          coll.removeMessages(delete_query);
+        }
+      }
+    }
+  }
 
-//     if (!start_meta_ok || !goal_meta_ok)
-//     {
-//       RCLCPP_ERROR(
-//         node_->get_logger(),
-//         "Skipping insert: Could not construct insert metadata.");
-//       return false;
-//     }
+  // Insert if candidate is best seen.
+  if (execution_time_s < best_execution_time_seen)
+  {
+    Metadata::Ptr insert_metadata = coll.createMetadata();
 
-//     RCLCPP_INFO(
-//       node_->get_logger(),
-//       "Inserting plan: New plan execution_time (%es) "
-//       "is better than best plan's execution_time (%es)",
-//       execution_time_s, best_execution_time_seen);
+    bool start_meta_ok = this->extract_and_append_cartesian_plan_start_to_metadata(
+      *insert_metadata, move_group, plan_request);
+    bool goal_meta_ok = this->extract_and_append_cartesian_plan_goal_to_metadata(
+      *insert_metadata, move_group, plan_request);
+    insert_metadata->append("execution_time_s", execution_time_s);
+    insert_metadata->append("planning_time_s", planning_time_s);
+    insert_metadata->append("fraction", fraction);
 
-//     coll.insert(plan, insert_metadata);
-//     return true;
-//   }
+    if (!start_meta_ok || !goal_meta_ok)
+    {
+      RCLCPP_ERROR(
+        node_->get_logger(),
+        "Skipping insert: Could not construct insert metadata.");
+      return false;
+    }
 
-//   RCLCPP_INFO(
-//     node_->get_logger(),
-//     "Skipping insert: New plan execution_time (%es) "
-//     "is worse than best plan's execution_time (%es)",
-//     execution_time_s, best_execution_time_seen);
-//   return false;
-// }
+    RCLCPP_INFO(
+      node_->get_logger(),
+      "Inserting plan: New plan execution_time (%es) "
+      "is better than best plan's execution_time (%es) at fraction (%es)",
+      execution_time_s, best_execution_time_seen, fraction);
+
+    coll.insert(plan, insert_metadata);
+    return true;
+  }
+
+  RCLCPP_INFO(
+    node_->get_logger(),
+    "Skipping insert: New plan execution_time (%es) "
+    "is worse than best plan's execution_time (%es) at fraction (%es)",
+    execution_time_s, best_execution_time_seen, fraction);
+  return false;
+}
 
 // // CARTESIAN PLAN CACHING: QUERY CONSTRUCTION
 bool

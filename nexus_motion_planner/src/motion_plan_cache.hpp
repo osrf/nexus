@@ -171,6 +171,7 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double min_fraction,
     double start_tolerance, double goal_tolerance, bool metadata_only = false);
 
   warehouse_ros::MessageWithMetadata<
@@ -180,6 +181,7 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
+    double min_fraction,
     double start_tolerance, double goal_tolerance, bool metadata_only = false);
 
   bool put_cartesian_plan(
@@ -189,6 +191,7 @@ public:
     const moveit_msgs::msg::RobotTrajectory& plan,
     double execution_time_s,
     double planning_time_s,
+    double fraction,
     bool overwrite = true);
 
   // QUERY CONSTRUCTION
