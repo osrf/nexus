@@ -293,11 +293,6 @@ MotionPlannerServer::~MotionPlannerServer()
   {
     _spin_thread.join();
   }
-
-  if (_cache_spin_thread.joinable())
-  {
-    _cache_spin_thread.join();
-  }
 }
 
 //==============================================================================

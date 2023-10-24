@@ -99,9 +99,6 @@ private:
   rclcpp::Node::SharedPtr _internal_node;
   std::thread _spin_thread;
 
-  rclcpp::Node::SharedPtr _internal_cache_node;
-  std::thread _cache_spin_thread;
-
   // MoveIt planning
   std::vector<std::string> _manipulators;
   bool _use_move_group_interfaces;
