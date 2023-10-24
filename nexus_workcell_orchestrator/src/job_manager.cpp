@@ -144,7 +144,7 @@ Job& JobManager::assign_task(
   }
 
   auto& j = this->_jobs.emplace_back(Job{nullptr, std::nullopt, nullptr,
-        std::nullopt});
+        nullptr});
   j.task_state.task_id = task_id;
   j.task_state.workcell_id = this->_node->get_name();
   j.task_state.status = TaskState::STATUS_ASSIGNED;
@@ -176,7 +176,8 @@ Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
 
   it->ctx = ctx;
   it->bt = std::move(bt);
-  it->bt_logging.emplace(common::BtLogging(*it->bt, this->_node));
+  it->bt_logging =
+    std::make_unique<common::BtLogging>(*it->bt, this->_node);
   it->goal_handle = goal_handle;
   it->task_state.status = TaskState::STATUS_QUEUED;
   return *it;

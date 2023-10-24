@@ -93,7 +93,7 @@ TEST_CASE("JobManager") {
     Job* job;
     job = &job_mgr.assign_task("test");
     CHECK(!job->bt.has_value());
-    CHECK(!job->bt_logging.has_value());
+    CHECK(!job->bt_logging);
     CHECK(job->ctx == nullptr);
     CHECK(job->goal_handle == nullptr);
     CHECK(job->task_state.task_id == "test");
@@ -113,7 +113,7 @@ TEST_CASE("JobManager") {
           CHECK(&job_mgr.queue_task(goal_handle, ctx,
             bt_factory.createTreeFromText(bt)) == job);
           CHECK(job->bt.has_value());
-          CHECK(job->bt_logging.has_value());
+          CHECK(job->bt_logging);
           REQUIRE(job->ctx == ctx);
           CHECK(job->goal_handle == goal_handle);
           CHECK(job->task_state.task_id == "test");

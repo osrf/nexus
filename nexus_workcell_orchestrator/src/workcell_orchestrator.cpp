@@ -278,7 +278,7 @@ auto WorkcellOrchestrator::_configure(
       const auto it =
       std::find_if(jobs.begin(), jobs.end(), [&goal](const Job& j)
       {
-        return j.ctx->task.id == goal->task.id;
+        return j.task_state.task_id == goal->task.id;
       });
       if (it == jobs.end())
       {

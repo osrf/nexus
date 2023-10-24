@@ -40,7 +40,7 @@ struct Job
   std::shared_ptr<Context> ctx;
   std::optional<BT::Tree> bt;
   GoalHandlePtr goal_handle;
-  std::optional<common::BtLogging> bt_logging;
+  std::unique_ptr<common::BtLogging> bt_logging;
   TaskState task_state = TaskState();
   uint64_t tick_count = 0;
 };
