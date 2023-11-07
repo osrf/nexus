@@ -214,7 +214,7 @@ auto WorkcellOrchestrator::on_activate(
   RCLCPP_INFO(this->get_logger(), "Workcell activated");
   this->_bt_timer = this->create_wall_timer(BT_TICK_RATE, [this]()
       {
-        this->_job_mgr->tick();
+        this->_job_mgr.value().tick();
       });
   return CallbackReturn::SUCCESS;
 }
