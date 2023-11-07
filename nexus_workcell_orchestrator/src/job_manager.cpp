@@ -90,17 +90,8 @@ uint8_t JobManager::_tick_job(Job& job)
   auto& task_status = job.task_state.status;
   switch (task_status)
   {
-    case TaskState::STATUS_ASSIGNED: {
-      RCLCPP_INFO_THROTTLE(
-        this->_node->get_logger(),
-        *this->_node->get_clock(),
-        std::chrono::milliseconds(1000).count(),
-        "Task [%s] is pending, call \"%s\" to start this task",
-        job.task_state.task_id.c_str(),
-        endpoints::WorkcellRequestAction::action_name(
-          this->_node->get_name()).c_str());
+    case TaskState::STATUS_ASSIGNED:
       break;
-    }
     case TaskState::STATUS_QUEUED:
     case TaskState::STATUS_RUNNING: {
       this->_tick_bt(job);
@@ -148,6 +139,12 @@ Job& JobManager::assign_task(
   j.task_state.task_id = task_id;
   j.task_state.workcell_id = this->_node->get_name();
   j.task_state.status = TaskState::STATUS_ASSIGNED;
+  RCLCPP_INFO(
+    this->_node->get_logger(),
+    "Task [%s] is pending, call \"%s\" to start this task",
+    j.task_state.task_id.c_str(),
+    endpoints::WorkcellRequestAction::action_name(
+      this->_node->get_name()).c_str());
 
   RCLCPP_INFO(
     this->_node->get_logger(), "Assigned task [%s]",
@@ -180,6 +177,9 @@ Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
     std::make_unique<common::BtLogging>(*it->bt, this->_node);
   it->goal_handle = goal_handle;
   it->task_state.status = TaskState::STATUS_QUEUED;
+  RCLCPP_INFO(
+    it->ctx->node->get_logger(), "Task [%s] is now queued",
+    it->task_state.task_id.c_str());
   return *it;
 }
 
