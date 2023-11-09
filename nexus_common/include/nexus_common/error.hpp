@@ -21,7 +21,6 @@
 #include <exception>
 #include <memory>
 #include <optional>
-#include <string>
 #include <type_traits>
 #include <variant>
 
@@ -53,41 +52,31 @@ public: template<typename D,
   Result(D d)
   : _var(std::make_shared<D>(std::move(d))) {}
 
-public: T* value()
+  /**
+   * Returns the value.
+   * @throws std::bad_variant_access if the result is an error.
+   */
+public: constexpr T& value()
   {
-    return std::get_if<T>(&this->_var);
+    return std::get<T>(this->_var);
   }
 
-public: const T* value() const
+  /**
+   * Returns the value.
+   * @throws std::bad_variant_access if the result is an error.
+   */
+public: constexpr const T& value() const
   {
-    return std::get_if<T>(&this->_var);
+    return std::get<T>(this->_var);
   }
 
-public: T* value_or_abort()
-  {
-    if (!this->value())
-    {
-      std::abort();
-    }
-    return this->value();
-  }
-
-public: const T* value_or_abort() const
-  {
-    if (!this->value())
-    {
-      std::abort();
-    }
-    return this->value();
-  }
-
-public: E* error()
+public: constexpr E* error()
   {
     auto* maybe_err = std::get_if<std::shared_ptr<E>>(&this->_var);
     return maybe_err ? maybe_err->get() : nullptr;
   }
 
-public: const E* error() const
+public: constexpr const E* error() const
   {
     auto* maybe_err = std::get_if<std::shared_ptr<E>>(&this->_var);
     return maybe_err ? maybe_err->get() : nullptr;
@@ -100,35 +89,39 @@ template<typename E>
 class Result<void, E>
 {
 public: Result()
-  : _var(std::nullopt) {}
+  : _err(std::nullopt) {}
 
 public: Result(std::shared_ptr<E> e)
-  : _var(std::move(e)) {}
+  : _err(std::move(e)) {}
 
 public: template<typename D,
     typename = std::enable_if_t<std::is_base_of_v<E, D>>>
   Result(D d)
-  : _var(std::make_shared<D>(std::move(d))) {}
+  : _err(std::make_shared<D>(std::move(d))) {}
 
-public: void value_or_abort() const
+  /**
+   * Throws if result is an error.
+   * @throws std::runtime_error if the result is an error.
+   */
+public: constexpr void value() const
   {
-    if (this->error())
+    if (this->_err.has_value())
     {
-      std::abort();
+      throw std::runtime_error("bad value access");
     }
   }
 
-public: E* error()
+public: constexpr E* error()
   {
-    return this->_var.has_value() ? this->_var->get() : nullptr;
+    return this->_err.has_value() ? this->_err->get() : nullptr;
   }
 
-public: const E* error() const
+public: constexpr const E* error() const
   {
-    return this->_var.has_value() ? this->_var->get() : nullptr;
+    return this->_err.has_value() ? this->_err->get() : nullptr;
   }
 
-private: std::optional<std::shared_ptr<E>> _var;
+private: std::optional<std::shared_ptr<E>> _err;
 };
 
 }

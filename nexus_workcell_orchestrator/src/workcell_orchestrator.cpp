@@ -214,7 +214,7 @@ auto WorkcellOrchestrator::on_activate(
   RCLCPP_INFO(this->get_logger(), "Workcell activated");
   this->_bt_timer = this->create_wall_timer(BT_TICK_RATE, [this]()
       {
-        this->_job_mgr.value().tick().value_or_abort();
+        this->_job_mgr.value().tick().value();
       });
   return CallbackReturn::SUCCESS;
 }
@@ -224,7 +224,7 @@ auto WorkcellOrchestrator::on_deactivate(
 {
   RCLCPP_INFO(this->get_logger(),
     "Halting ongoing task before deactivating workcell");
-  this->_job_mgr->halt_all_jobs().value_or_abort();
+  this->_job_mgr->halt_all_jobs().value();
 
   this->_bt_timer->cancel();
   this->_bt_timer.reset();
@@ -245,7 +245,7 @@ auto WorkcellOrchestrator::on_cleanup(
   this->_signal_wc_srv.reset();
   this->_task_doable_srv.reset();
   this->_cmd_server.reset();
-  this->_job_mgr->halt_all_jobs().value_or_abort();
+  this->_job_mgr->halt_all_jobs().value();
   RCLCPP_INFO(this->get_logger(), "Cleaned up");
   return CallbackReturn::SUCCESS;
 }
@@ -301,7 +301,7 @@ auto WorkcellOrchestrator::_configure(
           "Cancelling specific task is no longer supported, all tasks will be cancelled together to ensure line consistency");
       }
 
-      this->_job_mgr->halt_all_jobs().value_or_abort();
+      this->_job_mgr->halt_all_jobs().value();
       return rclcpp_action::CancelResponse::ACCEPT;
     },
     [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
@@ -327,7 +327,7 @@ auto WorkcellOrchestrator::_configure(
         goal_handle->abort(result);
         return;
       }
-      ctx->task = *task_result.value();
+      ctx->task = task_result.value();
 
       auto bt = this->_create_bt(ctx);
       auto job_result =
@@ -745,7 +745,7 @@ void WorkcellOrchestrator::_handle_task_doable(
       resp->success = false;
       return;
     }
-    resp->success = this->_can_perform_task(*r.value());
+    resp->success = this->_can_perform_task(r.value());
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");
