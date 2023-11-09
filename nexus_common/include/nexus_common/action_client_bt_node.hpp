@@ -178,7 +178,16 @@ BT::NodeStatus ActionClientBtNode<NodePtrT, ActionT>::onStart()
   RCLCPP_DEBUG(
     this->_node->get_logger(), "%s: Goal is accepted",
     this->name().c_str());
-  this->_result_fut = this->_client->async_get_result(this->_goal_handle);
+  try
+  {
+    this->_result_fut = this->_client->async_get_result(this->_goal_handle);
+  }
+  catch (const rclcpp_action::exceptions::UnknownGoalHandleError& e)
+  {
+    RCLCPP_ERROR(this->_node->get_logger(), "%s: %s",
+      this->name().c_str(), e.what());
+    return BT::NodeStatus::FAILURE;
+  }
   return BT::NodeStatus::RUNNING;
 }
 
