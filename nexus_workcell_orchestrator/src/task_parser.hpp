@@ -19,6 +19,7 @@
 #define NEXUS_CAPABILITITY_PLUGIN__TASK_PARSER_HPP
 
 #include <nexus_capabilities/task.hpp>
+#include <nexus_common/error.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <unordered_map>
 
@@ -34,9 +35,8 @@ public: TaskParser() {}
 
   /**
    * Parses a workcell task.
-   * @throws YAML::Exception if parsing the payload fails.
    */
-public: Task parse_task(const nexus_orchestrator_msgs::msg::WorkcellTask& task);
+public: common::Result<Task> parse_task(const nexus_orchestrator_msgs::msg::WorkcellTask& task);
 
   /**
    * Add task type to remap to.
