@@ -118,17 +118,18 @@ if(BUILD_TESTING)
   endfunction()
 
   nexus_add_test(action_client_bt_node_test src/action_client_bt_node_test.cpp)
-  nexus_add_test(pausable_sequence_test src/pausable_sequence_test.cpp)
-  nexus_add_test(service_client_bt_node_test src/service_client_bt_node_test.cpp)
+  nexus_add_test(error_test src/main_test.cpp src/error_test.cpp)
+  nexus_add_test(logging_test src/logging_test.cpp)
   nexus_add_test(models_test
     src/main_test.cpp
     src/models/work_order_test.cpp
   )
+  nexus_add_test(pausable_sequence_test src/pausable_sequence_test.cpp)
   nexus_add_test(ros_utils_test
     src/main_test.cpp
     src/batch_service_call_test.cpp
   )
-  nexus_add_test(logging_test src/logging_test.cpp)
+  nexus_add_test(service_client_bt_node_test src/service_client_bt_node_test.cpp)
   nexus_add_test(sync_ros_client_test src/sync_ros_client_test.cpp)
 endif()
 

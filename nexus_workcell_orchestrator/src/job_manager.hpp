@@ -21,6 +21,7 @@
 #include "job.hpp"
 
 #include <nexus_capabilities/context_manager.hpp>
+#include <nexus_common/error.hpp>
 #include <nexus_endpoints.hpp>
 
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -54,29 +55,27 @@ public: JobManager(rclcpp_lifecycle::LifecycleNode::SharedPtr node,
 
   /**
    * Assigns a task.
-   * @throw JobError
   */
-public: Job& assign_task(const std::string& task_id);
+public: [[nodiscard]] common::Result<Job*> assign_task(
+    const std::string& task_id);
 
   /**
-   * Queue a task. The task must already be assigned. If there is an error, the goal will
-   * immediately be aborted.
-   * @throw JobError
+   * Queue a task. The task must already be assigned.
    */
-public: Job& queue_task(const GoalHandlePtr& goal_handle,
+public: [[nodiscard]] common::Result<Job*> queue_task(
+    const GoalHandlePtr& goal_handle,
     const std::shared_ptr<Context>& ctx, BT::Tree&& bt);
 
   /**
    * Remove a assigned task.
-   * @throw JobError
    */
-public: void remove_assigned_task(const std::string& task_id);
+public: [[nodiscard]] common::Result<void> remove_assigned_task(const std::string& task_id);
 
   /**
    * Forcefully stop and clear all jobs. Jobs will be stopped as soon as possible, unlike
    * `cancel_all_jobs`, the behavior trees cannot react to this event.
    */
-public: void halt_all_jobs();
+public: [[nodiscard]] common::Result<void> halt_all_jobs();
 
   /**
    * TODO: Implement on cancel bt node.
@@ -88,7 +87,7 @@ public: void halt_all_jobs();
   /**
    * Tick all active jobs.
    */
-public: void tick();
+public: [[nodiscard]] common::Result<void> tick();
 
 public: const std::list<Job>& jobs() const
   {

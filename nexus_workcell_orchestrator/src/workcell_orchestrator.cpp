@@ -214,7 +214,7 @@ auto WorkcellOrchestrator::on_activate(
   RCLCPP_INFO(this->get_logger(), "Workcell activated");
   this->_bt_timer = this->create_wall_timer(BT_TICK_RATE, [this]()
       {
-        this->_job_mgr.value().tick();
+        this->_job_mgr.value().tick().value_or_abort();
       });
   return CallbackReturn::SUCCESS;
 }
@@ -224,7 +224,7 @@ auto WorkcellOrchestrator::on_deactivate(
 {
   RCLCPP_INFO(this->get_logger(),
     "Halting ongoing task before deactivating workcell");
-  this->_job_mgr->halt_all_jobs();
+  this->_job_mgr->halt_all_jobs().value_or_abort();
 
   this->_bt_timer->cancel();
   this->_bt_timer.reset();
@@ -245,7 +245,7 @@ auto WorkcellOrchestrator::on_cleanup(
   this->_signal_wc_srv.reset();
   this->_task_doable_srv.reset();
   this->_cmd_server.reset();
-  this->_job_mgr->halt_all_jobs();
+  this->_job_mgr->halt_all_jobs().value_or_abort();
   RCLCPP_INFO(this->get_logger(), "Cleaned up");
   return CallbackReturn::SUCCESS;
 }
@@ -301,7 +301,7 @@ auto WorkcellOrchestrator::_configure(
           "Cancelling specific task is no longer supported, all tasks will be cancelled together to ensure line consistency");
       }
 
-      this->_job_mgr->halt_all_jobs();
+      this->_job_mgr->halt_all_jobs().value_or_abort();
       return rclcpp_action::CancelResponse::ACCEPT;
     },
     [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
@@ -319,14 +319,14 @@ auto WorkcellOrchestrator::_configure(
       auto ctx = std::make_shared<Context>(this->shared_from_this());
       ctx->task = this->_task_parser.parse_task(goal_handle->get_goal()->task);
       auto bt = this->_create_bt(ctx);
-      try
+      auto r = this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
+      if (r.error())
       {
-        this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
-      }
-      catch (const JobError& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "Failed to queue task [%s]: %s",
-        goal_handle->get_goal()->task.id.c_str(), e.what());
+        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->success = false;
+        result->message = r.error()->what();
+        goal_handle->abort(result);
+        return;
       }
     });
 
@@ -380,18 +380,14 @@ auto WorkcellOrchestrator::_configure(
       ConstSharedPtr req,
       endpoints::QueueWorkcellTaskService::ServiceType::Response::SharedPtr resp)
       {
-        try
-        {
-          this->_job_mgr->assign_task(req->task_id);
-          resp->success = true;
-        }
-        catch (const JobError& e)
+        auto r = this->_job_mgr->assign_task(req->task_id);
+        if (r.error())
         {
           resp->success = false;
-          resp->message = e.what();
-          RCLCPP_ERROR(this->get_logger(), "Failed to assign task [%s]: %s",
-          req->task_id.c_str(), e.what());
+          resp->message = r.error()->what();
+          return;
         }
+        resp->success = true;
       });
 
   this->_remove_pending_task_srv =
@@ -403,19 +399,14 @@ auto WorkcellOrchestrator::_configure(
       {
         RCLCPP_DEBUG(this->get_logger(),
         "received request to remove pending task [%s]", req->task_id.c_str());
-        try
+        auto r = this->_job_mgr->remove_assigned_task(req->task_id);
+        if (r.error())
         {
-          this->_job_mgr->remove_assigned_task(req->task_id);
-          resp->success = true;
-        }
-        catch (const JobError& e)
-        {
-          RCLCPP_WARN(this->get_logger(),
-          "Failed to remove assigned task [%s]: %s", req->task_id.c_str(),
-          e.what());
           resp->success = false;
-          resp->message = e.what();
+          resp->message = r.error()->what();
+          return;
         }
+        resp->success = true;
       });
 
   this->_tf2_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
