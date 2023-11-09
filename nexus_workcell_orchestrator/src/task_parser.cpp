@@ -24,15 +24,22 @@
 namespace nexus::workcell_orchestrator {
 
 //==============================================================================
-Task TaskParser::parse_task(
+common::Result<Task> TaskParser::parse_task(
   const nexus_orchestrator_msgs::msg::WorkcellTask& workcell_task)
 {
-  return Task{
-    workcell_task.id,
-    this->remap_task_type(workcell_task.type),
-    YAML::Load(workcell_task.payload),
-    YAML::Load(workcell_task.previous_results),
-  };
+  try
+  {
+    return Task{
+      workcell_task.id,
+      this->remap_task_type(workcell_task.type),
+      YAML::Load(workcell_task.payload),
+      YAML::Load(workcell_task.previous_results),
+    };
+  }
+  catch (const YAML::ParserException& e)
+  {
+    return e;
+  }
 }
 
 //==============================================================================

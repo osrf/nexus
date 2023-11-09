@@ -317,14 +317,26 @@ auto WorkcellOrchestrator::_configure(
       }
 
       auto ctx = std::make_shared<Context>(this->shared_from_this());
-      ctx->task = this->_task_parser.parse_task(goal_handle->get_goal()->task);
-      auto bt = this->_create_bt(ctx);
-      auto r = this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
-      if (r.error())
+      auto task_result =
+      this->_task_parser.parse_task(goal_handle->get_goal()->task);
+      if (task_result.error())
       {
         auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
         result->success = false;
-        result->message = r.error()->what();
+        result->message = task_result.error()->what();
+        goal_handle->abort(result);
+        return;
+      }
+      ctx->task = *task_result.value();
+
+      auto bt = this->_create_bt(ctx);
+      auto job_result =
+      this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
+      if (job_result.error())
+      {
+        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->success = false;
+        result->message = job_result.error()->what();
         goal_handle->abort(result);
         return;
       }
@@ -727,8 +739,13 @@ void WorkcellOrchestrator::_handle_task_doable(
   RCLCPP_DEBUG(this->get_logger(), "Got request to check task doable");
   try
   {
-    auto task = this->_task_parser.parse_task(req->task);
-    resp->success = this->_can_perform_task(task);
+    auto r = this->_task_parser.parse_task(req->task);
+    if (r.error())
+    {
+      resp->success = false;
+      return;
+    }
+    resp->success = this->_can_perform_task(*r.value());
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");
