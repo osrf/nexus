@@ -91,7 +91,7 @@ TEST_CASE("JobManager") {
 
   SECTION("assign task sets job data correctly") {
     Job* job;
-    job = *job_mgr.assign_task("test").value();
+    job = job_mgr.assign_task("test").value();
     CHECK(!job->bt.has_value());
     CHECK(!job->bt_logging);
     CHECK(job->ctx == nullptr);
@@ -102,7 +102,7 @@ TEST_CASE("JobManager") {
     CHECK(job->tick_count == 0);
 
     SECTION("ticking assigned but unqueued task is a noop") {
-      job_mgr.tick().value_or_abort();
+      job_mgr.tick().value();
       CHECK(job->tick_count == 0);
     }
 
@@ -110,7 +110,7 @@ TEST_CASE("JobManager") {
       handle_accepted = [&](const JobManager::GoalHandlePtr& goal_handle)
         {
           auto ctx = std::make_shared<Context>(fixture.node);
-          CHECK(*job_mgr.queue_task(goal_handle, ctx,
+          CHECK(job_mgr.queue_task(goal_handle, ctx,
             bt_factory.createTreeFromText(bt)).value() == job);
           CHECK(job->bt.has_value());
           CHECK(job->bt_logging);
@@ -141,7 +141,7 @@ TEST_CASE("JobManager") {
     std::vector<std::string> task_ids{"test1", "test2", "test3"};
     for (const auto& task_id : task_ids)
     {
-      job_mgr.assign_task(task_id).value_or_abort();
+      job_mgr.assign_task(task_id).value();
     }
 
     std::promise<void> done;
@@ -168,11 +168,11 @@ TEST_CASE("JobManager") {
     REQUIRE(done.get_future().wait_for(std::chrono::seconds(
         1)) == std::future_status::ready);
 
-    job_mgr.tick().value_or_abort();
+    job_mgr.tick().value();
     // test1 and test2 should be finished
     CHECK(job_mgr.jobs().size() == 1);
 
-    job_mgr.tick().value_or_abort();
+    job_mgr.tick().value();
     // test3 should now be finished
     CHECK(job_mgr.jobs().size() == 0);
   }

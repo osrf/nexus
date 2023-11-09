@@ -23,19 +23,19 @@ namespace nexus::common::test {
 
 TEST_CASE("get_result_value_and_error") {
   Result<int> good(1);
-  CHECK(*good.value() == 1);
+  CHECK(good.value() == 1);
   CHECK(!good.error());
 
   const Result<int> const_good(1);
-  CHECK(*const_good.value() == 1);
+  CHECK(const_good.value() == 1);
   CHECK(!const_good.error());
 
   Result<int> bad(std::make_shared<std::runtime_error>("bad"));
-  CHECK(!bad.value());
+  CHECK_THROWS(bad.value());
   CHECK(bad.error());
 
   Result<int> bad_val_constructor(std::runtime_error("bad_val_constructor"));
-  CHECK(!bad_val_constructor.value());
+  CHECK_THROWS(bad_val_constructor.value());
   CHECK(bad_val_constructor.error());
 
   Result<void> void_good;
