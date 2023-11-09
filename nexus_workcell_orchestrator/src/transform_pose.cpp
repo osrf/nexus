@@ -94,9 +94,9 @@ BT::NodeStatus ApplyTransform::tick()
   RCLCPP_INFO_STREAM(
     this->_node.get_logger(),
     "[" << this->name() << "]" << std::endl <<
-      "Base pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
-      "Transform: " << t << std::endl <<
-      "Result: " << result_pose.pose <<  " frame: " << result_pose.header.frame_id
+      "\tBase pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
+      "\tTransform: " << t << std::endl <<
+      "\tResult: " << result_pose.pose <<  " frame: " << result_pose.header.frame_id
     );
   this->setOutput("result", result_pose);
   return BT::NodeStatus::SUCCESS;
@@ -188,9 +188,9 @@ BT::NodeStatus GetTransform::tick()
   RCLCPP_INFO_STREAM(
     this->_node.get_logger(),
     "[" << this->name() << "]" << std::endl <<
-      "Base pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
-      "Target pose: " << target_pose->pose << "frame: " << target_pose->header.frame_id << std::endl <<
-      "Result: " << result_tf;
+      "\tBase pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
+      "\tTarget pose: " << target_pose->pose << "frame: " << target_pose->header.frame_id << std::endl <<
+      "\tResult: " << result_tf;
   );
   this->setOutput("result", tf2::toMsg(result_tf));
 
