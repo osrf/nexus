@@ -20,17 +20,14 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
 {
   RCLCPP_INFO(this->get_logger(), "Motion Planner Server is running...");
 
-  auto internal_node_options = rclcpp::NodeOptions();
-  internal_node_options.automatically_declare_parameters_from_overrides(true);
-  internal_node_options.use_global_arguments(false);
   _internal_node = std::make_shared<rclcpp::Node>(
-    "motion_planner_server_internal_node", internal_node_options);
+    "motion_planner_server_internal_node", options);
   _spin_thread = std::thread(
-    [this]()
+    [node = _internal_node]()
     {
       while (rclcpp::ok())
       {
-        rclcpp::spin_some(_internal_node);
+        rclcpp::spin_some(node);
       }
     });
 
@@ -69,30 +66,6 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
       this->declare_parameter(name + ".group_name", name + ".manipulator") :
       this->declare_parameter("default_group_name", "manipulator");
     _group_names.insert({name, std::move(group_name)});
-
-    const std::string description_param_name = _use_namespace ?
-      name + ".robot_description" : "robot_description";
-    const auto description_param =
-      this->declare_parameter(
-      description_param_name,
-      rclcpp::ParameterType::PARAMETER_STRING);
-
-    // Push robot_description parameter to internal node
-    _internal_node->declare_parameter(
-      description_param_name,
-      description_param);
-
-    const std::string description_semantic_param_name = _use_namespace ?
-      name + ".robot_description_semantic" : "robot_description_semantic";
-    const auto description_semantic_param =
-      this->declare_parameter(
-      description_semantic_param_name,
-      rclcpp::ParameterType::PARAMETER_STRING);
-
-    // Push robot_description_semantic parameter to internal node
-    _internal_node->declare_parameter(
-      description_semantic_param_name,
-      description_semantic_param);
 
   }
   RCLCPP_INFO(
