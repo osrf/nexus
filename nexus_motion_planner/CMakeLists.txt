@@ -33,6 +33,7 @@ set (motion_planner_server_dependencies
 )
 
 set (test_request_dependencies
+  moveit_msgs
   nexus_endpoints
   geometry_msgs
   rclcpp
