@@ -17,7 +17,7 @@
 
 #include "workcell_orchestrator.hpp"
 
-#include "exceptions.hpp"
+#include "exit_code.hpp"
 #include "get_joint_constraints.hpp"
 #include "get_result.hpp"
 #include "make_transform.hpp"
@@ -83,7 +83,8 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     auto param = this->declare_parameter<std::string>("bt_path", "", desc);
     if (param.empty())
     {
-      throw std::runtime_error("param [bt_path] is required");
+      RCLCPP_FATAL(this->get_logger(), "param [bt_path] is required");
+      std::exit(EXIT_CODE_INVALID_PARAMETER);
     }
     this->_bt_path = std::move(param);
   }
@@ -661,7 +662,7 @@ void WorkcellOrchestrator::_register()
             RCLCPP_FATAL(this->get_logger(),
               "Failed to register with system orchestrator! [%s]",
               resp->message.c_str());
-            throw RegistrationError(resp->message, resp->error_code);
+            std::exit(EXIT_CODE_REGISTRATION_FAILED);
         }
         return;
       }
