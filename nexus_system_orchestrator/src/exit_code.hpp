@@ -15,18 +15,14 @@
  *
  */
 
-#ifndef NEXUS_SYSTEM_ORCHESTRATOR__EXCEPTIONS_HPP
-#define NEXUS_SYSTEM_ORCHESTRATOR__EXCEPTIONS_HPP
-
-#include <stdexcept>
+#ifndef NEXUS_SYSTEM_ORCHESTRATOR__EXIT_CODE_HPP
+#define NEXUS_SYSTEM_ORCHESTRATOR__EXIT_CODE_HPP
 
 namespace nexus::system_orchestrator {
 
-class DuplicatedWorkOrderError : public std::runtime_error
-{
-public: using std::runtime_error::runtime_error;
-};
+constexpr int EXIT_CODE_INVALID_PARAMETER = 1;
 
 }
+
 
 #endif

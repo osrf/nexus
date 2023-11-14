@@ -27,20 +27,11 @@ BT::PortsList BidTransporter::providedPorts()
 
 BT::NodeStatus BidTransporter::onStart()
 {
-  auto node = this->_w_node.lock();
-  if (!node)
-  {
-    std::cerr <<
-      "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES" <<
-      std::endl;
-    std::terminate();
-  }
-
   auto maybe_destination = this->getInput<std::string>("destination");
   if (!maybe_destination)
   {
     RCLCPP_ERROR(
-      node->get_logger(), "%s: [destination] param is required",
+      this->_node->get_logger(), "%s: [destination] param is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -49,7 +40,7 @@ BT::NodeStatus BidTransporter::onStart()
   auto req =
     std::make_shared<endpoints::IsTransporterAvailableService::ServiceType::Request>();
   req->request.id = this->_ctx->job_id;
-  req->request.requester = node->get_name();
+  req->request.requester = this->_node->get_name();
   req->request.destination = destination;
   // send request to all transporters in parallel
   for (auto& [transporter_id, session] : this->_ctx->transporter_sessions)
@@ -91,26 +82,17 @@ void BidTransporter::_cleanup_pending_requests()
 
 BT::NodeStatus BidTransporter::_update_ongoing_requests()
 {
-  auto node = this->_w_node.lock();
-  if (!node)
-  {
-    std::cerr <<
-      "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES" <<
-      std::endl;
-    std::terminate();
-  }
-
   if (std::chrono::steady_clock::now() > this->_time_limit)
   {
     for (const auto& [transporter_id, _] : this->_ongoing_requests)
     {
       RCLCPP_WARN(
-        node->get_logger(), "%s: Skipped transporter [%s] (no response)",
+        this->_node->get_logger(), "%s: Skipped transporter [%s] (no response)",
         this->name().c_str(),
         transporter_id.c_str());
     }
     RCLCPP_ERROR(
-      node->get_logger(), "%s: No transporter is able to perform task",
+      this->_node->get_logger(), "%s: No transporter is able to perform task",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -128,7 +110,7 @@ BT::NodeStatus BidTransporter::_update_ongoing_requests()
       if (resp->available)
       {
         RCLCPP_INFO(
-          node->get_logger(), "[%s]: Bid awarded to [%s]",
+          this->_node->get_logger(), "[%s]: Bid awarded to [%s]",
           this->name().c_str(),
           transporter_id.c_str());
         this->setOutput("result", transporter_id);
@@ -138,7 +120,7 @@ BT::NodeStatus BidTransporter::_update_ongoing_requests()
       else
       {
         RCLCPP_DEBUG(
-          node->get_logger(), "%s: Transporter [%s] cannot perform task",
+          this->_node->get_logger(), "%s: Transporter [%s] cannot perform task",
           this->name().c_str(), transporter_id.c_str());
       }
     }
