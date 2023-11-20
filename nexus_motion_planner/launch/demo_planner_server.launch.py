@@ -197,7 +197,7 @@ def launch_setup(context, *args, **kwargs):
         executable="static_transform_publisher",
         name="motion_planner_static_transform_publisher_base_link_t_item",
         output="log",
-        arguments=["0.3", "0.2", "0.1", "0.0", "0.0", "0.0", "base_link", "item"],
+        arguments=["0.6", "0.2", "0.5", "3.14", "0.0", "3.14", "base_link", "item"],
         condition=IfCondition(publish_item),
     )
 
