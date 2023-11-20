@@ -27,7 +27,6 @@
 #include "transform_pose.hpp"
 
 #include <nexus_capabilities/context.hpp>
-#include <nexus_capabilities/exceptions.hpp>
 #include <nexus_capabilities/utils.hpp>
 #include <nexus_common/logging.hpp>
 #include <nexus_common/pausable_sequence.hpp>
