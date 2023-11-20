@@ -26,12 +26,17 @@
 namespace nexus {
 namespace motion_planner {
 
-#define NEXUS_MATCH_RANGE(arg, tolerance) \
-  arg - tolerance / 2, arg + tolerance / 2
-
 using warehouse_ros::MessageWithMetadata;
 using warehouse_ros::Metadata;
 using warehouse_ros::Query;
+
+// Append a range inclusive query with some tolerance about some center value.
+void queryAppendRangeInclusiveWithTolerance(
+  Query& query, const std::string& name, double center, double tolerance)
+{
+  query.appendRangeInclusive(
+    name, center - tolerance / 2, center + tolerance / 2);
+}
 
 MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
 : node_(node)
@@ -336,11 +341,9 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         current_state_msg.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          current_state_msg.joint_state.position.at(i), match_tolerance)
-      );
+      queryAppendRangeInclusiveWithTolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        current_state_msg.joint_state.position.at(i), match_tolerance);
     }
   }
   else
@@ -352,11 +355,9 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         plan_request.start_state.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          plan_request.start_state.joint_state.position.at(i), match_tolerance)
-      );
+      queryAppendRangeInclusiveWithTolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        plan_request.start_state.joint_state.position.at(i), match_tolerance);
     }
   }
   return true;
@@ -398,19 +399,15 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
 
   // auto original = *query;  // Copy not supported.
 
-  query.appendRangeInclusive(
-    "max_velocity_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_velocity_scaling_factor, match_tolerance)
-  );
-  query.appendRangeInclusive(
-    "max_acceleration_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_acceleration_scaling_factor, match_tolerance)
-  );
-  query.appendRangeInclusive(
-    "max_cartesian_speed",
-    NEXUS_MATCH_RANGE(plan_request.max_cartesian_speed, match_tolerance));
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_velocity_scaling_factor",
+    plan_request.max_velocity_scaling_factor, match_tolerance);
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_acceleration_scaling_factor",
+    plan_request.max_acceleration_scaling_factor, match_tolerance);
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_cartesian_speed",
+    plan_request.max_cartesian_speed, match_tolerance);
 
   // Extract constraints (so we don't have cardinality on goal_constraint idx.)
   std::vector<moveit_msgs::msg::JointConstraint> joint_constraints;
@@ -440,13 +437,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
       "goal_constraints.joint_constraints_" + std::to_string(joint_idx++);
 
     query.append(meta_name + ".joint_name", constraint.joint_name);
-    query.appendRangeInclusive(
-      meta_name + ".position",
-      NEXUS_MATCH_RANGE(constraint.position, match_tolerance));
-    query.appendGTE(
-      meta_name + ".tolerance_above", constraint.tolerance_above);
-    query.appendLTE(
-      meta_name + ".tolerance_below", constraint.tolerance_below);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".position", constraint.position, match_tolerance);
+    query.appendGTE(meta_name + ".tolerance_above", constraint.tolerance_above);
+    query.appendLTE(meta_name + ".tolerance_below", constraint.tolerance_below);
   }
 
   // Position constraints
@@ -501,18 +495,15 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
 
       query.append(meta_name + ".link_name", constraint.link_name);
 
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.x",
-        NEXUS_MATCH_RANGE(
-          x_offset + constraint.target_point_offset.x, match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.y",
-        NEXUS_MATCH_RANGE(
-          y_offset + constraint.target_point_offset.y, match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.z",
-        NEXUS_MATCH_RANGE(
-          z_offset + constraint.target_point_offset.z, match_tolerance));
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.x",
+        x_offset + constraint.target_point_offset.x, match_tolerance);
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.y",
+        y_offset + constraint.target_point_offset.y, match_tolerance);
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.z",
+        z_offset + constraint.target_point_offset.z, match_tolerance);
     }
   }
 
@@ -586,18 +577,18 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
       auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
       final_quat.normalize();
 
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.x",
-        NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.y",
-        NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.z",
-        NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.w",
-        NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.x",
+        final_quat.getX(), match_tolerance);
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.y",
+        final_quat.getY(), match_tolerance);
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.z",
+        final_quat.getZ(), match_tolerance);
+      queryAppendRangeInclusiveWithTolerance(
+        query, meta_name + ".target_point_offset.w",
+        final_quat.getW(), match_tolerance);
     }
   }
 
@@ -1208,10 +1199,9 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         current_state_msg.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          current_state_msg.joint_state.position.at(i), match_tolerance));
+      queryAppendRangeInclusiveWithTolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        current_state_msg.joint_state.position.at(i), match_tolerance);
     }
   }
   else
@@ -1223,11 +1213,9 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         plan_request.start_state.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          plan_request.start_state.joint_state.position.at(i),
-          match_tolerance));
+      queryAppendRangeInclusiveWithTolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        plan_request.start_state.joint_state.position.at(i), match_tolerance);
     }
   }
 
@@ -1260,20 +1248,16 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
 
   // auto original = *metadata;  // Copy not supported.
 
-  query.appendRangeInclusive(
-    "max_velocity_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_velocity_scaling_factor, match_tolerance));
-  query.appendRangeInclusive(
-    "max_acceleration_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_acceleration_scaling_factor, match_tolerance));
-  query.appendRangeInclusive(
-    "max_step",
-    NEXUS_MATCH_RANGE(plan_request.max_step, match_tolerance));
-  query.appendRangeInclusive(
-    "jump_threshold",
-    NEXUS_MATCH_RANGE(plan_request.jump_threshold, match_tolerance));
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_velocity_scaling_factor",
+    plan_request.max_velocity_scaling_factor, match_tolerance);
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_acceleration_scaling_factor",
+    plan_request.max_acceleration_scaling_factor, match_tolerance);
+  queryAppendRangeInclusiveWithTolerance(
+    query, "max_step", plan_request.max_step, match_tolerance);
+  queryAppendRangeInclusiveWithTolerance(
+    query, "jump_threshold", plan_request.jump_threshold, match_tolerance);
 
   // Waypoints
   // Restating them in terms of the robot model frame (usually base_link)
@@ -1328,15 +1312,15 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
 
     // Apply offsets
     // Position
-    query.appendRangeInclusive(
-      meta_name + ".position.x",
-      NEXUS_MATCH_RANGE(x_offset + waypoint.position.x, match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".position.y",
-      NEXUS_MATCH_RANGE(y_offset+ waypoint.position.y, match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".position.z",
-      NEXUS_MATCH_RANGE(z_offset+waypoint.position.z, match_tolerance));
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".position.x",
+      x_offset + waypoint.position.x, match_tolerance);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".position.y",
+      y_offset+ waypoint.position.y, match_tolerance);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".position.z",
+      z_offset+waypoint.position.z, match_tolerance);
 
     // Orientation
     tf2::Quaternion tf2_quat_goal_offset(
@@ -1349,18 +1333,14 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
     auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
     final_quat.normalize();
 
-    query.appendRangeInclusive(
-      meta_name + ".orientation.x",
-      NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.y",
-      NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.z",
-      NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.w",
-      NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".orientation.x", final_quat.getX(), match_tolerance);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".orientation.y", final_quat.getY(), match_tolerance);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".orientation.z", final_quat.getZ(), match_tolerance);
+    queryAppendRangeInclusiveWithTolerance(
+      query, meta_name + ".orientation.w", final_quat.getW(), match_tolerance);
   }
 
   query.append("link_name", plan_request.link_name);
@@ -1554,8 +1534,6 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
 
   return true;
 }
-
-#undef NEXUS_MATCH_RANGE
 
 }  // namespace motion_planner
 }  // namespace nexus
