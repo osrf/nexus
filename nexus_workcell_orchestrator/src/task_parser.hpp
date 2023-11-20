@@ -36,7 +36,8 @@ public: TaskParser() {}
   /**
    * Parses a workcell task.
    */
-public: common::Result<Task> parse_task(const nexus_orchestrator_msgs::msg::WorkcellTask& task);
+public: common::Result<Task> parse_task(
+    const nexus_orchestrator_msgs::msg::WorkcellTask& task);
 
   /**
    * Add task type to remap to.

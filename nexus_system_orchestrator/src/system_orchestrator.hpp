@@ -111,7 +111,8 @@ private:
    * required contexts and start the job.
    * @throws std::exception
    */
-  [[nodiscard]] common::Result<void> _create_job(const WorkOrderActionType::Goal& goal);
+  [[nodiscard]] common::Result<void> _create_job(
+    const WorkOrderActionType::Goal& goal);
 
   /**
    * Assigns all tasks and start the job associated with the goal handle.

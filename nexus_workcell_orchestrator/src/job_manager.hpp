@@ -69,7 +69,8 @@ public: [[nodiscard]] common::Result<Job*> queue_task(
   /**
    * Remove a assigned task.
    */
-public: [[nodiscard]] common::Result<void> remove_assigned_task(const std::string& task_id);
+public: [[nodiscard]] common::Result<void> remove_assigned_task(
+    const std::string& task_id);
 
   /**
    * Forcefully stop and clear all jobs. Jobs will be stopped as soon as possible, unlike
