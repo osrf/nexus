@@ -88,7 +88,7 @@ public:
   // it...
   explicit MotionPlanCache(const rclcpp::Node::SharedPtr& node);
 
-  void init(
+  bool init(
     const std::string& db_path = ":memory:",
     uint32_t db_port = 0,
     double exact_match_precision = 1e-6);

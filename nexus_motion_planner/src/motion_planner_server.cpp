@@ -304,8 +304,12 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 
   if (_cache_mode != PlannerDatabaseMode::Unset)
   {
-    _motion_plan_cache->init(
-      _cache_db_host, _cache_db_port, _cache_exact_match_tolerance);
+    if (!_motion_plan_cache->init(
+        _cache_db_host, _cache_db_port, _cache_exact_match_tolerance))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Could not init motion plan cache.");
+      return CallbackReturn::ERROR;
+    }
   }
 
   if (_use_move_group_interfaces)

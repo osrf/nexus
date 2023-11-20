@@ -52,7 +52,7 @@ MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
   db_ = loader.loadDatabase();
 }
 
-void MotionPlanCache::init(
+bool MotionPlanCache::init(
   const std::string& db_path, uint32_t db_port, double exact_match_precision)
 {
   RCLCPP_INFO(
@@ -62,7 +62,7 @@ void MotionPlanCache::init(
 
   exact_match_precision_ = exact_match_precision;
   db_->setParams(db_path, db_port);
-  db_->connect();
+  return db_->connect();
 }
 
 // =============================================================================
