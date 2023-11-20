@@ -2,8 +2,8 @@
 Changelog for package nexus_motion_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2023-11-20)
+------------------
 * Use parent node options (`#24 <https://github.com/OpenSourceRobotics/nexus/issues/24>`_)
 * Contributors: Yadunund
 
