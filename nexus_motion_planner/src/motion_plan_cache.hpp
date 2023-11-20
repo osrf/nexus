@@ -128,6 +128,13 @@ public:
     bool metadata_only = false,
     const std::string& sort_by = "execution_time_s");
 
+  // Put a plan into the database if it is the best matching plan seen so far.
+  //
+  // Plans are matched based off their start and goal states.
+  // And are considered "better" if they have a smaller planned execution time
+  // than matching plans.
+  //
+  // Optionally deletes all worse plans by default to prune the cache.
   bool put_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
@@ -135,7 +142,7 @@ public:
     const moveit_msgs::msg::RobotTrajectory& plan,
     double execution_time_s,
     double planning_time_s,
-    bool overwrite = true);
+    bool delete_worse_plans = true);
 
   // QUERY CONSTRUCTION
   bool extract_and_append_plan_start_to_query(
@@ -209,6 +216,14 @@ public:
     bool metadata_only = false,
     const std::string& sort_by = "execution_time_s");
 
+  // Put a cartesian plan into the database if it is the best matching cartesian
+  // plan seen so far.
+  //
+  // Cartesian plans are matched based off their start and goal states.
+  // And are considered "better" if they have a smaller planned execution time
+  // than matching cartesian plans.
+  //
+  // Optionally deletes all worse cartesian plans by default to prune the cache.
   bool put_cartesian_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
@@ -217,7 +232,7 @@ public:
     double execution_time_s,
     double planning_time_s,
     double fraction,
-    bool overwrite = true);
+    bool delete_worse_plans = true);
 
   // QUERY CONSTRUCTION
   bool extract_and_append_cartesian_plan_start_to_query(

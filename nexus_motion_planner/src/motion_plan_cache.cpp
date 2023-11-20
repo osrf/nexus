@@ -134,7 +134,7 @@ MotionPlanCache::put_plan(
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
   const moveit_msgs::msg::RobotTrajectory& plan,
-  double execution_time_s, double planning_time_s, bool overwrite)
+  double execution_time_s, double planning_time_s, bool delete_worse_plans)
 {
   // Check pre-conditions
   if (!plan.multi_dof_joint_trajectory.points.empty())
@@ -190,8 +190,7 @@ MotionPlanCache::put_plan(
   {
     best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-    // Delete "worse" plans if overwrite requested.
-    if (overwrite)
+    if (delete_worse_plans)
     {
       for (auto& match : exact_matches)
       {
@@ -1020,7 +1019,7 @@ MotionPlanCache::put_cartesian_plan(
   double execution_time_s,
   double planning_time_s,
   double fraction,
-  bool overwrite)
+  bool delete_worse_plans)
 {
   // Check pre-conditions
   if (!plan.multi_dof_joint_trajectory.points.empty())
@@ -1068,8 +1067,7 @@ MotionPlanCache::put_cartesian_plan(
   {
     best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-    // Delete "worse" plans if overwrite requested.
-    if (overwrite)
+    if (delete_worse_plans)
     {
       for (auto& match : exact_matches)
       {
