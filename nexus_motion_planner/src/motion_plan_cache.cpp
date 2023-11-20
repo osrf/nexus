@@ -141,14 +141,14 @@ MotionPlanCache::put_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Multi-DOF trajectory plans are not supported.");
+      "Skipping plan insert: Multi-DOF trajectory plans are not supported.");
     return false;
   }
   if (plan_request.workspace_parameters.header.frame_id.empty() ||
     plan.joint_trajectory.header.frame_id.empty())
   {
     RCLCPP_ERROR(
-      node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
+      node_->get_logger(), "Skipping plan insert: Frame IDs cannot be empty.");
     return false;
   }
   if (plan_request.workspace_parameters.header.frame_id !=
@@ -156,7 +156,7 @@ MotionPlanCache::put_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: "
+      "Skipping plan insert: "
       "Plan request frame (%s) does not match plan frame (%s).",
       plan_request.workspace_parameters.header.frame_id.c_str(),
       plan.joint_trajectory.header.frame_id.c_str());
@@ -166,8 +166,7 @@ MotionPlanCache::put_plan(
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_plan_cache", move_group_namespace);
 
-  // If start and goal are "exact" match, AND the candidate plan is better,
-  // overwrite.
+  // Pull out "exact" matching plans in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_plan_start_to_query(
@@ -179,27 +178,25 @@ MotionPlanCache::put_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Could not construct overwrite query.");
+      "Skipping plan insert: Could not construct lookup query.");
     return false;
   }
 
-  auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
-  double best_execution_time_seen = std::numeric_limits<double>::infinity();
+  auto exact_matches = coll.queryList(
+    exact_query, /* metadata_only */ true, /* sort_by */ "execution_time_s");
+
+  double best_execution_time = std::numeric_limits<double>::infinity();
   if (!exact_matches.empty())
   {
-    for (auto& match : exact_matches)
-    {
-      double match_execution_time_s =
-        match->lookupDouble("execution_time_s");
-      if (match_execution_time_s < best_execution_time_seen)
-      {
-        best_execution_time_seen = match_execution_time_s;
-      }
+    best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-      if (match_execution_time_s > execution_time_s)
+    // Delete "worse" plans if overwrite requested.
+    if (overwrite)
+    {
+      for (auto& match : exact_matches)
       {
-        // If we found any "exact" matches that are worse, delete them.
-        if (overwrite)
+        double match_execution_time_s = match->lookupDouble("execution_time_s");
+        if (execution_time_s < match_execution_time_s)
         {
           int delete_id = match->lookupInt("id");
           RCLCPP_INFO(
@@ -217,7 +214,7 @@ MotionPlanCache::put_plan(
   }
 
   // Insert if candidate is best seen.
-  if (execution_time_s < best_execution_time_seen)
+  if (execution_time_s < best_execution_time)
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
@@ -232,7 +229,7 @@ MotionPlanCache::put_plan(
     {
       RCLCPP_ERROR(
         node_->get_logger(),
-        "Skipping insert: Could not construct insert metadata.");
+        "Skipping plan insert: Could not construct insert metadata.");
       return false;
     }
 
@@ -240,7 +237,7 @@ MotionPlanCache::put_plan(
       node_->get_logger(),
       "Inserting plan: New plan execution_time (%es) "
       "is better than best plan's execution_time (%es)",
-      execution_time_s, best_execution_time_seen);
+      execution_time_s, best_execution_time);
 
     coll.insert(plan, insert_metadata);
     return true;
@@ -248,9 +245,9 @@ MotionPlanCache::put_plan(
 
   RCLCPP_INFO(
     node_->get_logger(),
-    "Skipping insert: New plan execution_time (%es) "
+    "Skipping plan insert: New plan execution_time (%es) "
     "is worse than best plan's execution_time (%es)",
-    execution_time_s, best_execution_time_seen);
+    execution_time_s, best_execution_time);
   return false;
 }
 
@@ -971,7 +968,8 @@ MotionPlanCache::fetch_all_matching_cartesian_plans(
 
   if (!start_ok || !goal_ok)
   {
-    RCLCPP_ERROR(node_->get_logger(), "Could not construct plan query.");
+    RCLCPP_ERROR(
+      node_->get_logger(), "Could not construct cartesian plan query.");
     return {};
   }
 
@@ -997,7 +995,7 @@ MotionPlanCache::fetch_best_matching_cartesian_plan(
 
   if (matching_plans.empty())
   {
-    RCLCPP_INFO(node_->get_logger(), "No matching plans found.");
+    RCLCPP_INFO(node_->get_logger(), "No matching cartesian plans found.");
     return nullptr;
   }
 
@@ -1029,61 +1027,59 @@ MotionPlanCache::put_cartesian_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Multi-DOF trajectory plans are not supported.");
+      "Skipping cartesian plan insert: "
+      "Multi-DOF trajectory plans are not supported.");
     return false;
   }
   if (plan_request.header.frame_id.empty() ||
     plan.joint_trajectory.header.frame_id.empty())
   {
     RCLCPP_ERROR(
-      node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
+      node_->get_logger(),
+      "Skipping cartesian plan insert: "
+      "Frame IDs cannot be empty.");
     return false;
   }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
 
-  // If start and goal are "exact" match, AND the candidate plan is better,
-  // overwrite.
+  // Pull out "exact" matching plans in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
     *exact_query, move_group, plan_request, 0);
   bool goal_query_ok = this->extract_and_append_cartesian_plan_goal_to_query(
     *exact_query, move_group, plan_request, 0);
-
   exact_query->append("fraction", fraction);
 
   if (!start_query_ok || !goal_query_ok)
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Could not construct overwrite query.");
+      "Skipping cartesian plan insert: Could not construct lookup query.");
     return false;
   }
 
-  auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
-  double best_execution_time_seen = std::numeric_limits<double>::infinity();
+  auto exact_matches = coll.queryList(
+    exact_query, /* metadata_only */ true, /* sort_by */ "execution_time_s");
+  double best_execution_time = std::numeric_limits<double>::infinity();
   if (!exact_matches.empty())
   {
-    for (auto& match : exact_matches)
-    {
-      double match_execution_time_s =
-        match->lookupDouble("execution_time_s");
-      if (match_execution_time_s < best_execution_time_seen)
-      {
-        best_execution_time_seen = match_execution_time_s;
-      }
+    best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-      if (match_execution_time_s > execution_time_s)
+    // Delete "worse" plans if overwrite requested.
+    if (overwrite)
+    {
+      for (auto& match : exact_matches)
       {
-        // If we found any "exact" matches that are worse, delete them.
-        if (overwrite)
+        double match_execution_time_s = match->lookupDouble("execution_time_s");
+        if (execution_time_s < match_execution_time_s)
         {
           int delete_id = match->lookupInt("id");
           RCLCPP_INFO(
             node_->get_logger(),
-            "Overwriting plan (id: %d): "
+            "Overwriting cartesian plan (id: %d): "
             "execution_time (%es) > new plan's execution_time (%es)",
             delete_id, match_execution_time_s, execution_time_s);
 
@@ -1096,7 +1092,7 @@ MotionPlanCache::put_cartesian_plan(
   }
 
   // Insert if candidate is best seen.
-  if (execution_time_s < best_execution_time_seen)
+  if (execution_time_s < best_execution_time)
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
@@ -1114,15 +1110,15 @@ MotionPlanCache::put_cartesian_plan(
     {
       RCLCPP_ERROR(
         node_->get_logger(),
-        "Skipping insert: Could not construct insert metadata.");
+        "Skipping cartesian plan insert: Could not construct insert metadata.");
       return false;
     }
 
     RCLCPP_INFO(
       node_->get_logger(),
-      "Inserting plan: New plan execution_time (%es) "
+      "Inserting cartesian plan: New plan execution_time (%es) "
       "is better than best plan's execution_time (%es) at fraction (%es)",
-      execution_time_s, best_execution_time_seen, fraction);
+      execution_time_s, best_execution_time, fraction);
 
     coll.insert(plan, insert_metadata);
     return true;
@@ -1130,9 +1126,9 @@ MotionPlanCache::put_cartesian_plan(
 
   RCLCPP_INFO(
     node_->get_logger(),
-    "Skipping insert: New plan execution_time (%es) "
+    "Skipping cartesian plan insert: New plan execution_time (%es) "
     "is worse than best plan's execution_time (%es) at fraction (%es)",
-    execution_time_s, best_execution_time_seen, fraction);
+    execution_time_s, best_execution_time, fraction);
   return false;
 }
 
