@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: Catch warehouse_ros exceptions if they are thrown.
+
 #include "motion_planner_server.hpp"
 
 std::string str_tolower(std::string s)
