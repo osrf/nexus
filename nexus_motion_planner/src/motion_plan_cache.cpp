@@ -74,7 +74,8 @@ MotionPlanCache::fetch_all_matching_plans(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_plan_cache", move_group_namespace);
@@ -92,8 +93,7 @@ MotionPlanCache::fetch_all_matching_plans(
     return {};
   }
 
-  return coll.queryList(
-    query, metadata_only, /* sort_by */ "execution_time_s", true);
+  return coll.queryList(query, metadata_only, sort_by, true);
 }
 
 MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
@@ -101,14 +101,14 @@ MotionPlanCache::fetch_best_matching_plan(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   // First find all matching, but metadata only.
   // Then use the ID metadata of the best plan to pull the actual message.
   auto matching_plans = this->fetch_all_matching_plans(
     move_group, move_group_namespace,
-    plan_request, start_tolerance, goal_tolerance,
-    true);
+    plan_request, start_tolerance, goal_tolerance, true, sort_by);
 
   if (matching_plans.empty())
   {
@@ -134,9 +134,7 @@ MotionPlanCache::put_plan(
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
   const moveit_msgs::msg::RobotTrajectory& plan,
-  double execution_time_s,
-  double planning_time_s,
-  bool overwrite)
+  double execution_time_s, double planning_time_s, bool overwrite)
 {
   // Check pre-conditions
   if (!plan.multi_dof_joint_trajectory.points.empty())
@@ -921,8 +919,8 @@ MotionPlanCache::extract_and_append_plan_goal_to_metadata(
 moveit_msgs::srv::GetCartesianPath::Request
 MotionPlanCache::construct_get_cartesian_plan_request(
   moveit::planning_interface::MoveGroupInterface& move_group,
-  const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
-  double jump_threshold, bool avoid_collisions)
+  const std::vector<geometry_msgs::msg::Pose>& waypoints,
+  double step, double jump_threshold, bool avoid_collisions)
 {
   moveit_msgs::srv::GetCartesianPath::Request out;
 
@@ -958,7 +956,8 @@ MotionPlanCache::fetch_all_matching_cartesian_plans(
   const std::string& move_group_namespace,
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
   double min_fraction,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
@@ -977,9 +976,7 @@ MotionPlanCache::fetch_all_matching_cartesian_plans(
   }
 
   query->appendGTE("fraction", min_fraction);
-
-  return coll.queryList(
-    query, metadata_only, /* sort_by */ "execution_time_s", true);
+  return coll.queryList(query, metadata_only, sort_by, true);
 }
 
 MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
@@ -988,14 +985,15 @@ MotionPlanCache::fetch_best_matching_cartesian_plan(
   const std::string& move_group_namespace,
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
   double min_fraction,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   // First find all matching, but metadata only.
   // Then use the ID metadata of the best plan to pull the actual message.
   auto matching_plans = this->fetch_all_matching_cartesian_plans(
     move_group, move_group_namespace,
     plan_request, min_fraction,
-    start_tolerance, goal_tolerance, true);
+    start_tolerance, goal_tolerance, true, sort_by);
 
   if (matching_plans.empty())
   {

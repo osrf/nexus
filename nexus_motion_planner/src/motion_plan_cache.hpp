@@ -97,6 +97,9 @@ public:
   // MOTION PLAN CACHING
   // ===========================================================================
   // TOP LEVEL OPS
+
+  // Fetches all plans that fit within the requested tolerances for start and
+  // goal conditions, returning them as a vector, sorted by some db column.
   std::vector<
     warehouse_ros::MessageWithMetadata<
       moveit_msgs::msg::RobotTrajectory
@@ -106,8 +109,13 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Fetches the best plan that fits within the requested tolerances for start
+  // and goal conditions, by some db column.
   warehouse_ros::MessageWithMetadata<
     moveit_msgs::msg::RobotTrajectory
   >::ConstPtr
@@ -115,7 +123,10 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
   bool put_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
@@ -154,14 +165,20 @@ public:
   // CARTESIAN PLAN CACHING
   // ===========================================================================
   // TOP LEVEL OPS
+
   // This mimics the move group computeCartesianPath signature (without path
   // constraints).
   moveit_msgs::srv::GetCartesianPath::Request
   construct_get_cartesian_plan_request(
     moveit::planning_interface::MoveGroupInterface& move_group,
-    const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
-    double jump_threshold, bool avoid_collisions = true);
+    const std::vector<geometry_msgs::msg::Pose>& waypoints,
+    double step,
+    double jump_threshold,
+    bool avoid_collisions = true);
 
+  // Fetches all cartesian plans that fit within the requested tolerances for
+  // start and goal conditions, returning them as a vector, sorted by some db
+  // column.
   std::vector<
     warehouse_ros::MessageWithMetadata<
       moveit_msgs::msg::RobotTrajectory
@@ -172,8 +189,13 @@ public:
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
     double min_fraction,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Fetches the best cartesian plan that fits within the requested tolerances
+  // for start and goal conditions, by some db column.
   warehouse_ros::MessageWithMetadata<
     moveit_msgs::msg::RobotTrajectory
   >::ConstPtr
@@ -182,7 +204,10 @@ public:
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
     double min_fraction,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
   bool put_cartesian_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
