@@ -43,12 +43,17 @@ set (test_request_dependencies
 )
 
 #===============================================================================
-set(LIBRARY_NAME motion_planner_server_core)
+set(MOTION_PLAN_CACHE_LIBRARY_NAME motion_planner_server_core)
 set(EXECUTABLE_NAME motion_planner_server)
 
+# Motion plan cache library
+add_library(${MOTION_PLAN_CACHE_LIBRARY_NAME} src/motion_plan_cache.cpp)
+ament_target_dependencies(${MOTION_PLAN_CACHE_LIBRARY_NAME} ${motion_planner_server_dependencies})
+
 # Server executable
-add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp src/motion_plan_cache.cpp)
+add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp)
 ament_target_dependencies(${EXECUTABLE_NAME} ${motion_planner_server_dependencies})
+target_link_libraries(${EXECUTABLE_NAME} ${MOTION_PLAN_CACHE_LIBRARY_NAME})
 
 # Test executable
 add_executable(test_request src/test_request.cpp)
