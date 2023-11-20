@@ -41,17 +41,13 @@ void queryAppendRangeInclusiveWithTolerance(
 MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {
-  if (!node_->has_parameter("warehouse_plugin"))
-  {
-    node_->declare_parameter<std::string>(
-      "warehouse_plugin", "warehouse_ros_sqlite::DatabaseConnection");
-  }
-
   tf_buffer_ =
     std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+  // If the `warehouse_plugin` parameter isn't set, defaults to warehouse_ros'
+  // default.
   warehouse_ros::DatabaseLoader loader(node_);
   db_ = loader.loadDatabase();
 }
