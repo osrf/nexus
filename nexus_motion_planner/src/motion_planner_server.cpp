@@ -247,6 +247,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     "Setting parameter cache_db_port to [%d]", _cache_db_port
   );
 
+  // For floating point comparison, what counts as an "exact" match.
   _cache_exact_match_tolerance = this->declare_parameter(
     "cache_exact_match_tolerance", 0.0005);  // ~0.028 degrees per joint
   RCLCPP_INFO(
