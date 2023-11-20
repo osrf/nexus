@@ -20,6 +20,11 @@
 
 #include "task.hpp"
 
+#include <nexus_common/error.hpp>
+#include <nexus_endpoints.hpp>
+#include <nexus_orchestrator_msgs/msg/task_progress.hpp>
+
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 #include <memory>
@@ -32,6 +37,9 @@ namespace nexus {
 
 class Context
 {
+public: using GoalHandlePtr =
+    std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>;
+
   /**
    * There are several choices we can use here, each having their own pros and cons.
    *
@@ -65,8 +73,15 @@ public: Task task;
 public: std::vector<std::string> errors;
 public: std::unordered_set<std::string> signals;
 
-public: Context(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node)
-  : node(std::move(node)) {}
+public: Context(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node,
+    GoalHandlePtr goal_handle)
+  : node(std::move(node)), _goal_handle(std::move(goal_handle)) {}
+
+public: common::Result<void> publish_feedback(
+    const nexus_orchestrator_msgs::msg::TaskProgress& progress,
+    const std::string& msg = "");
+
+private: GoalHandlePtr _goal_handle;
 };
 
 } // namespace nexus

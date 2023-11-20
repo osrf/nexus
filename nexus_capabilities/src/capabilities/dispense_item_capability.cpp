@@ -19,8 +19,6 @@
 
 #include "dispense_item_task_data.hpp"
 
-#include <nexus_capabilities/exceptions.hpp>
-
 #include <yaml-cpp/exceptions.h>
 
 namespace nexus::capabilities {
@@ -47,7 +45,7 @@ void DispenseItemCapability::declare_params(
 }
 
 //==============================================================================
-void DispenseItemCapability::configure(
+common::Result<void> DispenseItemCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> /* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
@@ -76,6 +74,8 @@ void DispenseItemCapability::configure(
       return std::make_unique<DispenseItem>(name, config,
       node, this->_dispensers, std::chrono::milliseconds{dispenser_timeout});
     });
+
+  return common::Result<void>();
 }
 
 }

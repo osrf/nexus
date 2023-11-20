@@ -22,6 +22,7 @@
 #include "task.hpp"
 
 #include <nexus_common/bt_store.hpp>
+#include <nexus_common/error.hpp>
 
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
@@ -54,7 +55,7 @@ public:
    * @param bt_factory Must be valid for the lifetime of the capability.
    * @throws StateTransitionError if transition fails.
    */
-  virtual void configure(
+  [[nodiscard]] virtual common::Result<void> configure(
     rclcpp_lifecycle::LifecycleNode::SharedPtr node,
     std::shared_ptr<const ContextManager> ctx_mgr,
     BT::BehaviorTreeFactory& bt_factory) = 0;

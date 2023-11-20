@@ -31,7 +31,7 @@ void GripperCapability::declare_params(rclcpp_lifecycle::LifecycleNode& node)
   node.declare_parameter("grippers", std::vector<std::string>{}, desc);
 }
 
-void GripperCapability::configure(
+common::Result<void> GripperCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> /* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
@@ -48,6 +48,8 @@ void GripperCapability::configure(
     {
       return std::make_unique<GripperControl>(name, config, *node);
     });
+
+  return common::Result<void>();
 }
 
 }

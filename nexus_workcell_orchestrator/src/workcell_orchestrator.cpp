@@ -317,7 +317,7 @@ auto WorkcellOrchestrator::_configure(
         return;
       }
 
-      auto ctx = std::make_shared<Context>(this->shared_from_this());
+      auto ctx = std::make_shared<Context>(this->shared_from_this(), goal_handle);
       auto task_result =
       this->_task_parser.parse_task(goal_handle->get_goal()->task);
       if (task_result.error())
@@ -564,29 +564,27 @@ auto WorkcellOrchestrator::_configure(
   }
 
   // configure capabilities
-  try
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Configuring generic capabilities..."
+  );
+  for (auto& [cap_id, cap] : this->_capabilities)
   {
     RCLCPP_INFO(
       this->get_logger(),
-      "Configuring generic capabilities..."
+      "configuring capability [%s]",
+      cap_id.c_str()
     );
-    for (auto& [cap_id, cap] : this->_capabilities)
+    const auto r = cap->configure(
+      this->shared_from_this(), this->_job_mgr->context_manager(),
+      *_bt_factory);
+    if (r.error())
     {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "configuring capability [%s]",
-        cap_id.c_str()
-      );
-      cap->configure(
-        this->shared_from_this(), this->_job_mgr->context_manager(),
-        *_bt_factory);
+      RCLCPP_ERROR(
+        this->get_logger(), "Failed to configure capability (%s)",
+        r.error()->what());
+      return CallbackReturn::FAILURE;
     }
-  }
-  catch (const CapabilityError& e)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(), "Failed to configure capability (%s)", e.what());
-    return CallbackReturn::FAILURE;
   }
 
   // Create map for remapping capabilities
