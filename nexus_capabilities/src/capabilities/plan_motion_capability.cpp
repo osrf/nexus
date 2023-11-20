@@ -19,15 +19,13 @@
 
 #include "plan_motion.hpp"
 
-#include <nexus_capabilities/exceptions.hpp>
-
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <memory>
 
 namespace nexus::capabilities {
 
-void PlanMotionCapability::configure(
+common::Result<void> PlanMotionCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> /* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
@@ -43,6 +41,7 @@ void PlanMotionCapability::configure(
       return std::make_unique<PlanMotion>(name, config, *node, this->_client,
       tf_broadcaster);
     });
+  return common::Result<void>();
 }
 
 }

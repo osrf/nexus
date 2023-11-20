@@ -109,7 +109,7 @@ TEST_CASE("JobManager") {
     SECTION("can queue an assigned task") {
       handle_accepted = [&](const JobManager::GoalHandlePtr& goal_handle)
         {
-          auto ctx = std::make_shared<Context>(fixture.node);
+          auto ctx = std::make_shared<Context>(fixture.node, goal_handle);
           CHECK(job_mgr.queue_task(goal_handle, ctx,
             bt_factory.createTreeFromText(bt)).value() == job);
           CHECK(job->bt.has_value());
@@ -148,7 +148,7 @@ TEST_CASE("JobManager") {
     size_t queued = 0;
     handle_accepted = [&](const JobManager::GoalHandlePtr& goal_handle)
       {
-        auto ctx = std::make_shared<Context>(fixture.node);
+        auto ctx = std::make_shared<Context>(fixture.node, goal_handle);
         REQUIRE(job_mgr.queue_task(goal_handle, ctx,
           bt_factory.createTreeFromText(bt)).value());
         if (++queued == task_ids.size())

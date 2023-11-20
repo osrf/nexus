@@ -25,25 +25,19 @@
 
 namespace nexus::capabilities {
 
-void ExecuteTrajectoryCapability::configure(
+common::Result<void> ExecuteTrajectoryCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> /* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
 {
   bt_factory.registerBuilder<ExecuteTrajectory>(
     "execute_trajectory.ExecuteTrajectory",
-    [w_node = std::weak_ptr{node}](const std::string& name,
+    [node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
-      auto node = w_node.lock();
-      if (!node)
-      {
-        std::cerr << "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!" << std::endl;
-        std::terminate();
-      }
-
-      return std::make_unique<ExecuteTrajectory>(name, config, *node);
+      return std::make_unique<ExecuteTrajectory>(name, config, node);
     });
+  return common::Result<void>();
 }
 
 }
