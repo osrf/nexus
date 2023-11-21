@@ -103,6 +103,22 @@ bool MotionPlanCache::init(
   return db_->connect();
 }
 
+unsigned
+MotionPlanCache::count_plans(const std::string& move_group_namespace)
+{
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_plan_cache", move_group_namespace);
+  return coll.count();
+}
+
+unsigned
+MotionPlanCache::count_cartesian_plans(const std::string& move_group_namespace)
+{
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_cartesian_plan_cache", move_group_namespace);
+  return coll.count();
+}
+
 // =============================================================================
 // MOTION PLAN CACHING
 // =============================================================================

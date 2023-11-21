@@ -37,9 +37,6 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_msgs/srv/get_cartesian_path.hpp>
 
-// NEXUS messages
-#include <nexus_endpoints.hpp>
-
 namespace nexus {
 namespace motion_planner {
 
@@ -92,6 +89,10 @@ public:
     const std::string& db_path = ":memory:",
     uint32_t db_port = 0,
     double exact_match_precision = 1e-6);
+
+  unsigned count_plans(const std::string& move_group_namespace);
+
+  unsigned count_cartesian_plans(const std::string& move_group_namespace);
 
   // ===========================================================================
   // MOTION PLAN CACHING
