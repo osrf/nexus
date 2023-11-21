@@ -30,6 +30,8 @@ using warehouse_ros::MessageWithMetadata;
 using warehouse_ros::Metadata;
 using warehouse_ros::Query;
 
+// Utils =======================================================================
+
 // Append a range inclusive query with some tolerance about some center value.
 void queryAppendRangeInclusiveWithTolerance(
   Query& query, const std::string& name, double center, double tolerance)
@@ -37,6 +39,42 @@ void queryAppendRangeInclusiveWithTolerance(
   query.appendRangeInclusive(
     name, center - tolerance / 2, center + tolerance / 2);
 }
+
+// Sort constraint components by joint or link name.
+void sort_constraints(
+  std::vector<moveit_msgs::msg::JointConstraint>& joint_constraints,
+  std::vector<moveit_msgs::msg::PositionConstraint>& position_constraints,
+  std::vector<moveit_msgs::msg::OrientationConstraint>& orientation_constraints)
+{
+  std::sort(
+    joint_constraints.begin(), joint_constraints.end(),
+    [](
+      const moveit_msgs::msg::JointConstraint& l,
+      const moveit_msgs::msg::JointConstraint& r)
+    {
+      return l.joint_name < r.joint_name;
+    });
+
+  std::sort(
+    position_constraints.begin(), position_constraints.end(),
+    [](
+      const moveit_msgs::msg::PositionConstraint& l,
+      const moveit_msgs::msg::PositionConstraint& r)
+    {
+      return l.link_name < r.link_name;
+    });
+
+  std::sort(
+    orientation_constraints.begin(), orientation_constraints.end(),
+    [](
+      const moveit_msgs::msg::OrientationConstraint& l,
+      const moveit_msgs::msg::OrientationConstraint& r)
+    {
+      return l.link_name < r.link_name;
+    });
+}
+
+// Motion Plan Cache ===========================================================
 
 MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
 : node_(node)
@@ -417,6 +455,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
     {
       orientation_constraints.push_back(orientation_constraint);
     }
+
+    // Also sort for even less cardinality.
+    sort_constraints(
+      joint_constraints, position_constraints, orientation_constraints);
   }
 
   // Joint constraints
@@ -742,6 +784,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_metadata(
     {
       orientation_constraints.push_back(orientation_constraint);
     }
+
+    // Also sort for even less cardinality.
+    sort_constraints(
+      joint_constraints, position_constraints, orientation_constraints);
   }
 
   // Joint constraints
