@@ -351,6 +351,13 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -686,6 +693,13 @@ MotionPlanCache::extract_and_append_plan_start_to_metadata(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -1215,6 +1229,13 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -1418,6 +1439,13 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_metadata(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
