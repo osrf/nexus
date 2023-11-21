@@ -46,7 +46,8 @@ public: void declare_params(rclcpp_lifecycle::LifecycleNode& node) final;
   /**
    * @copydoc Capability::configure
    */
-public: common::Result<void> configure(rclcpp_lifecycle::LifecycleNode::SharedPtr node,
+public: common::Result<void> configure(
+    rclcpp_lifecycle::LifecycleNode::SharedPtr node,
     std::shared_ptr<const ContextManager> ctx_mgr,
     BT::BehaviorTreeFactory& bt_factory) final;
 

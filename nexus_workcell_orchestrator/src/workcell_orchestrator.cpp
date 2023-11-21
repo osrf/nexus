@@ -316,7 +316,8 @@ auto WorkcellOrchestrator::_configure(
         return;
       }
 
-      auto ctx = std::make_shared<Context>(this->shared_from_this(), goal_handle);
+      auto ctx = std::make_shared<Context>(
+        this->shared_from_this(), goal_handle);
       auto task_result =
       this->_task_parser.parse_task(goal_handle->get_goal()->task);
       if (task_result.error())
