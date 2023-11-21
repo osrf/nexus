@@ -78,7 +78,7 @@ namespace motion_planner {
  *
  * Motion plans may be looked up with some tolerance at call time.
  */
-class MotionPlanCache
+class MotionPlanCache : public std::enable_shared_from_this<MotionPlanCache>
 {
 public:
   // We explicitly need a Node::SharedPtr because warehouse_ros ONLY supports
