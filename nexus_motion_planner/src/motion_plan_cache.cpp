@@ -220,7 +220,7 @@ MotionPlanCache::put_plan(
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_plan_cache", move_group_namespace);
 
-  // Pull out "exact" matching plans in cache.
+  // Pull out plans "exactly" keyed by request in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_plan_start_to_query(
@@ -1111,15 +1111,14 @@ MotionPlanCache::put_cartesian_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping cartesian plan insert: "
-      "Frame IDs cannot be empty.");
+      "Skipping cartesian plan insert: Frame IDs cannot be empty.");
     return false;
   }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
 
-  // Pull out "exact" matching plans in cache.
+  // Pull out plans "exactly" keyed by request in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
