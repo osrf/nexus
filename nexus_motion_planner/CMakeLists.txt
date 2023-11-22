@@ -28,10 +28,15 @@ set (motion_planner_server_dependencies
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
-  warehouse_ros
-  warehouse_ros_sqlite
   tf2
   tf2_ros
+)
+
+set (motion_plan_cache_dependencies
+  moveit_ros_planning_interface
+  rclcpp
+  warehouse_ros
+  warehouse_ros_sqlite
 )
 
 set (test_request_dependencies
@@ -48,7 +53,7 @@ set(EXECUTABLE_NAME motion_planner_server)
 
 # Motion plan cache library
 add_library(${MOTION_PLAN_CACHE_LIBRARY_NAME} src/motion_plan_cache.cpp)
-ament_target_dependencies(${MOTION_PLAN_CACHE_LIBRARY_NAME} ${motion_planner_server_dependencies})
+ament_target_dependencies(${MOTION_PLAN_CACHE_LIBRARY_NAME} ${motion_plan_cache_dependencies})
 
 # Server executable
 add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp)
@@ -72,6 +77,8 @@ install(
 )
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_pytest REQUIRED)
   find_package(ament_cmake_uncrustify REQUIRED)
   find_package(launch_testing_ament_cmake REQUIRED)
   find_package(rmf_utils REQUIRED)
@@ -80,11 +87,23 @@ if(BUILD_TESTING)
     NAMES "rmf_code_style.cfg"
     PATHS "${rmf_utils_DIR}/../../../../share/rmf_utils/")
 
+  add_executable(test_motion_plan_cache src/test_motion_plan_cache.cpp)
+  target_link_libraries(test_motion_plan_cache ${MOTION_PLAN_CACHE_LIBRARY_NAME})
+
+  install(TARGETS
+      test_motion_plan_cache
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+  )
+
   ament_uncrustify(
     ARGN include src test
     CONFIG_FILE ${uncrustify_config_file}
     MAX_LINE_LENGTH 80
     LANGUAGE CPP
+  )
+
+  ament_add_pytest_test(test_motion_plan_cache_py "test/test_motion_plan_cache.py"
+   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   )
 
   # TODO(YV): Fix these tests.
@@ -94,5 +113,5 @@ if(BUILD_TESTING)
   # )
 endif()
 
-ament_export_dependencies(${motion_planner_server_dependencies})
+ament_export_dependencies(${motion_planner_server_dependencies} ${motion_plan_cache_dependencies})
 ament_package()
