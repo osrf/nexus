@@ -38,6 +38,7 @@ void check_and_emit(
   else
   {
     std::cout << "[FAIL] " << prefix << ": " << label << std::endl;
+    exit(1);
   }
 }
 
