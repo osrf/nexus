@@ -1075,7 +1075,7 @@ MotionPlanCache::fetch_best_matching_cartesian_plan(
   }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
-    "move_group_plan_cache", move_group_namespace);
+    "move_group_cartesian_plan_cache", move_group_namespace);
 
   // Best plan is at first index, since the lookup query was sorted by
   // execution_time.
@@ -1302,10 +1302,10 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
   match_tolerance += exact_match_precision_;
 
   // Make ignored members explicit
-  if (plan_request.path_constraints.joint_constraints.empty() ||
-    plan_request.path_constraints.position_constraints.empty() ||
-    plan_request.path_constraints.orientation_constraints.empty() ||
-    plan_request.path_constraints.visibility_constraints.empty())
+  if (!plan_request.path_constraints.joint_constraints.empty() ||
+    !plan_request.path_constraints.position_constraints.empty() ||
+    !plan_request.path_constraints.orientation_constraints.empty() ||
+    !plan_request.path_constraints.visibility_constraints.empty())
   {
     RCLCPP_WARN(
       node_->get_logger(), "Ignoring path_constraints: Not supported.");
@@ -1387,10 +1387,10 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
       x_offset + waypoint.position.x, match_tolerance);
     query_append_range_inclusive_with_tolerance(
       query, meta_name + ".position.y",
-      y_offset+ waypoint.position.y, match_tolerance);
+      y_offset + waypoint.position.y, match_tolerance);
     query_append_range_inclusive_with_tolerance(
       query, meta_name + ".position.z",
-      z_offset+waypoint.position.z, match_tolerance);
+      z_offset + waypoint.position.z, match_tolerance);
 
     // Orientation
     tf2::Quaternion tf2_quat_goal_offset(
@@ -1414,6 +1414,7 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
   }
 
   query.append("link_name", plan_request.link_name);
+  query.append("header.frame_id", base_frame);
 
   return true;
 }
@@ -1509,10 +1510,10 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request)
 {
   // Make ignored members explicit
-  if (plan_request.path_constraints.joint_constraints.empty() ||
-    plan_request.path_constraints.position_constraints.empty() ||
-    plan_request.path_constraints.orientation_constraints.empty() ||
-    plan_request.path_constraints.visibility_constraints.empty())
+  if (!plan_request.path_constraints.joint_constraints.empty() ||
+    !plan_request.path_constraints.position_constraints.empty() ||
+    !plan_request.path_constraints.orientation_constraints.empty() ||
+    !plan_request.path_constraints.visibility_constraints.empty())
   {
     RCLCPP_WARN(
       node_->get_logger(), "Ignoring path_constraints: Not supported.");
