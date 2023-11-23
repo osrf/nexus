@@ -615,7 +615,8 @@ void MotionPlannerServer::plan_with_move_group(
       _collision_aware_cartesian_path);
 
     // Fetch if in execute mode.
-    if (cache_mode_is_execute(_cache_mode))
+    if (cache_mode_is_execute(_cache_mode)
+      || req.force_cache_mode_execute_read_only)
     {
       auto fetch_start = this->now();
       auto fetched_cartesian_plan =
@@ -640,7 +641,8 @@ void MotionPlannerServer::plan_with_move_group(
           fetched_cartesian_plan->lookupDouble("planning_time_s"));
       }
       // Fail if ReadOnly mode and no cached cartesian plan was fetched.
-      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly)
+      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly
+        || req.force_cache_mode_execute_read_only)
       {
         RCLCPP_ERROR(
           this->get_logger(),
