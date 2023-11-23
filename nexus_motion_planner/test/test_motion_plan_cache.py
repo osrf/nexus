@@ -149,17 +149,17 @@ def test_read_stdout(motion_cache_test_runner_node, launch_context):
         ]),
 
         ('test_motion_plans.put_plan_empty_frame', [
-            'Put empty frame plan, no overwrite, not ok',
+            'Put empty frame plan, no delete_worse_plans, not ok',
             'No plans in cache',
         ]),
 
         ('test_motion_plans.put_plan_req_empty_frame', [
-            'Put empty frame req plan, no overwrite, not ok',
+            'Put empty frame req plan, no delete_worse_plans, not ok',
             'No plans in cache',
         ]),
 
         ('test_motion_plans.put_first', [
-            'Put first valid plan, no overwrite, ok',
+            'Put first valid plan, no delete_worse_plans, ok',
             'One plan in cache',
         ]),
         ('test_motion_plans.put_first.fetch_matching_no_tolerance', [
@@ -214,12 +214,12 @@ def test_read_stdout(motion_cache_test_runner_node, launch_context):
         ]),
 
         ('test_motion_plans.put_worse', [
-            'Put worse plan, no overwrite, not ok',
+            'Put worse plan, no delete_worse_plans, not ok',
             'One plan in cache',
         ]),
 
         ('test_motion_plans.put_better', [
-            'Put better plan, no overwrite, ok',
+            'Put better plan, no delete_worse_plans, ok',
             'Two plans in cache',
         ]),
         ('test_motion_plans.put_better.fetch_sorted', [
@@ -232,11 +232,11 @@ def test_read_stdout(motion_cache_test_runner_node, launch_context):
             'Fetched plans are sorted correctly',
         ]),
 
-        ('test_motion_plans.put_better_overwrite', [
-            'Put better plan, overwrite, ok',
+        ('test_motion_plans.put_better_delete_worse_plans', [
+            'Put better plan, delete_worse_plans, ok',
             'One plan in cache',
         ]),
-        ('test_motion_plans.put_better_overwrite.fetch', [
+        ('test_motion_plans.put_better_delete_worse_plans.fetch', [
             'Fetch all returns one',
             'Fetch best plan is not nullptr',
             'Fetched plan on both fetches match',
@@ -246,7 +246,7 @@ def test_read_stdout(motion_cache_test_runner_node, launch_context):
         ]),
 
         ('test_motion_plans.put_different_req', [
-            'Put different plan req, overwrite, ok',
+            'Put different plan req, delete_worse_plans, ok',
             'Two plans in cache',
         ]),
         ('test_motion_plans.put_different_req.fetch', [
@@ -258,6 +258,122 @@ def test_read_stdout(motion_cache_test_runner_node, launch_context):
             'Fetched plan has correct planning time',
         ]),
 
+        # Cartesian plan cache
+        ('test_cartesian_plans.construct_get_cartesian_path_request', [
+            'Ok',
+        ]),
+
+        ('test_cartesian_plans.empty', [
+            'Plan cache initially empty',
+            'Fetch all plans on empty cache returns empty',
+            'Fetch best plan on empty cache returns nullptr',
+        ]),
+
+        ('test_cartesian_plans.put_plan_empty_frame', [
+            'Put empty frame plan, no delete_worse_plans, not ok',
+            'No plans in cache',
+        ]),
+
+        ('test_cartesian_plans.put_plan_req_empty_frame', [
+            'Put empty frame req plan, no delete_worse_plans, not ok',
+            'No plans in cache',
+        ]),
+
+        ('test_cartesian_plans.put_first', [
+            'Put first valid plan, no delete_worse_plans, ok',
+            'One plan in cache',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_matching_no_tolerance', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_is_diff_no_tolerance', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_non_matching_out_of_tolerance', [
+            'Fetch all returns empty',
+            'Fetch best plan is nullptr',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_non_matching_in_tolerance', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_higher_fraction', [
+            'Fetch all returns empty',
+            'Fetch best plan is nullptr',
+        ]),
+        ('test_cartesian_plans.put_first.fetch_lower_fraction', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
+
+        ('test_cartesian_plans.put_worse', [
+            'Put worse plan, no delete_worse_plans, not ok',
+            'One plan in cache',
+        ]),
+
+        ('test_cartesian_plans.put_better', [
+            'Put better plan, no delete_worse_plans, ok',
+            'Two plans in cache',
+        ]),
+        ('test_cartesian_plans.put_better.fetch_sorted', [
+            'Fetch all returns two',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+            'Fetched plans are sorted correctly',
+        ]),
+        ('test_cartesian_plans.put_better_delete_worse_plans', [
+            'Put better plan, delete_worse_plans, ok',
+            'One plan in cache',
+        ]),
+        ('test_cartesian_plans.put_better_delete_worse_plans.fetch', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
+
+        ('test_cartesian_plans.put_different_req', [
+            'Put different plan req, delete_worse_plans, ok',
+            'Two plans in cache',
+        ]),
+        ('test_cartesian_plans.put_different_req.fetch', [
+            'Fetch all returns one',
+            'Fetch best plan is not nullptr',
+            'Fetched plan on both fetches match',
+            'Fetched plan matches original',
+            'Fetched plan has correct execution time',
+            'Fetched plan has correct planning time',
+            'Fetched plan has correct fraction',
+        ]),
     ]
 
     for prefix, labels in test_cases:
