@@ -342,6 +342,38 @@ void test_motion_plans(
   check_and_emit(
     fetched_plan == nullptr, prefix, "Fetch best plan is nullptr");
 
+  // Fetch non-matching, only start in tolerance (but not goal)
+  //
+  // Non-matching key should not have cache hit
+  prefix =
+    "test_motion_plans.put_first.fetch_non_matching_only_start_in_tolerance";
+
+  fetched_plans = cache->fetch_all_matching_plans(
+    *move_group, g_robot_name, close_matching_plan_req, 999, 0);
+
+  fetched_plan = cache->fetch_best_matching_plan(
+    *move_group, g_robot_name, close_matching_plan_req, 999, 0);
+
+  check_and_emit(fetched_plans.size() == 0, prefix, "Fetch all returns empty");
+  check_and_emit(
+    fetched_plan == nullptr, prefix, "Fetch best plan is nullptr");
+
+  // Fetch non-matching, only goal in tolerance (but not start)
+  //
+  // Non-matching key should not have cache hit
+  prefix =
+    "test_motion_plans.put_first.fetch_non_matching_only_goal_in_tolerance";
+
+  fetched_plans = cache->fetch_all_matching_plans(
+    *move_group, g_robot_name, close_matching_plan_req, 0, 999);
+
+  fetched_plan = cache->fetch_best_matching_plan(
+    *move_group, g_robot_name, close_matching_plan_req, 0, 999);
+
+  check_and_emit(fetched_plans.size() == 0, prefix, "Fetch all returns empty");
+  check_and_emit(
+    fetched_plan == nullptr, prefix, "Fetch best plan is nullptr");
+
   // Fetch non-matching, in tolerance
   //
   // Close key within tolerance limit should have cache hit
@@ -677,12 +709,21 @@ void test_cartesian_plans(
 
   // Something close enough (mod 0.1 away)
   auto close_matching_cartesian_plan_req = cartesian_plan_req;
+  close_matching_cartesian_plan_req.start_state.joint_state.position.at(0) -=
+    0.05;
+  close_matching_cartesian_plan_req.start_state.joint_state.position.at(1) +=
+    0.05;
+  close_matching_cartesian_plan_req.start_state.joint_state.position.at(2) -=
+    0.05;
   close_matching_cartesian_plan_req.waypoints.at(0).position.x -= 0.05;
   close_matching_cartesian_plan_req.waypoints.at(1).position.x += 0.05;
   close_matching_cartesian_plan_req.waypoints.at(2).position.x -= 0.05;
 
   // Different
   auto different_cartesian_plan_req = cartesian_plan_req;
+  different_cartesian_plan_req.start_state.joint_state.position.at(0) -= 1.05;
+  different_cartesian_plan_req.start_state.joint_state.position.at(1) += 2.05;
+  different_cartesian_plan_req.start_state.joint_state.position.at(2) -= 3.05;
   different_cartesian_plan_req.waypoints.at(0).position.x -= 1.05;
   different_cartesian_plan_req.waypoints.at(1).position.x += 2.05;
   different_cartesian_plan_req.waypoints.at(2).position.x -= 3.05;
@@ -851,6 +892,42 @@ void test_cartesian_plans(
   fetched_plan = cache->fetch_best_matching_cartesian_plan(
     *move_group, g_robot_name, close_matching_cartesian_plan_req,
     fraction, 0, 0);
+
+  check_and_emit(fetched_plans.size() == 0, prefix, "Fetch all returns empty");
+  check_and_emit(
+    fetched_plan == nullptr, prefix, "Fetch best plan is nullptr");
+
+  // Fetch non-matching, only start in tolerance (but not goal)
+  //
+  // Non-matching key should not have cache hit
+  prefix =
+    "test_motion_plans.put_first.fetch_non_matching_only_start_in_tolerance";
+
+  fetched_plans = cache->fetch_all_matching_cartesian_plans(
+    *move_group, g_robot_name, close_matching_cartesian_plan_req,
+    fraction, 999, 0);
+
+  fetched_plan = cache->fetch_best_matching_cartesian_plan(
+    *move_group, g_robot_name, close_matching_cartesian_plan_req,
+    fraction, 999, 0);
+
+  check_and_emit(fetched_plans.size() == 0, prefix, "Fetch all returns empty");
+  check_and_emit(
+    fetched_plan == nullptr, prefix, "Fetch best plan is nullptr");
+
+  // Fetch non-matching, only goal in tolerance (but not start)
+  //
+  // Non-matching key should not have cache hit
+  prefix =
+    "test_motion_plans.put_first.fetch_non_matching_only_goal_in_tolerance";
+
+  fetched_plans = cache->fetch_all_matching_cartesian_plans(
+    *move_group, g_robot_name, close_matching_cartesian_plan_req,
+    fraction, 0, 999);
+
+  fetched_plan = cache->fetch_best_matching_cartesian_plan(
+    *move_group, g_robot_name, close_matching_cartesian_plan_req,
+    fraction, 0, 999);
 
   check_and_emit(fetched_plans.size() == 0, prefix, "Fetch all returns empty");
   check_and_emit(
