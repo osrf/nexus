@@ -647,6 +647,44 @@ void test_motion_plans(
   check_and_emit(
     fetched_plan->lookupDouble("planning_time_s") == planning_time,
     prefix, "Fetched plan has correct planning time");
+
+  // Fetch different robot
+  //
+  // Since we didn't populate anything, we should expect empty
+  prefix = "test_motion_plans.different_robot.empty";
+  std::string different_robot_name = "different_robot";
+
+  check_and_emit(
+    cache->count_cartesian_plans(different_robot_name) == 0,
+    prefix, "No plans in cache");
+
+  // Put first for different robot, delete_worse_plans
+  //
+  // A different robot's cache should not interact with the original cache
+  prefix = "test_motion_plans.different_robot.put_first";
+  check_and_emit(
+    cache->put_plan(
+      *move_group, different_robot_name, different_plan_req,
+      different_plan, better_execution_time, planning_time, true),
+    prefix, "Put different plan req, delete_worse_plans, ok");
+
+  check_and_emit(
+    cache->count_plans(different_robot_name) == 1,
+    prefix, "One plans in cache");
+
+  check_and_emit(
+    cache->count_plans(different_robot_name) == 1,
+    prefix, "One plans in cache");
+
+  check_and_emit(
+    cache->count_plans(g_robot_name) == 2,
+    prefix, "Two plans in original robot's cache");
+
+  fetched_plans = cache->fetch_all_matching_plans(
+    *move_group, g_robot_name, different_plan_req, 0, 0);
+
+  check_and_emit(fetched_plans.size() == 1, prefix,
+    "Fetch all on original still returns one");
 }
 
 void test_cartesian_plans(
@@ -1148,8 +1186,7 @@ void test_cartesian_plans(
 
   check_and_emit(
     cache->put_cartesian_plan(
-      *move_group, g_robot_name, different_cartesian_plan_req,
-      different_plan,
+      *move_group, g_robot_name, different_cartesian_plan_req, different_plan,
       better_execution_time, planning_time, fraction, true),
     prefix, "Put different plan req, delete_worse_plans, ok");
 
@@ -1191,6 +1228,44 @@ void test_cartesian_plans(
   check_and_emit(
     fetched_plan->lookupDouble("fraction") == fraction,
     prefix, "Fetched plan has correct fraction");
+
+  // Fetch different robot
+  //
+  // Since we didn't populate anything, we should expect empty
+  prefix = "test_cartesian_plans.different_robot.empty";
+  std::string different_robot_name = "different_robot";
+
+  check_and_emit(
+    cache->count_cartesian_plans(different_robot_name) == 0,
+    prefix, "No plans in cache");
+
+  // Put first for different robot, delete_worse_plans
+  //
+  // A different robot's cache should not interact with the original cache
+  prefix = "test_cartesian_plans.different_robot.put_first";
+  check_and_emit(
+    cache->put_cartesian_plan(
+      *move_group, different_robot_name, different_cartesian_plan_req,
+      different_plan, better_execution_time, planning_time, fraction, true),
+    prefix, "Put different plan req, delete_worse_plans, ok");
+
+  check_and_emit(
+    cache->count_cartesian_plans(different_robot_name) == 1,
+    prefix, "One plans in cache");
+
+  check_and_emit(
+    cache->count_cartesian_plans(different_robot_name) == 1,
+    prefix, "One plans in cache");
+
+  check_and_emit(
+    cache->count_cartesian_plans(g_robot_name) == 2,
+    prefix, "Two plans in original robot's cache");
+
+  fetched_plans = cache->fetch_all_matching_cartesian_plans(
+    *move_group, g_robot_name, different_cartesian_plan_req, fraction, 0, 0);
+
+  check_and_emit(fetched_plans.size() == 1, prefix,
+    "Fetch all on original still returns one");
 }
 
 int main(int argc, char** argv)
