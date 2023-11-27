@@ -120,6 +120,17 @@ make_request()
   req->max_velocity_scaling_factor = scale_speed;
   req->max_acceleration_scaling_factor = scale_speed;
 
+  auto maybe_read_only =
+    this->getInput<bool>("force_cache_mode_execute_read_only");
+  if (maybe_read_only.has_value())
+  {
+    req->force_cache_mode_execute_read_only = maybe_read_only.value();
+  }
+  else
+  {
+    req->force_cache_mode_execute_read_only = false;
+  }
+
   RCLCPP_DEBUG_STREAM(this->_logger,
     "planning to " << req->goal_pose.pose << " at frame " <<
       req->goal_pose.header.frame_id << " with cartesian " << req->cartesian << "and scaled speed of " <<

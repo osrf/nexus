@@ -37,9 +37,6 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit_msgs/srv/get_cartesian_path.hpp>
 
-// NEXUS messages
-#include <nexus_endpoints.hpp>
-
 namespace nexus {
 namespace motion_planner {
 
@@ -88,15 +85,22 @@ public:
   // it...
   explicit MotionPlanCache(const rclcpp::Node::SharedPtr& node);
 
-  void init(
+  bool init(
     const std::string& db_path = ":memory:",
     uint32_t db_port = 0,
     double exact_match_precision = 1e-6);
+
+  unsigned count_plans(const std::string& move_group_namespace);
+
+  unsigned count_cartesian_plans(const std::string& move_group_namespace);
 
   // ===========================================================================
   // MOTION PLAN CACHING
   // ===========================================================================
   // TOP LEVEL OPS
+
+  // Fetches all plans that fit within the requested tolerances for start and
+  // goal conditions, returning them as a vector, sorted by some db column.
   std::vector<
     warehouse_ros::MessageWithMetadata<
       moveit_msgs::msg::RobotTrajectory
@@ -106,8 +110,13 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Fetches the best plan that fits within the requested tolerances for start
+  // and goal conditions, by some db column.
   warehouse_ros::MessageWithMetadata<
     moveit_msgs::msg::RobotTrajectory
   >::ConstPtr
@@ -115,8 +124,18 @@ public:
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
     const moveit_msgs::msg::MotionPlanRequest& plan_request,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Put a plan into the database if it is the best matching plan seen so far.
+  //
+  // Plans are matched based off their start and goal states.
+  // And are considered "better" if they have a smaller planned execution time
+  // than matching plans.
+  //
+  // Optionally deletes all worse plans by default to prune the cache.
   bool put_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
@@ -124,7 +143,7 @@ public:
     const moveit_msgs::msg::RobotTrajectory& plan,
     double execution_time_s,
     double planning_time_s,
-    bool overwrite = true);
+    bool delete_worse_plans = true);
 
   // QUERY CONSTRUCTION
   bool extract_and_append_plan_start_to_query(
@@ -154,14 +173,20 @@ public:
   // CARTESIAN PLAN CACHING
   // ===========================================================================
   // TOP LEVEL OPS
+
   // This mimics the move group computeCartesianPath signature (without path
   // constraints).
   moveit_msgs::srv::GetCartesianPath::Request
   construct_get_cartesian_plan_request(
     moveit::planning_interface::MoveGroupInterface& move_group,
-    const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
-    double jump_threshold, bool avoid_collisions = true);
+    const std::vector<geometry_msgs::msg::Pose>& waypoints,
+    double step,
+    double jump_threshold,
+    bool avoid_collisions = true);
 
+  // Fetches all cartesian plans that fit within the requested tolerances for
+  // start and goal conditions, returning them as a vector, sorted by some db
+  // column.
   std::vector<
     warehouse_ros::MessageWithMetadata<
       moveit_msgs::msg::RobotTrajectory
@@ -172,8 +197,13 @@ public:
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
     double min_fraction,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Fetches the best cartesian plan that fits within the requested tolerances
+  // for start and goal conditions, by some db column.
   warehouse_ros::MessageWithMetadata<
     moveit_msgs::msg::RobotTrajectory
   >::ConstPtr
@@ -182,8 +212,19 @@ public:
     const std::string& move_group_namespace,
     const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
     double min_fraction,
-    double start_tolerance, double goal_tolerance, bool metadata_only = false);
+    double start_tolerance,
+    double goal_tolerance,
+    bool metadata_only = false,
+    const std::string& sort_by = "execution_time_s");
 
+  // Put a cartesian plan into the database if it is the best matching cartesian
+  // plan seen so far.
+  //
+  // Cartesian plans are matched based off their start and goal states.
+  // And are considered "better" if they have a smaller planned execution time
+  // than matching cartesian plans.
+  //
+  // Optionally deletes all worse cartesian plans by default to prune the cache.
   bool put_cartesian_plan(
     const moveit::planning_interface::MoveGroupInterface& move_group,
     const std::string& move_group_namespace,
@@ -192,7 +233,7 @@ public:
     double execution_time_s,
     double planning_time_s,
     double fraction,
-    bool overwrite = true);
+    bool delete_worse_plans = true);
 
   // QUERY CONSTRUCTION
   bool extract_and_append_cartesian_plan_start_to_query(

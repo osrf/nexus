@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: Catch warehouse_ros exceptions if they are thrown.
+
 #include "motion_planner_server.hpp"
 
 std::string str_tolower(std::string s)
@@ -245,6 +247,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     "Setting parameter cache_db_port to [%d]", _cache_db_port
   );
 
+  // For floating point comparison, what counts as an "exact" match.
   _cache_exact_match_tolerance = this->declare_parameter(
     "cache_exact_match_tolerance", 0.0005);  // ~0.028 degrees per joint
   RCLCPP_INFO(
@@ -304,8 +307,12 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 
   if (_cache_mode != PlannerDatabaseMode::Unset)
   {
-    _motion_plan_cache->init(
-      _cache_db_host, _cache_db_port, _cache_exact_match_tolerance);
+    if (!_motion_plan_cache->init(
+        _cache_db_host, _cache_db_port, _cache_exact_match_tolerance))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Could not init motion plan cache.");
+      return CallbackReturn::ERROR;
+    }
   }
 
   if (_use_move_group_interfaces)
@@ -608,7 +615,8 @@ void MotionPlannerServer::plan_with_move_group(
       _collision_aware_cartesian_path);
 
     // Fetch if in execute mode.
-    if (cache_mode_is_execute(_cache_mode))
+    if (cache_mode_is_execute(_cache_mode)
+      || req.force_cache_mode_execute_read_only)
     {
       auto fetch_start = this->now();
       auto fetched_cartesian_plan =
@@ -633,7 +641,8 @@ void MotionPlannerServer::plan_with_move_group(
           fetched_cartesian_plan->lookupDouble("planning_time_s"));
       }
       // Fail if ReadOnly mode and no cached cartesian plan was fetched.
-      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly)
+      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly
+        || req.force_cache_mode_execute_read_only)
       {
         RCLCPP_ERROR(
           this->get_logger(),

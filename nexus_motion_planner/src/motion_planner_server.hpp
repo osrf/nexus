@@ -127,7 +127,7 @@ private:
   std::string _cache_db_plugin;
   std::string _cache_db_host;
   int _cache_db_port;
-  double _cache_exact_match_tolerance;
+  double _cache_exact_match_tolerance;  // for floating point comparison
   double _cache_start_match_tolerance;
   double _cache_goal_match_tolerance;
 

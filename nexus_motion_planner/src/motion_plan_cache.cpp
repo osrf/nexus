@@ -26,32 +26,71 @@
 namespace nexus {
 namespace motion_planner {
 
-#define NEXUS_MATCH_RANGE(arg, tolerance) \
-  arg - tolerance / 2, arg + tolerance / 2
-
 using warehouse_ros::MessageWithMetadata;
 using warehouse_ros::Metadata;
 using warehouse_ros::Query;
 
+// Utils =======================================================================
+
+// Append a range inclusive query with some tolerance about some center value.
+void query_append_range_inclusive_with_tolerance(
+  Query& query, const std::string& name, double center, double tolerance)
+{
+  query.appendRangeInclusive(
+    name, center - tolerance / 2, center + tolerance / 2);
+}
+
+// Sort constraint components by joint or link name.
+void sort_constraints(
+  std::vector<moveit_msgs::msg::JointConstraint>& joint_constraints,
+  std::vector<moveit_msgs::msg::PositionConstraint>& position_constraints,
+  std::vector<moveit_msgs::msg::OrientationConstraint>& orientation_constraints)
+{
+  std::sort(
+    joint_constraints.begin(), joint_constraints.end(),
+    [](
+      const moveit_msgs::msg::JointConstraint& l,
+      const moveit_msgs::msg::JointConstraint& r)
+    {
+      return l.joint_name < r.joint_name;
+    });
+
+  std::sort(
+    position_constraints.begin(), position_constraints.end(),
+    [](
+      const moveit_msgs::msg::PositionConstraint& l,
+      const moveit_msgs::msg::PositionConstraint& r)
+    {
+      return l.link_name < r.link_name;
+    });
+
+  std::sort(
+    orientation_constraints.begin(), orientation_constraints.end(),
+    [](
+      const moveit_msgs::msg::OrientationConstraint& l,
+      const moveit_msgs::msg::OrientationConstraint& r)
+    {
+      return l.link_name < r.link_name;
+    });
+}
+
+// Motion Plan Cache ===========================================================
+
 MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {
-  if (!node_->has_parameter("warehouse_plugin"))
-  {
-    node_->declare_parameter<std::string>(
-      "warehouse_plugin", "warehouse_ros_sqlite::DatabaseConnection");
-  }
-
   tf_buffer_ =
     std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+  // If the `warehouse_plugin` parameter isn't set, defaults to warehouse_ros'
+  // default.
   warehouse_ros::DatabaseLoader loader(node_);
   db_ = loader.loadDatabase();
 }
 
-void MotionPlanCache::init(
+bool MotionPlanCache::init(
   const std::string& db_path, uint32_t db_port, double exact_match_precision)
 {
   RCLCPP_INFO(
@@ -61,7 +100,23 @@ void MotionPlanCache::init(
 
   exact_match_precision_ = exact_match_precision;
   db_->setParams(db_path, db_port);
-  db_->connect();
+  return db_->connect();
+}
+
+unsigned
+MotionPlanCache::count_plans(const std::string& move_group_namespace)
+{
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_plan_cache", move_group_namespace);
+  return coll.count();
+}
+
+unsigned
+MotionPlanCache::count_cartesian_plans(const std::string& move_group_namespace)
+{
+  auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
+    "move_group_cartesian_plan_cache", move_group_namespace);
+  return coll.count();
 }
 
 // =============================================================================
@@ -73,7 +128,8 @@ MotionPlanCache::fetch_all_matching_plans(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_plan_cache", move_group_namespace);
@@ -91,8 +147,7 @@ MotionPlanCache::fetch_all_matching_plans(
     return {};
   }
 
-  return coll.queryList(
-    query, metadata_only, /* sort_by */ "execution_time_s", true);
+  return coll.queryList(query, metadata_only, sort_by, true);
 }
 
 MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
@@ -100,14 +155,14 @@ MotionPlanCache::fetch_best_matching_plan(
   const moveit::planning_interface::MoveGroupInterface& move_group,
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   // First find all matching, but metadata only.
   // Then use the ID metadata of the best plan to pull the actual message.
   auto matching_plans = this->fetch_all_matching_plans(
     move_group, move_group_namespace,
-    plan_request, start_tolerance, goal_tolerance,
-    true);
+    plan_request, start_tolerance, goal_tolerance, true, sort_by);
 
   if (matching_plans.empty())
   {
@@ -133,23 +188,21 @@ MotionPlanCache::put_plan(
   const std::string& move_group_namespace,
   const moveit_msgs::msg::MotionPlanRequest& plan_request,
   const moveit_msgs::msg::RobotTrajectory& plan,
-  double execution_time_s,
-  double planning_time_s,
-  bool overwrite)
+  double execution_time_s, double planning_time_s, bool delete_worse_plans)
 {
   // Check pre-conditions
   if (!plan.multi_dof_joint_trajectory.points.empty())
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Multi-DOF trajectory plans are not supported.");
+      "Skipping plan insert: Multi-DOF trajectory plans are not supported.");
     return false;
   }
   if (plan_request.workspace_parameters.header.frame_id.empty() ||
     plan.joint_trajectory.header.frame_id.empty())
   {
     RCLCPP_ERROR(
-      node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
+      node_->get_logger(), "Skipping plan insert: Frame IDs cannot be empty.");
     return false;
   }
   if (plan_request.workspace_parameters.header.frame_id !=
@@ -157,7 +210,7 @@ MotionPlanCache::put_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: "
+      "Skipping plan insert: "
       "Plan request frame (%s) does not match plan frame (%s).",
       plan_request.workspace_parameters.header.frame_id.c_str(),
       plan.joint_trajectory.header.frame_id.c_str());
@@ -167,8 +220,7 @@ MotionPlanCache::put_plan(
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_plan_cache", move_group_namespace);
 
-  // If start and goal are "exact" match, AND the candidate plan is better,
-  // overwrite.
+  // Pull out plans "exactly" keyed by request in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_plan_start_to_query(
@@ -180,27 +232,24 @@ MotionPlanCache::put_plan(
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Could not construct overwrite query.");
+      "Skipping plan insert: Could not construct lookup query.");
     return false;
   }
 
-  auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
-  double best_execution_time_seen = std::numeric_limits<double>::infinity();
+  auto exact_matches = coll.queryList(
+    exact_query, /* metadata_only */ true, /* sort_by */ "execution_time_s");
+
+  double best_execution_time = std::numeric_limits<double>::infinity();
   if (!exact_matches.empty())
   {
-    for (auto& match : exact_matches)
-    {
-      double match_execution_time_s =
-        match->lookupDouble("execution_time_s");
-      if (match_execution_time_s < best_execution_time_seen)
-      {
-        best_execution_time_seen = match_execution_time_s;
-      }
+    best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-      if (match_execution_time_s > execution_time_s)
+    if (delete_worse_plans)
+    {
+      for (auto& match : exact_matches)
       {
-        // If we found any "exact" matches that are worse, delete them.
-        if (overwrite)
+        double match_execution_time_s = match->lookupDouble("execution_time_s");
+        if (execution_time_s < match_execution_time_s)
         {
           int delete_id = match->lookupInt("id");
           RCLCPP_INFO(
@@ -218,7 +267,7 @@ MotionPlanCache::put_plan(
   }
 
   // Insert if candidate is best seen.
-  if (execution_time_s < best_execution_time_seen)
+  if (execution_time_s < best_execution_time)
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
@@ -233,7 +282,7 @@ MotionPlanCache::put_plan(
     {
       RCLCPP_ERROR(
         node_->get_logger(),
-        "Skipping insert: Could not construct insert metadata.");
+        "Skipping plan insert: Could not construct insert metadata.");
       return false;
     }
 
@@ -241,7 +290,7 @@ MotionPlanCache::put_plan(
       node_->get_logger(),
       "Inserting plan: New plan execution_time (%es) "
       "is better than best plan's execution_time (%es)",
-      execution_time_s, best_execution_time_seen);
+      execution_time_s, best_execution_time);
 
     coll.insert(plan, insert_metadata);
     return true;
@@ -249,9 +298,9 @@ MotionPlanCache::put_plan(
 
   RCLCPP_INFO(
     node_->get_logger(),
-    "Skipping insert: New plan execution_time (%es) "
+    "Skipping plan insert: New plan execution_time (%es) "
     "is worse than best plan's execution_time (%es)",
-    execution_time_s, best_execution_time_seen);
+    execution_time_s, best_execution_time);
   return false;
 }
 
@@ -318,6 +367,13 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -336,11 +392,9 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         current_state_msg.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          current_state_msg.joint_state.position.at(i), match_tolerance)
-      );
+      query_append_range_inclusive_with_tolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        current_state_msg.joint_state.position.at(i), match_tolerance);
     }
   }
   else
@@ -352,11 +406,9 @@ MotionPlanCache::extract_and_append_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         plan_request.start_state.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          plan_request.start_state.joint_state.position.at(i), match_tolerance)
-      );
+      query_append_range_inclusive_with_tolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        plan_request.start_state.joint_state.position.at(i), match_tolerance);
     }
   }
   return true;
@@ -398,19 +450,15 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
 
   // auto original = *query;  // Copy not supported.
 
-  query.appendRangeInclusive(
-    "max_velocity_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_velocity_scaling_factor, match_tolerance)
-  );
-  query.appendRangeInclusive(
-    "max_acceleration_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_acceleration_scaling_factor, match_tolerance)
-  );
-  query.appendRangeInclusive(
-    "max_cartesian_speed",
-    NEXUS_MATCH_RANGE(plan_request.max_cartesian_speed, match_tolerance));
+  query_append_range_inclusive_with_tolerance(
+    query, "max_velocity_scaling_factor",
+    plan_request.max_velocity_scaling_factor, match_tolerance);
+  query_append_range_inclusive_with_tolerance(
+    query, "max_acceleration_scaling_factor",
+    plan_request.max_acceleration_scaling_factor, match_tolerance);
+  query_append_range_inclusive_with_tolerance(
+    query, "max_cartesian_speed",
+    plan_request.max_cartesian_speed, match_tolerance);
 
   // Extract constraints (so we don't have cardinality on goal_constraint idx.)
   std::vector<moveit_msgs::msg::JointConstraint> joint_constraints;
@@ -430,6 +478,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
     {
       orientation_constraints.push_back(orientation_constraint);
     }
+
+    // Also sort for even less cardinality.
+    sort_constraints(
+      joint_constraints, position_constraints, orientation_constraints);
   }
 
   // Joint constraints
@@ -440,13 +492,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
       "goal_constraints.joint_constraints_" + std::to_string(joint_idx++);
 
     query.append(meta_name + ".joint_name", constraint.joint_name);
-    query.appendRangeInclusive(
-      meta_name + ".position",
-      NEXUS_MATCH_RANGE(constraint.position, match_tolerance));
-    query.appendGTE(
-      meta_name + ".tolerance_above", constraint.tolerance_above);
-    query.appendLTE(
-      meta_name + ".tolerance_below", constraint.tolerance_below);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".position", constraint.position, match_tolerance);
+    query.appendGTE(meta_name + ".tolerance_above", constraint.tolerance_above);
+    query.appendLTE(meta_name + ".tolerance_below", constraint.tolerance_below);
   }
 
   // Position constraints
@@ -501,18 +550,15 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
 
       query.append(meta_name + ".link_name", constraint.link_name);
 
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.x",
-        NEXUS_MATCH_RANGE(
-          x_offset + constraint.target_point_offset.x, match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.y",
-        NEXUS_MATCH_RANGE(
-          y_offset + constraint.target_point_offset.y, match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.z",
-        NEXUS_MATCH_RANGE(
-          z_offset + constraint.target_point_offset.z, match_tolerance));
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.x",
+        x_offset + constraint.target_point_offset.x, match_tolerance);
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.y",
+        y_offset + constraint.target_point_offset.y, match_tolerance);
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.z",
+        z_offset + constraint.target_point_offset.z, match_tolerance);
     }
   }
 
@@ -586,18 +632,18 @@ MotionPlanCache::extract_and_append_plan_goal_to_query(
       auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
       final_quat.normalize();
 
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.x",
-        NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.y",
-        NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.z",
-        NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
-      query.appendRangeInclusive(
-        meta_name + ".target_point_offset.w",
-        NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.x",
+        final_quat.getX(), match_tolerance);
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.y",
+        final_quat.getY(), match_tolerance);
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.z",
+        final_quat.getZ(), match_tolerance);
+      query_append_range_inclusive_with_tolerance(
+        query, meta_name + ".target_point_offset.w",
+        final_quat.getW(), match_tolerance);
     }
   }
 
@@ -663,6 +709,13 @@ MotionPlanCache::extract_and_append_plan_start_to_metadata(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -761,6 +814,10 @@ MotionPlanCache::extract_and_append_plan_goal_to_metadata(
     {
       orientation_constraints.push_back(orientation_constraint);
     }
+
+    // Also sort for even less cardinality.
+    sort_constraints(
+      joint_constraints, position_constraints, orientation_constraints);
   }
 
   // Joint constraints
@@ -934,8 +991,8 @@ MotionPlanCache::extract_and_append_plan_goal_to_metadata(
 moveit_msgs::srv::GetCartesianPath::Request
 MotionPlanCache::construct_get_cartesian_plan_request(
   moveit::planning_interface::MoveGroupInterface& move_group,
-  const std::vector<geometry_msgs::msg::Pose>& waypoints, double step,
-  double jump_threshold, bool avoid_collisions)
+  const std::vector<geometry_msgs::msg::Pose>& waypoints,
+  double step, double jump_threshold, bool avoid_collisions)
 {
   moveit_msgs::srv::GetCartesianPath::Request out;
 
@@ -971,7 +1028,8 @@ MotionPlanCache::fetch_all_matching_cartesian_plans(
   const std::string& move_group_namespace,
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
   double min_fraction,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
@@ -985,14 +1043,13 @@ MotionPlanCache::fetch_all_matching_cartesian_plans(
 
   if (!start_ok || !goal_ok)
   {
-    RCLCPP_ERROR(node_->get_logger(), "Could not construct plan query.");
+    RCLCPP_ERROR(
+      node_->get_logger(), "Could not construct cartesian plan query.");
     return {};
   }
 
   query->appendGTE("fraction", min_fraction);
-
-  return coll.queryList(
-    query, metadata_only, /* sort_by */ "execution_time_s", true);
+  return coll.queryList(query, metadata_only, sort_by, true);
 }
 
 MessageWithMetadata<moveit_msgs::msg::RobotTrajectory>::ConstPtr
@@ -1001,23 +1058,24 @@ MotionPlanCache::fetch_best_matching_cartesian_plan(
   const std::string& move_group_namespace,
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request,
   double min_fraction,
-  double start_tolerance, double goal_tolerance, bool metadata_only)
+  double start_tolerance, double goal_tolerance, bool metadata_only,
+  const std::string& sort_by)
 {
   // First find all matching, but metadata only.
   // Then use the ID metadata of the best plan to pull the actual message.
   auto matching_plans = this->fetch_all_matching_cartesian_plans(
     move_group, move_group_namespace,
     plan_request, min_fraction,
-    start_tolerance, goal_tolerance, true);
+    start_tolerance, goal_tolerance, true, sort_by);
 
   if (matching_plans.empty())
   {
-    RCLCPP_INFO(node_->get_logger(), "No matching plans found.");
+    RCLCPP_INFO(node_->get_logger(), "No matching cartesian plans found.");
     return nullptr;
   }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
-    "move_group_plan_cache", move_group_namespace);
+    "move_group_cartesian_plan_cache", move_group_namespace);
 
   // Best plan is at first index, since the lookup query was sorted by
   // execution_time.
@@ -1037,68 +1095,64 @@ MotionPlanCache::put_cartesian_plan(
   double execution_time_s,
   double planning_time_s,
   double fraction,
-  bool overwrite)
+  bool delete_worse_plans)
 {
   // Check pre-conditions
   if (!plan.multi_dof_joint_trajectory.points.empty())
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Multi-DOF trajectory plans are not supported.");
+      "Skipping cartesian plan insert: "
+      "Multi-DOF trajectory plans are not supported.");
     return false;
   }
   if (plan_request.header.frame_id.empty() ||
     plan.joint_trajectory.header.frame_id.empty())
   {
     RCLCPP_ERROR(
-      node_->get_logger(), "Skipping insert: Frame IDs cannot be empty.");
+      node_->get_logger(),
+      "Skipping cartesian plan insert: Frame IDs cannot be empty.");
     return false;
   }
 
   auto coll = db_->openCollection<moveit_msgs::msg::RobotTrajectory>(
     "move_group_cartesian_plan_cache", move_group_namespace);
 
-  // If start and goal are "exact" match, AND the candidate plan is better,
-  // overwrite.
+  // Pull out plans "exactly" keyed by request in cache.
   Query::Ptr exact_query = coll.createQuery();
 
   bool start_query_ok = this->extract_and_append_cartesian_plan_start_to_query(
     *exact_query, move_group, plan_request, 0);
   bool goal_query_ok = this->extract_and_append_cartesian_plan_goal_to_query(
     *exact_query, move_group, plan_request, 0);
-
   exact_query->append("fraction", fraction);
 
   if (!start_query_ok || !goal_query_ok)
   {
     RCLCPP_ERROR(
       node_->get_logger(),
-      "Skipping insert: Could not construct overwrite query.");
+      "Skipping cartesian plan insert: Could not construct lookup query.");
     return false;
   }
 
-  auto exact_matches = coll.queryList(exact_query, /* metadata_only */ true);
-  double best_execution_time_seen = std::numeric_limits<double>::infinity();
+  auto exact_matches = coll.queryList(
+    exact_query, /* metadata_only */ true, /* sort_by */ "execution_time_s");
+  double best_execution_time = std::numeric_limits<double>::infinity();
   if (!exact_matches.empty())
   {
-    for (auto& match : exact_matches)
-    {
-      double match_execution_time_s =
-        match->lookupDouble("execution_time_s");
-      if (match_execution_time_s < best_execution_time_seen)
-      {
-        best_execution_time_seen = match_execution_time_s;
-      }
+    best_execution_time = exact_matches.at(0)->lookupDouble("execution_time_s");
 
-      if (match_execution_time_s > execution_time_s)
+    if (delete_worse_plans)
+    {
+      for (auto& match : exact_matches)
       {
-        // If we found any "exact" matches that are worse, delete them.
-        if (overwrite)
+        double match_execution_time_s = match->lookupDouble("execution_time_s");
+        if (execution_time_s < match_execution_time_s)
         {
           int delete_id = match->lookupInt("id");
           RCLCPP_INFO(
             node_->get_logger(),
-            "Overwriting plan (id: %d): "
+            "Overwriting cartesian plan (id: %d): "
             "execution_time (%es) > new plan's execution_time (%es)",
             delete_id, match_execution_time_s, execution_time_s);
 
@@ -1111,7 +1165,7 @@ MotionPlanCache::put_cartesian_plan(
   }
 
   // Insert if candidate is best seen.
-  if (execution_time_s < best_execution_time_seen)
+  if (execution_time_s < best_execution_time)
   {
     Metadata::Ptr insert_metadata = coll.createMetadata();
 
@@ -1129,15 +1183,15 @@ MotionPlanCache::put_cartesian_plan(
     {
       RCLCPP_ERROR(
         node_->get_logger(),
-        "Skipping insert: Could not construct insert metadata.");
+        "Skipping cartesian plan insert: Could not construct insert metadata.");
       return false;
     }
 
     RCLCPP_INFO(
       node_->get_logger(),
-      "Inserting plan: New plan execution_time (%es) "
+      "Inserting cartesian plan: New plan execution_time (%es) "
       "is better than best plan's execution_time (%es) at fraction (%es)",
-      execution_time_s, best_execution_time_seen, fraction);
+      execution_time_s, best_execution_time, fraction);
 
     coll.insert(plan, insert_metadata);
     return true;
@@ -1145,9 +1199,9 @@ MotionPlanCache::put_cartesian_plan(
 
   RCLCPP_INFO(
     node_->get_logger(),
-    "Skipping insert: New plan execution_time (%es) "
+    "Skipping cartesian plan insert: New plan execution_time (%es) "
     "is worse than best plan's execution_time (%es) at fraction (%es)",
-    execution_time_s, best_execution_time_seen, fraction);
+    execution_time_s, best_execution_time, fraction);
   return false;
 }
 
@@ -1190,6 +1244,13 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -1208,10 +1269,9 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         current_state_msg.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          current_state_msg.joint_state.position.at(i), match_tolerance));
+      query_append_range_inclusive_with_tolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        current_state_msg.joint_state.position.at(i), match_tolerance);
     }
   }
   else
@@ -1223,11 +1283,9 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_query(
       query.append(
         "start_state.joint_state.name_" + std::to_string(i),
         plan_request.start_state.joint_state.name.at(i));
-      query.appendRangeInclusive(
-        "start_state.joint_state.position_" + std::to_string(i),
-        NEXUS_MATCH_RANGE(
-          plan_request.start_state.joint_state.position.at(i),
-          match_tolerance));
+      query_append_range_inclusive_with_tolerance(
+        query, "start_state.joint_state.position_" + std::to_string(i),
+        plan_request.start_state.joint_state.position.at(i), match_tolerance);
     }
   }
 
@@ -1244,10 +1302,10 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
   match_tolerance += exact_match_precision_;
 
   // Make ignored members explicit
-  if (plan_request.path_constraints.joint_constraints.empty() ||
-    plan_request.path_constraints.position_constraints.empty() ||
-    plan_request.path_constraints.orientation_constraints.empty() ||
-    plan_request.path_constraints.visibility_constraints.empty())
+  if (!plan_request.path_constraints.joint_constraints.empty() ||
+    !plan_request.path_constraints.position_constraints.empty() ||
+    !plan_request.path_constraints.orientation_constraints.empty() ||
+    !plan_request.path_constraints.visibility_constraints.empty())
   {
     RCLCPP_WARN(
       node_->get_logger(), "Ignoring path_constraints: Not supported.");
@@ -1260,20 +1318,16 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
 
   // auto original = *metadata;  // Copy not supported.
 
-  query.appendRangeInclusive(
-    "max_velocity_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_velocity_scaling_factor, match_tolerance));
-  query.appendRangeInclusive(
-    "max_acceleration_scaling_factor",
-    NEXUS_MATCH_RANGE(
-      plan_request.max_acceleration_scaling_factor, match_tolerance));
-  query.appendRangeInclusive(
-    "max_step",
-    NEXUS_MATCH_RANGE(plan_request.max_step, match_tolerance));
-  query.appendRangeInclusive(
-    "jump_threshold",
-    NEXUS_MATCH_RANGE(plan_request.jump_threshold, match_tolerance));
+  query_append_range_inclusive_with_tolerance(
+    query, "max_velocity_scaling_factor",
+    plan_request.max_velocity_scaling_factor, match_tolerance);
+  query_append_range_inclusive_with_tolerance(
+    query, "max_acceleration_scaling_factor",
+    plan_request.max_acceleration_scaling_factor, match_tolerance);
+  query_append_range_inclusive_with_tolerance(
+    query, "max_step", plan_request.max_step, match_tolerance);
+  query_append_range_inclusive_with_tolerance(
+    query, "jump_threshold", plan_request.jump_threshold, match_tolerance);
 
   // Waypoints
   // Restating them in terms of the robot model frame (usually base_link)
@@ -1328,15 +1382,15 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
 
     // Apply offsets
     // Position
-    query.appendRangeInclusive(
-      meta_name + ".position.x",
-      NEXUS_MATCH_RANGE(x_offset + waypoint.position.x, match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".position.y",
-      NEXUS_MATCH_RANGE(y_offset+ waypoint.position.y, match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".position.z",
-      NEXUS_MATCH_RANGE(z_offset+waypoint.position.z, match_tolerance));
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".position.x",
+      x_offset + waypoint.position.x, match_tolerance);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".position.y",
+      y_offset + waypoint.position.y, match_tolerance);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".position.z",
+      z_offset + waypoint.position.z, match_tolerance);
 
     // Orientation
     tf2::Quaternion tf2_quat_goal_offset(
@@ -1349,21 +1403,18 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_query(
     auto final_quat = tf2_quat_goal_offset * tf2_quat_frame_offset;
     final_quat.normalize();
 
-    query.appendRangeInclusive(
-      meta_name + ".orientation.x",
-      NEXUS_MATCH_RANGE(final_quat.getX(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.y",
-      NEXUS_MATCH_RANGE(final_quat.getY(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.z",
-      NEXUS_MATCH_RANGE(final_quat.getZ(), match_tolerance));
-    query.appendRangeInclusive(
-      meta_name + ".orientation.w",
-      NEXUS_MATCH_RANGE(final_quat.getW(), match_tolerance));
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".orientation.x", final_quat.getX(), match_tolerance);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".orientation.y", final_quat.getY(), match_tolerance);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".orientation.z", final_quat.getZ(), match_tolerance);
+    query_append_range_inclusive_with_tolerance(
+      query, meta_name + ".orientation.w", final_quat.getW(), match_tolerance);
   }
 
   query.append("link_name", plan_request.link_name);
+  query.append("header.frame_id", base_frame);
 
   return true;
 }
@@ -1404,6 +1455,13 @@ MotionPlanCache::extract_and_append_cartesian_plan_start_to_metadata(
     //   I think if is_diff is on, the joint states will not be populated in all
     //   of our motion plan requests? If this isn't the case we might need to
     //   apply the joint states as offsets as well.
+    //
+    // TODO: Since MoveIt also potentially does another getCurrentState() call
+    //   when planning, there is a chance that the current state in the cache
+    //   differs from the state used in MoveIt's plan.
+    //
+    //   When upstreaming this class to MoveIt, this issue should go away once
+    //   the class is used within the move group's Plan call.
     moveit::core::RobotStatePtr current_state = move_group.getCurrentState();
     if (!current_state)
     {
@@ -1452,10 +1510,10 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
   const moveit_msgs::srv::GetCartesianPath::Request& plan_request)
 {
   // Make ignored members explicit
-  if (plan_request.path_constraints.joint_constraints.empty() ||
-    plan_request.path_constraints.position_constraints.empty() ||
-    plan_request.path_constraints.orientation_constraints.empty() ||
-    plan_request.path_constraints.visibility_constraints.empty())
+  if (!plan_request.path_constraints.joint_constraints.empty() ||
+    !plan_request.path_constraints.position_constraints.empty() ||
+    !plan_request.path_constraints.orientation_constraints.empty() ||
+    !plan_request.path_constraints.visibility_constraints.empty())
   {
     RCLCPP_WARN(
       node_->get_logger(), "Ignoring path_constraints: Not supported.");
@@ -1554,8 +1612,6 @@ MotionPlanCache::extract_and_append_cartesian_plan_goal_to_metadata(
 
   return true;
 }
-
-#undef NEXUS_MATCH_RANGE
 
 }  // namespace motion_planner
 }  // namespace nexus

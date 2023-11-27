@@ -52,6 +52,7 @@
       <input_port name="scale_speed">An optional fraction [0,1] to scale the acceleraton and speed of the generated trajectory</input_port>
       <input_port name="cartesian">True if a cartesian plan is required</input_port>
       <input_port name="start_constraints">If provided the joint_constraints will be used as the start state of the robot. By default the current state is set as start</input_port>
+      <input_port name="force_cache_mode_execute_read_only">True to force cache mode to ExecuteReadOnly for this request.</input_port>
       <output_port name="result">The generated motion plan</output_port>
     </Action>
 
