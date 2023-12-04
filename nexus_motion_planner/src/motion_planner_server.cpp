@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: Catch warehouse_ros exceptions if they are thrown.
+
 #include "motion_planner_server.hpp"
 
 std::string str_tolower(std::string s)
@@ -42,7 +44,8 @@ PlannerDatabaseMode str_to_planner_database_mode(std::string s)
 {
   std::string s_lower = str_tolower(s);
 
-  // Using a switch-case here is... inconvenient (needs constexpr hashing or a map), so we don't.
+  // Using a switch-case here is... inconvenient (needs constexpr hashing or a
+  // map), so we don't.
   if (s_lower == "training_overwrite" || s_lower == "trainingoverwrite")
   {
     return PlannerDatabaseMode::TrainingOverwrite;
@@ -244,6 +247,7 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     "Setting parameter cache_db_port to [%d]", _cache_db_port
   );
 
+  // For floating point comparison, what counts as an "exact" match.
   _cache_exact_match_tolerance = this->declare_parameter(
     "cache_exact_match_tolerance", 0.0005);  // ~0.028 degrees per joint
   RCLCPP_INFO(
@@ -303,8 +307,12 @@ auto MotionPlannerServer::on_configure(const LifecycleState& /*state*/)
 
   if (_cache_mode != PlannerDatabaseMode::Unset)
   {
-    _motion_plan_cache->init(
-      _cache_db_host, _cache_db_port, _cache_exact_match_tolerance);
+    if (!_motion_plan_cache->init(
+        _cache_db_host, _cache_db_port, _cache_exact_match_tolerance))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Could not init motion plan cache.");
+      return CallbackReturn::ERROR;
+    }
   }
 
   if (_use_move_group_interfaces)
@@ -451,8 +459,7 @@ auto MotionPlannerServer::on_shutdown(const LifecycleState& /*state*/)
 
 //==============================================================================
 void MotionPlannerServer::plan_with_move_group(
-  const GetMotionPlanService::ServiceType::Request& req,
-  Response res)
+  const GetMotionPlanService::ServiceType::Request& req, Response res)
 {
   RCLCPP_INFO(
     this->get_logger(),
@@ -598,24 +605,136 @@ void MotionPlannerServer::plan_with_move_group(
     // TODO(YV): For now we use simple cartesian interpolation. OMPL supports
     // constrained planning so we can consider adding orientation or line
     // constraints to the end-effector link instead and call plan().
-    const double error = interface->computeCartesianPath(
-      waypoints,
-      _cartesian_max_step,
-      _cartesian_jump_threshold,
-      res->result.trajectory,
-      _collision_aware_cartesian_path
-    );
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Cartesian interpolation returned a fraction of [%.2f]", error
-    );
-    if (error <= 0.0)
+
+    moveit_msgs::msg::RobotTrajectory cartesian_plan;
+    double fraction;
+    bool cartesian_plan_is_from_cache = false;
+    auto cartesian_plan_req_msg =
+      _motion_plan_cache->construct_get_cartesian_plan_request(
+      *interface, waypoints, _cartesian_max_step, _cartesian_jump_threshold,
+      _collision_aware_cartesian_path);
+
+    // Fetch if in execute mode.
+    if (cache_mode_is_execute(_cache_mode)
+      || req.force_cache_mode_execute_read_only)
     {
-      res->result.error_code.val = -1;
+      auto fetch_start = this->now();
+      auto fetched_cartesian_plan =
+        _motion_plan_cache->fetch_best_matching_cartesian_plan(
+        *interface, robot_name, cartesian_plan_req_msg,
+        /* min_fraction */ 1.0,
+        _cache_start_match_tolerance, _cache_goal_match_tolerance);
+      auto fetch_end = this->now();
+      // Set plan if a cached cartesian plan was fetched.
+      if (fetched_cartesian_plan)
+      {
+        fraction = fetched_cartesian_plan->lookupDouble("fraction");
+        cartesian_plan_is_from_cache = true;
+        cartesian_plan = *fetched_cartesian_plan;
+        res->result.error_code.val =
+          moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+        res->result.planning_time = (fetch_end - fetch_start).seconds();
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Cache fetch took %es, planning time of fetched plan was: %es",
+          (fetch_end - fetch_start).seconds(),
+          fetched_cartesian_plan->lookupDouble("planning_time_s"));
+      }
+      // Fail if ReadOnly mode and no cached cartesian plan was fetched.
+      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly
+        || req.force_cache_mode_execute_read_only)
+      {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Cache mode was ExecuteReadOnly, and could not find "
+          "cached cartesian plan for cartesian plan request: \n\n%s",
+          moveit_msgs::srv::to_yaml(cartesian_plan_req_msg).c_str());
+        res->result.error_code.val =
+          moveit_msgs::msg::MoveItErrorCodes::FAILURE;
+        return;
+      }
+    }
+
+    // Plan if needed.
+    // This is if we didn't fetch a cartesian plan from the cache.
+    // (In training or unset mode we never attempt to fetch, so it will always
+    // plan.)
+    if (!cartesian_plan_is_from_cache)
+    {
+      auto cartesian_plan_start = this->now();
+      fraction = interface->computeCartesianPath(
+        waypoints,
+        _cartesian_max_step,
+        _cartesian_jump_threshold,
+        cartesian_plan,
+        _collision_aware_cartesian_path
+      );
+      auto cartesian_plan_end = this->now();
+
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Cartesian interpolation returned a fraction of [%.2f]", fraction
+      );
+      if (fraction <= 0.0)
+      {
+        res->result.error_code.val = -1;
+      }
+      else
+      {
+        res->result.error_code.val = 1;
+      }
+
+      res->result.planning_time =
+        (cartesian_plan_end - cartesian_plan_start).seconds();
+
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Plan status: %d, planning time: %es",
+        res->result.error_code.val, res->result.planning_time);
     }
     else
     {
-      res->result.error_code.val = 1;
+      if (fraction <= 0)
+      {
+        res->result.error_code.val = -1;
+      }
+      else
+      {
+        res->result.error_code.val = 1;
+      }
+    }
+
+    // Do NOT move this. We use the cartesian_plan_req_msg later.
+    res->result.trajectory_start = cartesian_plan_req_msg.start_state;
+    res->result.trajectory = std::move(cartesian_plan);
+
+    if (res->result.error_code.val !=
+      moveit_msgs::msg::MoveItErrorCodes::SUCCESS)
+    {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Cartesian planning did not succeed: %d", res->result.error_code.val);
+      return;
+    }
+
+    // Put plan if in training mode.
+    // Make sure we check if the plan we have was fetched (so we don't have
+    // duplicate caches.)
+    if (cache_mode_is_training(_cache_mode) && !cartesian_plan_is_from_cache)
+    {
+      if (!_motion_plan_cache->put_cartesian_plan(
+          *interface, robot_name,
+          std::move(cartesian_plan_req_msg), std::move(res->result.trajectory),
+          rclcpp::Duration(
+            res->result.trajectory.joint_trajectory.points.back()
+            .time_from_start
+          ).seconds(),
+          res->result.planning_time, fraction,
+          _cache_mode == PlannerDatabaseMode::TrainingOverwrite))
+      {
+        RCLCPP_WARN(
+          this->get_logger(), "Did not put cartesian plan into cache.");
+      }
     }
   }
   else
