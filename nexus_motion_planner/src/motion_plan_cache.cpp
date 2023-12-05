@@ -83,11 +83,6 @@ MotionPlanCache::MotionPlanCache(const rclcpp::Node::SharedPtr& node)
     std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
-  // If the `warehouse_plugin` parameter isn't set, defaults to warehouse_ros'
-  // default.
-  warehouse_ros::DatabaseLoader loader(node_);
-  db_ = loader.loadDatabase();
 }
 
 bool MotionPlanCache::init(
@@ -97,6 +92,11 @@ bool MotionPlanCache::init(
     node_->get_logger(),
     "Opening motion plan cache database at: %s (Port: %d, Precision: %f)",
     db_path.c_str(), db_port, exact_match_precision);
+
+  // If the `warehouse_plugin` parameter isn't set, defaults to warehouse_ros'
+  // default.
+  warehouse_ros::DatabaseLoader loader(node_);
+  db_ = loader.loadDatabase();
 
   exact_match_precision_ = exact_match_precision;
   db_->setParams(db_path, db_port);

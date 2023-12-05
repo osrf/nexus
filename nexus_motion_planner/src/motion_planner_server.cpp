@@ -285,9 +285,13 @@ MotionPlannerServer::MotionPlannerServer(const rclcpp::NodeOptions& options)
     _internal_node->declare_parameter<int>(
       "warehouse_port", _cache_db_port);
 
-    _motion_plan_cache =
-      std::make_unique<nexus::motion_planner::MotionPlanCache>(_internal_node);
   }
+
+  // We need to construct the cache even if we are not using the DB, since it
+  // has a utility function that uses the internal node that we use to generate
+  // a trajectory start point for cartesian planning.
+  _motion_plan_cache =
+    std::make_unique<nexus::motion_planner::MotionPlanCache>(_internal_node);
 }
 
 //==============================================================================
