@@ -37,6 +37,8 @@
   <test_depend>moveit_resources</test_depend>
   <test_depend>python3-pytest</test_depend>
   <test_depend>rmf_utils</test_depend>
+  <test_depend>robot_state_publisher</test_depend>
+  <test_depend>ros2_control</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
