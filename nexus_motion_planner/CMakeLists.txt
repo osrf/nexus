@@ -105,11 +105,17 @@ if(BUILD_TESTING)
    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   )
 
-  # TODO(YV): Fix these tests.
-  # add_launch_test(
-  #   test/test_request.test.py
-  #   TIMEOUT 60
-  # )
+  # Motion planner server test with cache mode unset
+  add_launch_test(
+    test/test_request.test.py
+    TIMEOUT 60
+  )
+
+  # Motion planner server test with cache mode set (so it uses the cache)
+  add_launch_test(
+    test/test_request_with_cache.test.py
+    TIMEOUT 60
+  )
 endif()
 
 ament_export_dependencies(${motion_planner_server_dependencies} ${motion_plan_cache_dependencies})

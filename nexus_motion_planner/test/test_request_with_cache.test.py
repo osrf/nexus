@@ -1,4 +1,4 @@
-# Copyright 2022 Johnson & Johnson
+# Copyright 2023 Johnson & Johnson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ def generate_test_description():
 
     robot_xacro_file = "irb1300_10_115.xacro"
     moveit_config_file = "abb_irb1300_10_115.srdf.xacro"
-    planner_config_file = "planner_params.yaml"
+    planner_config_file = "planner_params_with_cache.yaml"
 
     moveit_config_package = "abb_irb1300_10_115_moveit_config"
     support_package = "abb_irb1300_support"
@@ -385,6 +385,7 @@ class TestGetMotionPlanService(unittest.TestCase):
 
         motion_planner_server_str = [
             "Planning request accepted",
+            "Inserting plan",
             "Planning request complete!",
         ]
 
