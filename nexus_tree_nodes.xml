@@ -142,7 +142,7 @@
       <input_port name="target_pose">The geometry_msgs::msg::PoseStamped pose at the end of the offset</input_port>
       <input_port name="time">OPTIONAL, rclcpp::Time timepoint to lookup on, if not provided, the current time is used</input_port>
       <input_port name="local">OPTIONAL, if true, return t such that `target_pose = base_pose * t`</input_port>
-      <output_port name="result">The geometry_msgs::msg::Transform offset that transforms base_pose to target_pose</input_port>
+      <output_port name="result">The geometry_msgs::msg::Transform offset that transforms base_pose to target_pose</output_port>
     </Action>
 
     <Action ID="detection.GetDetection">
