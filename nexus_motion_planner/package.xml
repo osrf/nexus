@@ -28,9 +28,17 @@
   <test_depend>abb_irb1300_10_115_moveit_config</test_depend>
   <test_depend>abb_irb1300_support</test_depend>
 
+  <test_depend>ament_cmake_pytest</test_depend>
   <test_depend>ament_cmake_uncrustify</test_depend>
+  <test_depend>launch_pytest</test_depend>
   <test_depend>launch_testing_ament_cmake</test_depend>
+
+  <test_depend>moveit_configs_utils</test_depend>
+  <test_depend>moveit_resources</test_depend>
+  <test_depend>python3-pytest</test_depend>
   <test_depend>rmf_utils</test_depend>
+  <test_depend>robot_state_publisher</test_depend>
+  <test_depend>ros2_control</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

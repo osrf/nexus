@@ -1,0 +1,76 @@
+motion_planner_server:
+  ros__parameters:
+    # List of robots to generate motion plans for
+    manipulators: ["abb_irb1300"]
+    # The default moveit group for each manipulator
+    default_group_name: "manipulator"
+    # Seconds to wait to connect to an action or service server
+    timeout_duration: 5
+    # Configure the planner_server to query motion plans directly from a move_group
+    # node that is running by initializing a move_group_interface.
+    # When set to false, the planner_server will initialize planning pipelines
+    # to directly compute plans but this has not been implemented yet.
+    use_move_group_interfaces: true
+    # When planning for multiple robots, set this to true.
+    use_namespace: false
+    # Tolerance for goal position.
+    goal_tolerance: 0.005
+    # Maximum seconds to generate a plan.
+    planning_time: 1.0
+    # Maximum number of replanning attempts
+    replan_attempts: 10
+    # If true, the cartesian interpolator will check for collisions.
+    collision_aware_cartesian_path: false
+    # The value of the max_step parameter used in cartesian interpolation.
+    cartesian_max_step: 0.001
+    # The value of the jump_threshold parameter used in cartesian interpolation.
+    cartesian_jump_threshold: 0.0
+    # Set true if trajectory should be executed after a plan is generated.
+    # The execution is a blocking event.
+    execute_trajectory: false
+    # The min_x of workspace bounding box.
+    workspace_min_x: -1.0
+    # The min_y of workspace bounding box.
+    workspace_min_y: -1.0
+    # The min_z of workspace bounding box.
+    workspace_min_z: -1.0
+    # The max_x of workspace bounding box.
+    workspace_max_x: 1.0
+    # The max_y of workspace bounding box.
+    workspace_max_y: 1.0
+      # The max_z of workspace bounding box.
+    workspace_max_z: 1.0
+    # The seconds within which the current robot state should be valid.
+    get_state_wait_seconds: 0.01
+
+    ## Motion Plan Cache Parameters
+    # Planner database mode. Valid values:
+    #   - Unset: Always plan. No caching.
+    #   - TrainingOverwrite: Always plan, overwriting existing cache plans if better plan was found.
+    #   - TrainingAppendOnly: Always plan, append to cache if better plan was found (no overwriting).
+    #   - ExecuteBestEffort: Prioritize cached plans. Only plan if no cached plans found.
+    #   - ExecuteReadOnly: Only use cached plans. Fail if no cached plans found.
+    planner_database_mode: "TrainingOverwrite"
+    # Database type and location
+    cache_db_plugin: "warehouse_ros_sqlite::DatabaseConnection"
+    cache_db_host: ":memory:"
+    cache_db_port: 0  # Isn't used for SQLite3
+
+    # The cache keys cache entries on certain properties of the motion plan request's
+    # starting joint state, goal constraints, and more.
+
+    # For float comparisons, what tolerance counts as an exact match (to prevent floating point precision errors)
+    cache_exact_match_tolerance: 0.001  # ~0.05 degrees per joint
+    # Query range thresholds for matching attributes of the starting robot state for cache hits.
+    # This typically applies to joint states, per joint, in radians
+    #
+    # It should be acceptable to be more lenient on the start state, because the robot will be commanded
+    # to go to the first trajectory point from it's current start state.
+    cache_start_match_tolerance: 0.025
+    # Query range thresholds for matching attributes of the requested planning goals for cache hits.
+    # This typically applies to the x, y, z coordinates of the goal pose, in metres
+    # And also the individual quaternion components of the goal orientation
+    #
+    # Goal tolerances should be more strict so the end point of the robot remains consistent between
+    # the fetched plan and the desired goal.
+    cache_goal_match_tolerance: 0.001

@@ -52,6 +52,11 @@ string payload
 float64 max_velocity_scaling_factor
 float64 max_acceleration_scaling_factor
 
+# Set to true in order to force the server to use the motion cache as if the
+# cache mode were set to ExecuteReadOnly, regardless of the original setting
+# for this request.
+bool force_cache_mode_execute_read_only
+
 ---
 
 # Motion planning result

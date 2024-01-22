@@ -35,6 +35,36 @@
 // NEXUS messages
 #include <nexus_endpoints.hpp>
 
+// NEXUS motion plan cache
+#include "motion_plan_cache.hpp"
+
+namespace nexus {
+namespace motion_planner {
+
+enum class PlannerDatabaseMode : uint8_t
+{
+  // Unset. Planner will not use a cache.
+  Unset = 0,
+
+  // Planner will always generate a plan.
+  // It will add plans to the database if they are the best seen so far.
+  // Will overwrite close-enough entries if a better plan was found.
+  TrainingOverwrite = 10,
+
+  // Planner will always generate a plan.
+  // It will add plans to the database if they are the best seen so far.
+  // Will not overwrite any existing entries.
+  TrainingAppendOnly = 11,
+
+  // Planner will prioritize returning plans in the cache.
+  // If no plan was found, it will instead attempt to generate a plan live, but will not update the
+  // cache.
+  ExecuteBestEffort = 20,
+
+  // Planner will return a plan only if present in the database cache.
+  ExecuteReadOnly = 21,
+};
+
 //==============================================================================
 class MotionPlannerServer : public rclcpp_lifecycle::LifecycleNode
 {
@@ -69,6 +99,7 @@ private:
   rclcpp::Node::SharedPtr _internal_node;
   std::thread _spin_thread;
 
+  // MoveIt planning
   std::vector<std::string> _manipulators;
   bool _use_move_group_interfaces;
   bool _use_namespace;
@@ -88,6 +119,18 @@ private:
   double _workspace_max_y;
   double _workspace_max_z;
 
+  // Motion plan caching
+  std::unique_ptr<nexus::motion_planner::MotionPlanCache> _motion_plan_cache;
+  std::string _planner_database_mode;
+  PlannerDatabaseMode _cache_mode = PlannerDatabaseMode::Unset;
+
+  std::string _cache_db_plugin;
+  std::string _cache_db_host;
+  int _cache_db_port;
+  double _cache_exact_match_tolerance;  // for floating point comparison
+  double _cache_start_match_tolerance;
+  double _cache_goal_match_tolerance;
+
   rclcpp::Service<GetMotionPlanService::ServiceType>::SharedPtr _plan_srv;
 
   std::unordered_map<std::string, std::shared_ptr<MoveGroupInterface>>
@@ -101,5 +144,8 @@ private:
     const GetMotionPlanService::ServiceType::Request& req,
     Response res);
 }; // class MotionPlannerServer
+
+}  // namespace planning_interface
+}  // namespace moveit
 
 #endif // SRC__MOTION_PLANNER_SERVER_HPP
