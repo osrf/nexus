@@ -748,7 +748,8 @@ void MotionPlannerServer::plan_with_move_group(
     interface->constructMotionPlanRequest(plan_req_msg);
 
     // Fetch if in execute mode.
-    if (cache_mode_is_execute(_cache_mode))
+    if (cache_mode_is_execute(_cache_mode)
+      || req.force_cache_mode_execute_read_only)
     {
       auto fetch_start = this->now();
       auto fetched_plan = _motion_plan_cache->fetch_best_matching_plan(
@@ -771,7 +772,8 @@ void MotionPlannerServer::plan_with_move_group(
           fetched_plan->lookupDouble("planning_time_s"));
       }
       // Fail if ReadOnly mode and no cached plan was fetched.
-      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly)
+      else if (_cache_mode == PlannerDatabaseMode::ExecuteReadOnly
+        || req.force_cache_mode_execute_read_only)
       {
         RCLCPP_ERROR(
           this->get_logger(),
