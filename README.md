@@ -1,6 +1,6 @@
 # NEXUS
-![](https://github.com/OpenSourceRobotics/nexus/workflows/style/badge.svg)
-![](https://github.com/OpenSourceRobotics/nexus/workflows/integration_tests/badge.svg)
+![](https://github.com/osrf/nexus/workflows/style/badge.svg)
+![](https://github.com/osrf/nexus/workflows/integration_tests/badge.svg)
 
 ![](./docs/media/nexus_architecture.png)
 
@@ -30,7 +30,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```bash
 mkdir ~/ws_nexus/src -p
 cd ~/ws_nexus/src/
-git clone git@github.com:OpenSourceRobotics/nexus
+git clone git@github.com:osrf/nexus
 vcs import . < nexus/abb.repos
 cd ~/ws_nexus
 rosdep install --from-paths src --ignore-src --rosdistro iron -y -r
@@ -50,7 +50,7 @@ See sample BTs for [system_orchestrator](nexus_integration_tests/config/system_o
 At present, capabilities are registered as plugins with the `orchestrator` at runtime.
 We support [these capabilities](./nexus_capabilities/src/capabilities/plugins.xml) out of the bo
 Each plugin may register one or more behavior tree nodes which can then be used to define processes as seen in the `place_on_conveyor.xml`.
-The framework to register capabilities and map them to processes that can be performed in ongoing work. See [this discussion](https://github.com/OpenSourceRobotics/nexus/discussions/369) for more details.
+The framework to register capabilities and map them to processes that can be performed in ongoing work. See [this discussion](https://github.com/osrf/nexus/discussions/32) for more details.
 
 ### Visualization [experimental]
 ![](./docs/media/bt_example.png)
@@ -77,7 +77,7 @@ TODO: Add a dedicated demo package.
 
 The `nexus_endpoints` package contains ROS topics, services and actions used by NEXUS. The package is generated from [nexus_endpoints.redf.yaml](./nexus_endpoints.redf.yaml) using `redf`. rust is required to generated the package, the easiest way to install rust is via [rustup](https://rustup.rs/).
 
-With rust installed, clone the redf repo at https://github.com/OpenSourceRobotics/redf, then run
+With rust installed, clone the redf repo at https://github.com/osrf/redf, then run
 ```bash
 cargo install --path .
 ```
