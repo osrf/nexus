@@ -26,7 +26,7 @@ BT::NodeStatus WaitForSignal::onStart()
   if (!signal)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: [signal] port is required",
+      ctx->node->get_logger(), "%s: [signal] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -34,14 +34,14 @@ BT::NodeStatus WaitForSignal::onStart()
   if (already_set)
   {
     RCLCPP_DEBUG(
-      ctx->node.get_logger(), "%s: signal [%s] already set",
+      ctx->node->get_logger(), "%s: signal [%s] already set",
       this->name().c_str(), signal->c_str());
     auto clear = this->getInput<bool>("clear");
     if (clear && *clear)
     {
       ctx->signals.erase(*signal);
       RCLCPP_INFO(
-        ctx->node.get_logger(), "%s: cleared signal [%s]",
+        ctx->node->get_logger(), "%s: cleared signal [%s]",
         this->name().c_str(), signal->c_str());
     }
   }
@@ -55,7 +55,7 @@ BT::NodeStatus WaitForSignal::onRunning()
   if (!signal)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: [signal] port is required",
+      ctx->node->get_logger(), "%s: [signal] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -66,7 +66,7 @@ BT::NodeStatus WaitForSignal::onRunning()
     {
       ctx->signals.erase(*signal);
       RCLCPP_INFO(
-        ctx->node.get_logger(), "%s: cleared signal [%s]",
+        ctx->node->get_logger(), "%s: cleared signal [%s]",
         this->name().c_str(), signal->c_str());
     }
     return BT::NodeStatus::SUCCESS;
@@ -81,13 +81,13 @@ BT::NodeStatus SetSignal::tick()
   if (!signal)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [signal] is required",
+      ctx->node->get_logger(), "%s: port [signal] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
   ctx->signals.emplace(*signal);
   RCLCPP_DEBUG(
-    ctx->node.get_logger(), "%s: set signal [%s]",
+    ctx->node->get_logger(), "%s: set signal [%s]",
     this->name().c_str(), signal->c_str());
   return BT::NodeStatus::SUCCESS;
 }
