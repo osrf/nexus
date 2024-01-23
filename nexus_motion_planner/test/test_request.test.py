@@ -139,6 +139,14 @@ def generate_test_description():
         "robot_description_semantic": ParameterValue(robot_description_semantic_content, value_type=str)
     }
 
+    robot_state_publisher = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="log",
+        parameters=[robot_description],
+    )
+
     kinematics_yaml = load_yaml(
         moveit_config_package, "config/kinematics.yaml")
 
@@ -178,6 +186,34 @@ def generate_test_description():
         "publish_state_updates": True,
         "publish_transforms_updates": True,
     }
+
+    # Load ros2_control controller (so joint states are published)
+    # This needs to be loaded in tandem with the MoveIt controller manager
+    ros2_controllers_path = os.path.join(
+        get_package_share_directory(moveit_config_package),
+        "config",
+        "ros2_controllers.yaml",
+    )
+    ros2_control_node = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[robot_description, ros2_controllers_path],
+        output="log",
+    )
+
+    load_controllers = []
+    for controller in [
+        "manipulator_controller",
+        "joint_state_broadcaster"
+    ]:
+        load_controllers += [
+            ExecuteProcess(
+                cmd=["ros2 run controller_manager spawner {}".format(
+                    controller)],
+                shell=True,
+                output="log",
+            )
+        ]
 
     # Start the actual move_group node/action server
     move_group_node = Node(
@@ -307,6 +343,7 @@ def generate_test_description():
     }
 
     return launch.LaunchDescription([
+        robot_state_publisher,
         motion_planner,
         move_group_node,
         static_tf_node_1,
@@ -318,6 +355,8 @@ def generate_test_description():
         trigger_lifecycle_5,
         trigger_lifecycle_6,
         trigger_get_plan_irb1300_poses,
+        ros2_control_node,
+        *load_controllers,
         launch_testing.actions.ReadyToTest()
     ]), node_mapping
 
