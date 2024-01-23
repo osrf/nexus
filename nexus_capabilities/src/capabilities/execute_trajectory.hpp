@@ -35,7 +35,7 @@ namespace nexus::capabilities {
  *   trajectory |moveit_msgs::msg::RobotTrajectory| The trajectory to execute.
  */
 class ExecuteTrajectory : public common
-  ::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
+  ::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode::SharedPtr,
     endpoints::ControllerRobotTrajectoryAction::ActionType>
 {
 public: using ActionType =
@@ -54,9 +54,10 @@ public: static BT::PortsList providedPorts();
    */
 public: inline ExecuteTrajectory(const std::string& name,
     const BT::NodeConfiguration& config,
-    rclcpp_lifecycle::LifecycleNode& node)
-  : common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*, ActionType>(
-      name, config, &node) {}
+    rclcpp_lifecycle::LifecycleNode::SharedPtr node)
+  : common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode::SharedPtr,
+      ActionType>(
+      name, config, std::move(node)) {}
 
 protected: std::string get_action_name() const
   override

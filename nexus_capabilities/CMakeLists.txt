@@ -55,6 +55,7 @@ include(GNUInstallDirs)
 # nexus_capabilities library
 
 add_library(${PROJECT_NAME} SHARED
+  src/context.cpp
   src/conversions/pose_stamped.cpp
 )
 

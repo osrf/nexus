@@ -76,10 +76,8 @@ void JobManager::_tick_bt(Job& job)
     }
     default: {
       std::ostringstream oss;
-      oss << "Error ticking task [" << job.ctx->task.id <<
-        "]: Behavior tree returned invalid or unknown status [" <<
-        bt_status << "]";
-      RCLCPP_ERROR_STREAM(job.ctx->node->get_logger(), oss.str());
+      oss << "behavior tree returned invalid or unknown status (" <<
+        bt_status << ")";
       throw std::runtime_error(oss.str());
     }
   }
@@ -120,7 +118,7 @@ uint8_t JobManager::_tick_job(Job& job)
   return task_status;
 }
 
-Job& JobManager::assign_task(
+common::Result<Job*> JobManager::assign_task(
   const std::string& task_id)
 {
   const auto it =
@@ -131,7 +129,11 @@ Job& JobManager::assign_task(
       });
   if (it != this->_jobs.end())
   {
-    throw JobError("Another task with the same id already exist");
+    std::string msg("Another task with the same id already exist");
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "Failed to assign task [%s]: %s",
+      task_id.c_str(), msg.c_str());
+    return JobError(msg);
   }
 
   auto& j = this->_jobs.emplace_back(Job{nullptr, std::nullopt, nullptr,
@@ -149,10 +151,11 @@ Job& JobManager::assign_task(
   RCLCPP_INFO(
     this->_node->get_logger(), "Assigned task [%s]",
     task_id.c_str());
-  return j;
+  return &j;
 }
 
-Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
+common::Result<Job*> JobManager::queue_task(
+  const GoalHandlePtr& goal_handle,
   const std::shared_ptr<Context>& ctx, BT::Tree&& bt)
 {
   const auto& job_id = goal_handle->get_goal()->task.id;
@@ -161,14 +164,15 @@ Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
       {
         return j.task_state.task_id == job_id;
       });
-  if (it == this->_jobs.end())
+
+  if (it == this->_jobs.end() ||
+    it->task_state.status != TaskState::STATUS_ASSIGNED)
   {
-    // abort the goal and throw error
-    const auto result = std::make_shared<WorkcellRequest::Result>();
-    result->success = false;
-    result->message = "Task not found";
-    goal_handle->abort(result);
-    throw JobError("Task not found");
+    std::string msg("Task is not assigned");
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "Failed to queue task [%s]: %s",
+      job_id.c_str(), msg.c_str());
+    return JobError(msg);
   }
 
   it->ctx = ctx;
@@ -180,10 +184,11 @@ Job& JobManager::queue_task(const GoalHandlePtr& goal_handle,
   RCLCPP_INFO(
     it->ctx->node->get_logger(), "Task [%s] is now queued",
     it->task_state.task_id.c_str());
-  return *it;
+  return &*it;
 }
 
-void JobManager::remove_assigned_task(const std::string& task_id)
+common::Result<void> JobManager::remove_assigned_task(
+  const std::string& task_id)
 {
   const auto it = std::find_if(this->_jobs.begin(),
       this->_jobs.end(), [&task_id](const Job& j)
@@ -192,66 +197,112 @@ void JobManager::remove_assigned_task(const std::string& task_id)
       });
   if (it == this->_jobs.end())
   {
-    return;
+    return common::Result<void>();
   }
   if (it->task_state.status != TaskState::STATUS_ASSIGNED)
   {
-    throw JobError("Task is not assigned");
+    std::string msg("Task is not assigned");
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "Failed to remove task [%s]: %s",
+      task_id.c_str(), msg.c_str());
+    return JobError(msg);
   }
   this->_jobs.erase(it);
+  return common::Result<void>();
 }
 
-void JobManager::halt_all_jobs()
+common::Result<void> JobManager::halt_all_jobs()
 {
+  const auto handle_exception = [this](const std::exception& e, const Job& j)
+    {
+      RCLCPP_ERROR(
+        this->_node->get_logger(), "Failed to halt job [%s]: %s",
+        j.task_state.task_id.c_str(), e.what());
+      return e;
+    };
+
   RCLCPP_INFO(this->_node->get_logger(), "Halting all tasks");
   for (auto& j : this->_jobs)
   {
-    // halt bts that are running
-    if (j.task_state.status == TaskState::STATUS_RUNNING)
+    try
     {
-      this->_ctx_mgr->set_active_context(j.ctx);
-      j.bt->haltTree();
-      this->_ctx_mgr->set_active_context(nullptr);
+      // halt bts that are running
+      if (j.task_state.status == TaskState::STATUS_RUNNING)
+      {
+        this->_ctx_mgr->set_active_context(j.ctx);
+        j.bt->haltTree();
+        this->_ctx_mgr->set_active_context(nullptr);
 
-      RCLCPP_INFO(
-        j.ctx->node->get_logger(), "Task [%s] halted", j.ctx->task.id.c_str());
-      // Publish feedback.
-      j.task_state.status = TaskState::STATUS_FAILED;
-      auto fb = std::make_shared<WorkcellRequest::Feedback>();
-      fb->state = j.task_state;
-      j.goal_handle->publish_feedback(std::move(fb));
+        RCLCPP_INFO(
+          j.ctx->node->get_logger(), "Task [%s] halted",
+          j.ctx->task.id.c_str());
+        // Publish feedback.
+        j.task_state.status = TaskState::STATUS_FAILED;
+        auto fb = std::make_shared<WorkcellRequest::Feedback>();
+        fb->state = j.task_state;
+        j.goal_handle->publish_feedback(std::move(fb));
 
-      // Abort the action request.
-      auto result =
-        std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
-      result->success = false;
-      result->message = "Task halted";
-      j.goal_handle->abort(result);
-      break;
+        // Abort the action request.
+        auto result =
+          std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->success = false;
+        result->message = "Task halted";
+        j.goal_handle->abort(result);
+        break;
+      }
+    }
+    catch (const rclcpp::exceptions::RCLError& e)
+    {
+      return handle_exception(e, j);
+    }
+    catch (const std::runtime_error& e)
+    {
+      return handle_exception(e, j);
     }
   }
 
   this->_jobs.clear();
+  return common::Result<void>();
 }
 
-void JobManager::tick()
+common::Result<void> JobManager::tick()
 {
+  const auto handle_exception = [this](const std::exception& e, const Job& j)
+    {
+      RCLCPP_ERROR(
+        this->_node->get_logger(), "Error ticking task [%s]: %s",
+        j.task_state.task_id.c_str(), e.what());
+      return e;
+    };
+
   size_t i = 0;
   auto it = this->_jobs.begin();
   for (; i < this->_max_concurrent && it != this->_jobs.end(); ++i)
   {
-    const auto task_status = this->_tick_job(*it);
-    if (task_status == TaskState::STATUS_FAILED ||
-      task_status == TaskState::STATUS_FINISHED)
+    try
     {
-      it = this->_jobs.erase(it);
-      continue;
+      const auto task_status = this->_tick_job(*it);
+      if (task_status == TaskState::STATUS_FAILED ||
+        task_status == TaskState::STATUS_FINISHED)
+      {
+        it = this->_jobs.erase(it);
+        continue;
+      }
+      else
+      {
+        ++it;
+      }
     }
-    else
+    catch (const rclcpp::exceptions::RCLError& e)
     {
-      ++it;
+      return handle_exception(e, *it);
+    }
+    catch (const std::runtime_error& e)
+    {
+      return handle_exception(e, *it);
     }
   }
+  return common::Result<void>();
 }
 
 }

@@ -22,6 +22,7 @@
 
 #include <nexus_capabilities/capability.hpp>
 #include <nexus_capabilities/context_manager.hpp>
+#include <nexus_common/error.hpp>
 #include <nexus_endpoints.hpp>
 
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -48,7 +49,8 @@ public: void declare_params(rclcpp_lifecycle::LifecycleNode& /* node */) final
   /**
    * @copydoc Capability::configure
    */
-public: void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr node,
+public: common::Result<void> configure(
+    rclcpp_lifecycle::LifecycleNode::SharedPtr node,
     std::shared_ptr<const ContextManager> ctx_mgr,
     BT::BehaviorTreeFactory& bt_factory) final;
 

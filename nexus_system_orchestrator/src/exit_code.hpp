@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Johnson & Johnson
+ * Copyright (C) 2023 Johnson & Johnson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,14 @@
  *
  */
 
-#ifndef NEXUS_CAPABILITIES__EXCEPTIONS_HPP
-#define NEXUS_CAPABILITIES__EXCEPTIONS_HPP
+#ifndef NEXUS_SYSTEM_ORCHESTRATOR__EXIT_CODE_HPP
+#define NEXUS_SYSTEM_ORCHESTRATOR__EXIT_CODE_HPP
 
-#include <stdexcept>
-#include <string>
+namespace nexus::system_orchestrator {
 
-namespace nexus {
-
-/**
- * Base class for all errors from capabilities.
- */
-class CapabilityError : public std::runtime_error
-{
-public: CapabilityError(const std::string& msg)
-  : std::runtime_error(msg) {}
-};
+constexpr int EXIT_CODE_INVALID_PARAMETER = 1;
 
 }
 
-#endif // NEXUS_CAPABILITIES__EXCEPTIONS_HPP
+
+#endif

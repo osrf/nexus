@@ -69,6 +69,8 @@ BT::NodeStatus GetJointConstraints::tick()
   }
 
   // Convert TrajectoryPoint to set of JointConstraints.
+  // `index` is checked above so the accesses here should never cause OOB.
+  // No need to catch exception.
   std::vector<moveit_msgs::msg::JointConstraint> constraints;
   const auto& final_joint_values = joint_trajectory.points.at(index).positions;
   for (std::size_t i = 0; i < final_joint_values.size(); ++i)

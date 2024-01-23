@@ -28,6 +28,7 @@
 
 #include <nexus_common/action_client_bt_node.hpp>
 #include <nexus_common/bt_store.hpp>
+#include <nexus_common/error.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -77,6 +78,8 @@ public: CallbackReturn on_deactivate(
 
 public: CallbackReturn on_cleanup(const rclcpp_lifecycle::State& previous_state)
   override;
+
+private: enum class ExiCode;
 
 private: rclcpp_action::Server<endpoints::WorkcellRequestAction::ActionType>::
   SharedPtr
