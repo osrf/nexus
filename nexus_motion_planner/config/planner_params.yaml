@@ -42,17 +42,3 @@ motion_planner_server:
     workspace_max_z: 1.0
     # The seconds within which the current robot state should be valid.
     get_state_wait_seconds: 0.01
-    # Namespaced parameters for each robot when use_namespace is true.
-    # Is important to ensure move_group, robot_state_publisher and
-    # joint_state broadcaster all have the same namespace.
-    # Note: If use_namespace is false, pass these parameters directly.
-    abb_irb1300:
-      robot_description: ""
-      robot_description_semantic: ""
-      group_name: "manipulator"
-      # Group specific kinematic properties.
-      manipulator:
-        kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
-        kinematics_solver_search_resolution: 0.005
-        kinematics_solver_timeout: 0.005
-        kinematics_solver_attempts: 3

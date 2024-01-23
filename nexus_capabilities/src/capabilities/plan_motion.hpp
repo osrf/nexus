@@ -66,6 +66,9 @@ public: static BT::PortsList providedPorts()
       BT::InputPort<std::vector<moveit_msgs::msg::JointConstraint>>(
         "start_constraints",
         "OPTIONAL. If provided the the joint_constraints are used as the start condition. Else, the current state of the robot will be used as the start."),
+      BT::InputPort<bool>(
+        "force_cache_mode_execute_read_only",
+        "OPTIONAL. Set true to force cache mode to ExecuteReadOnly for this request."),
       BT::OutputPort<moveit_msgs::msg::RobotTrajectory>(
         "result", "The resulting trajectory.")};
   }
