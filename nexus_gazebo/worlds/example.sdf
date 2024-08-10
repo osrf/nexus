@@ -1,0 +1,38 @@
+<sdf version="1.9">
+  <world name="example_motion_capture">
+    <include>
+      <name>origin_mocap</name>
+      <uri>model://motion_capture_system</uri>
+      <pose>0 0 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <name>rotated_mocap</name>
+      <uri>model://motion_capture_system</uri>
+      <pose>0 0 0 0 0 1.5707</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>calibration_link_x</name>
+      <pose>1 0 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>calibration_link_y</name>
+      <pose>0 1 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>calibration_link_z</name>
+      <pose>0 1 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+  </world>
+</sdf>

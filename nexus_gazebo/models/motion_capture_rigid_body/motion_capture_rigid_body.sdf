@@ -1,0 +1,26 @@
+<sdf version="1.9">
+    <model name="motion_capture_rigid_body">
+        <link name="motion_capture_rigid_body">
+            <visual name="visual0">
+              <geometry>
+                <sphere>
+                  <!-- 1/4" marker bead -->
+                  <radius>0.0032</radius>
+                </sphere>
+              </geometry>
+              <material>
+                <diffuse>0.9 0.9 0.9 1.0</diffuse>
+              </material>
+            </visual>
+            <collision name="collision0">
+              <geometry>
+                <sphere>
+                  <!-- 1/4" marker bead -->
+                  <radius>0.0032</radius>
+                </sphere>
+              </geometry>
+            </collision>
+        </link>
+        <plugin filename="nexus_gazebo" name="nexus_gazebo::MotionCaptureRigidBody"/>
+    </model>
+</sdf>
