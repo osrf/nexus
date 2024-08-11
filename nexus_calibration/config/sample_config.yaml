@@ -1,0 +1,7 @@
+nexus_calibration_node:
+  ros__parameters:
+    vrpn_server_address: "localhost:3883" # The ip_address:port of the vrpn server.
+    vrpn_frame_id: "world" # The calibrated reference frame wrt which the vrpn server is streaming data.
+    workcell_id: "workcell_1" # The name of the workcell. This is used as a prefix for any endpoints.
+    tracker_names: ["workcell_calibration_link", "robot_calibration_link"] # The names of the relevant rigid bodies trackers.
+    update_rate: 2.0 # The rate in hz at which the update loop should run.

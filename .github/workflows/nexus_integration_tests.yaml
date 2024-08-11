@@ -40,7 +40,7 @@ jobs:
         rosdep update
         rosdep install --from-paths . -yir
     - name: build
-      run: /ros_entrypoint.sh colcon build --packages-up-to nexus_gazebo nexus_integration_tests nexus_motion_planner --mixin release lld --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: /ros_entrypoint.sh colcon build --packages-up-to nexus_calibration nexus_gazebo nexus_integration_tests nexus_motion_planner --mixin release lld --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - name: Test - Unit Tests
       run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner --event-handlers=console_direct+
     - name: Test - Integration Test
