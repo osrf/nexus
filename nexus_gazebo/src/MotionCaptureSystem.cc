@@ -15,10 +15,9 @@
 #include "nexus_gazebo/MotionCaptureSystem.hh"
 #include "nexus_gazebo/Components.hh"
 
-#include <ignition/plugin/Register.hh>
-
-#include "ignition/gazebo/EntityComponentManager.hh"
-#include "ignition/gazebo/Util.hh"
+#include <gz/plugin/Register.hh>
+#include <gz/sim/EntityComponentManager.hh>
+#include <gz/sim/Util.hh>
 
 constexpr const char* kPort = "port";
 constexpr const char* kSdfStreamRigid = "stream_rigid_bodies";
@@ -126,7 +125,7 @@ void MotionCaptureSystem::PostUpdate(
   }
 
   // Tracker pose in world frame
-  const auto pose_WT = ignition::gazebo::worldPose(this->entity, _ecm);
+  const auto pose_WT = gz::sim::worldPose(this->entity, _ecm);
 
   if (this->stream_rigid_bodies)
   {
@@ -135,7 +134,7 @@ void MotionCaptureSystem::PostUpdate(
       const components::MotionCaptureRigidBody* _rigid_body)->bool
       {
         // Rigid body pose in world frame
-        const auto pose_WB = ignition::gazebo::worldPose(_entity, _ecm);
+        const auto pose_WB = gz::sim::worldPose(_entity, _ecm);
 
         // Rigid body pose in tracker frame (pose_TB = pose_TW * pose_WB)
         const auto pose_TB = pose_WT.Inverse() * pose_WB;
@@ -165,7 +164,7 @@ void MotionCaptureSystem::PostUpdate(
 
 }  // namespace nexus_gazebo
 
-IGNITION_ADD_PLUGIN(
+GZ_ADD_PLUGIN(
   nexus_gazebo::MotionCaptureSystem,
   nexus_gazebo::System,
   nexus_gazebo::MotionCaptureSystem::ISystemConfigure,

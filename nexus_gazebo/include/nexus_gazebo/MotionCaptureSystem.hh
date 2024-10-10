@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include <ignition/gazebo/config.hh>
-#include <ignition/gazebo/System.hh>
+#include <gz/sim/config.hh>
+#include <gz/sim/System.hh>
 
 #include "vrpn_Connection.h"
 #include "vrpn_ConnectionPtr.h"
@@ -29,14 +29,14 @@
 
 namespace nexus_gazebo {
 
-using Entity = ignition::gazebo::Entity;
-using EntityComponentManager = ignition::gazebo::EntityComponentManager;
-using EventManager = ignition::gazebo::EventManager;
-using ISystemConfigure = ignition::gazebo::ISystemConfigure;
-using ISystemPostUpdate = ignition::gazebo::ISystemPostUpdate;
-using Pose3d = ignition::math::Pose3d;
-using System = ignition::gazebo::System;
-using UpdateInfo = ignition::gazebo::UpdateInfo;
+using Entity = gz::sim::Entity;
+using EntityComponentManager = gz::sim::EntityComponentManager;
+using EventManager = gz::sim::EventManager;
+using ISystemConfigure = gz::sim::ISystemConfigure;
+using ISystemPostUpdate = gz::sim::ISystemPostUpdate;
+using Pose3d = gz::math::Pose3d;
+using System = gz::sim::System;
+using UpdateInfo = gz::sim::UpdateInfo;
 
 class RigidBodyTracker : public vrpn_Tracker
 {
