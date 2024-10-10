@@ -496,7 +496,7 @@ public:
         "/" + node_name + std::string("/is_active"),
         std::bind(&Implementation<NodeType>::isActiveCallback,
         _pimpl.get(), _1, _2, _3),
-        rmw_qos_profile_services_default,
+        rclcpp::ServicesQoS(),
         _pimpl->callback_group_);
 
       _pimpl->_manager_srv = n->template create_service<ManageLifecycleNodes>(
@@ -527,7 +527,7 @@ public:
               break;
           }
         },
-        rmw_qos_profile_services_default,
+        rclcpp::ServicesQoS(),
         _pimpl->callback_group_);
     }
 
