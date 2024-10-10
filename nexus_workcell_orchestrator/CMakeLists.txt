@@ -19,7 +19,8 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(yaml-cpp REQUIRED VERSION 0.7)
+find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -58,7 +59,7 @@ target_link_libraries(${PROJECT_NAME}_plugin PUBLIC
   tf2::tf2
   tf2_geometry_msgs::tf2_geometry_msgs
   tf2_ros::tf2_ros
-  yaml-cpp
+  yaml-cpp::yaml-cpp
   ${vision_msgs_TARGETS}
   ${geometry_msgs_TARGETS}
 )

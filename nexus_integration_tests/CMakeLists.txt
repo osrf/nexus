@@ -6,6 +6,7 @@ find_package(ament_cmake REQUIRED)
 find_package(nexus_endpoints REQUIRED)
 find_package(nexus_transporter REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
@@ -34,7 +35,7 @@ target_link_libraries(mock_detection PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
-  ${yaml_cpp_vendor_TARGETS}
+  yaml-cpp::yaml-cpp
   ${tf2_ros_TARGETS}
 )
 target_include_directories(mock_detection PRIVATE
@@ -163,12 +164,11 @@ if(BUILD_TESTING)
       rclcpp_action::rclcpp_action
       rclcpp_lifecycle::rclcpp_lifecycle
       rcpputils::rcpputils
-      ${yaml_cpp_vendor_TARGETS}
+      yaml-cpp::yaml-cpp
       rmf_utils::rmf_utils
       ${tf2_ros_TARGETS}
     )
     target_include_directories(test_mocks PUBLIC
-      ${yaml_cpp_vendor_INCLUDE_DIRS}
       ${tf2_ros_INCLUDE_DIRS}
     )
     install(TARGETS test_mocks RUNTIME DESTINATION lib/${PROJECT_NAME})

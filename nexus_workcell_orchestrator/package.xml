@@ -27,6 +27,7 @@
   <depend>tf2_ros</depend>
   <depend>vision_msgs</depend>
   <depend>yaml-cpp</depend>
+  <depend>yaml_cpp_vendor</depend>
 
   <test_depend>ament_cmake_uncrustify</test_depend>
   <test_depend>rmf_utils</test_depend>
