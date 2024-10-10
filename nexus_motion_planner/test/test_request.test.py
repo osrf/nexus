@@ -150,6 +150,10 @@ def generate_test_description():
     kinematics_yaml = load_yaml(
         moveit_config_package, "config/kinematics.yaml")
 
+    joint_limits_yaml = {
+        "robot_description_planning": load_yaml(moveit_config_package, "config/joint_limits.yaml")
+    }
+
     # Planning Functionality
     ompl_planning_pipeline_config = {
         "move_group": {
@@ -224,6 +228,7 @@ def generate_test_description():
             robot_description,
             robot_description_semantic,
             kinematics_yaml,
+            joint_limits_yaml,
             ompl_planning_pipeline_config,
             trajectory_execution,
             moveit_controllers,
