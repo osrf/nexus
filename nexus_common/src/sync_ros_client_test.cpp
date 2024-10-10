@@ -16,7 +16,7 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 #include "sync_service_client.hpp"
 #include "test_utils.hpp"
