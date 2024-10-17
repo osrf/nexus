@@ -20,6 +20,7 @@ import yaml
 
 import launch
 from launch.actions import (
+    DeclareLaunchArgument,
     ExecuteProcess,
     LogInfo,
     RegisterEventHandler,
@@ -39,6 +40,7 @@ from launch.substitutions import (
 
 from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterValue
+from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
 
 import launch_testing
@@ -72,8 +74,7 @@ def set_lifecycle(server_name, transition):
         output='screen',
     )
 
-def load_yaml(package_name, file_path):
-    package_path = get_package_share_directory(package_name)
+def load_yaml(package_path, file_path):
     absolute_file_path = os.path.join(package_path, file_path)
 
     try:
@@ -99,12 +100,12 @@ def generate_test_description():
     proc_env = os.environ.copy()
     proc_env['PYTHONUNBUFFERED'] = '1'
 
-    robot_xacro_file = "irb1300_10_115.xacro"
-    moveit_config_file = "abb_irb1300_10_115.srdf.xacro"
+    robot_xacro_file = "ur.urdf.xacro"
+    moveit_config_file = "ur.srdf.xacro"
     planner_config_file = "planner_params.yaml"
 
-    moveit_config_package = "abb_irb1300_10_115_moveit_config"
-    support_package = "abb_irb1300_support"
+    moveit_config_package = get_package_share_directory("ur_moveit_config")
+    support_package = get_package_share_directory("ur_robot_driver")
     runtime_config_package = "nexus_motion_planner"
 
     planner_server_params = PathJoinSubstitution(
@@ -115,29 +116,25 @@ def generate_test_description():
         ]
     )
 
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare(support_package), "urdf", robot_xacro_file]
-            ),
-        ]
+    robot_description_config = xacro.process_file(
+        os.path.join(
+            support_package,
+            "urdf",
+            robot_xacro_file,
+        ),
+        mappings={"ur_type": "ur5e", "name": "ur5e", "use_mock_hardware": "true"},
     )
-    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
+    robot_description = {"robot_description": robot_description_config.toxml()}
 
-    robot_description_semantic_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare(moveit_config_package), "config", moveit_config_file]
-            ),
-        ]
+    robot_description_semantic_config = xacro.process_file(
+        os.path.join(
+            moveit_config_package,
+            "srdf",
+            moveit_config_file,
+        ),
+        mappings={"name": "ur5e"},
     )
-    robot_description_semantic = {
-        "robot_description_semantic": ParameterValue(robot_description_semantic_content, value_type=str)
-    }
+    robot_description_semantic = {"robot_description_semantic": robot_description_semantic_config.toxml()}
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -147,8 +144,8 @@ def generate_test_description():
         parameters=[robot_description],
     )
 
-    kinematics_yaml = load_yaml(
-        moveit_config_package, "config/kinematics.yaml")
+    kinematics_yaml = {"robot_description_kinematics": load_yaml(
+        moveit_config_package, "config/kinematics.yaml")}
 
     joint_limits_yaml = {
         "robot_description_planning": load_yaml(moveit_config_package, "config/joint_limits.yaml")
@@ -194,20 +191,20 @@ def generate_test_description():
     # Load ros2_control controller (so joint states are published)
     # This needs to be loaded in tandem with the MoveIt controller manager
     ros2_controllers_path = os.path.join(
-        get_package_share_directory(moveit_config_package),
+        support_package,
         "config",
-        "ros2_controllers.yaml",
+        "ur_controllers.yaml",
     )
     ros2_control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_description, ros2_controllers_path],
+        parameters=[robot_description, ParameterFile(ros2_controllers_path, allow_substs=True)],
         output="log",
     )
 
     load_controllers = []
     for controller in [
-        "manipulator_controller",
+        "joint_trajectory_controller",
         "joint_state_broadcaster"
     ]:
         load_controllers += [
@@ -270,14 +267,14 @@ def generate_test_description():
 
     # Send get motion plan requests with specified start and target
     # pose values
-    get_plan_irb1300_poses = Node(
+    get_plan_ur5e_poses = Node(
         package='nexus_motion_planner',
         executable='test_request',
         arguments=[
-            "-name", "abb_irb1300",
+            "-name", "ur5e",
             "-frame_id", "item",
             "-goal_type", "0",
-            "-t", "0.794981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107",
+            "-t", "0.594981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107",
         ],
         output='both',
     )
@@ -329,14 +326,14 @@ def generate_test_description():
             target_action=lifecycle_set_configure2,
             on_exit=[lifecycle_set_activate2]))
 
-    trigger_get_plan_irb1300_poses = RegisterEventHandler(
+    trigger_get_plan_ur5e_poses = RegisterEventHandler(
         OnProcessExit(
             target_action=lifecycle_set_activate2,
             on_exit=[
                 LogInfo(msg='Sending motion planning task with end-effector poses'),
                 TimerAction(
                     period=5.0,
-                    actions=[get_plan_irb1300_poses]
+                    actions=[get_plan_ur5e_poses]
                 )
             ]
         )
@@ -344,10 +341,19 @@ def generate_test_description():
 
     node_mapping = {
         'motion_planner': motion_planner,
-        'get_plan_irb1300_poses': get_plan_irb1300_poses,
+        'get_plan_ur5e_poses': get_plan_ur5e_poses,
     }
 
+    # Only used because ur_description expects it
+    tf_prefix_argument = DeclareLaunchArgument(
+        "tf_prefix",
+        default_value="",
+        description="tf_prefix of the joint names, useful for "
+        "multi-robot setup. If changed, also joint names in the controllers' configuration "
+        "have to be updated.")
+
     return launch.LaunchDescription([
+        tf_prefix_argument,
         robot_state_publisher,
         motion_planner,
         move_group_node,
@@ -359,7 +365,7 @@ def generate_test_description():
         trigger_lifecycle_4,
         trigger_lifecycle_5,
         trigger_lifecycle_6,
-        trigger_get_plan_irb1300_poses,
+        trigger_get_plan_ur5e_poses,
         ros2_control_node,
         *load_controllers,
         launch_testing.actions.ReadyToTest()
@@ -369,7 +375,7 @@ class TestGetMotionPlanService(unittest.TestCase):
     def test_read_task_client_stderr(
         self,
         proc_output,
-        get_plan_irb1300_poses):
+        get_plan_ur5e_poses):
         """Check if task client has sent service request and received successful response"""
 
         get_plan_poses_str = [
@@ -380,7 +386,7 @@ class TestGetMotionPlanService(unittest.TestCase):
         for expected_output in get_plan_poses_str:
           proc_output.assertWaitFor(
               expected_output,
-              process=get_plan_irb1300_poses, timeout=40, stream='stderr')
+              process=get_plan_ur5e_poses, timeout=40, stream='stderr')
 
     def test_read_server_stderr(
         self,
@@ -399,17 +405,17 @@ class TestGetMotionPlanService(unittest.TestCase):
                 process=motion_planner, timeout=60, stream='stderr')
 
 class TestWait(unittest.TestCase):
-    def test_wait_for_get_plan_clients(self, proc_info, get_plan_irb1300_poses):
+    def test_wait_for_get_plan_clients(self, proc_info, get_plan_ur5e_poses):
         """Wait until process ends"""
-        proc_info.assertWaitForShutdown(process=get_plan_irb1300_poses, timeout=40)
+        proc_info.assertWaitForShutdown(process=get_plan_ur5e_poses, timeout=40)
 
 @launch_testing.post_shutdown_test()
 class TestShutdown(unittest.TestCase):
     def test_read_task_client_stderr(
         self,
         proc_info,
-        get_plan_irb1300_poses):
+        get_plan_ur5e_poses):
       """Check if the processes exited normally."""
 
       launch_testing.asserts.assertExitCodes(proc_info, [0],
-                                             process=get_plan_irb1300_poses)
+                                             process=get_plan_ur5e_poses)
