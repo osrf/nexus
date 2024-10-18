@@ -18,16 +18,16 @@
 #include <memory>
 #include <string>
 
-#include <ignition/gazebo/config.hh>
-#include <ignition/gazebo/System.hh>
+#include <gz/sim/config.hh>
+#include <gz/sim/System.hh>
 
 namespace nexus_gazebo {
 
-using Entity = ignition::gazebo::Entity;
-using EntityComponentManager = ignition::gazebo::EntityComponentManager;
-using EventManager = ignition::gazebo::EventManager;
-using ISystemConfigure = ignition::gazebo::ISystemConfigure;
-using System = ignition::gazebo::System;
+using Entity = gz::sim::Entity;
+using EntityComponentManager = gz::sim::EntityComponentManager;
+using EventManager = gz::sim::EventManager;
+using ISystemConfigure = gz::sim::ISystemConfigure;
+using System = gz::sim::System;
 
 /// \class MotionCaptureRigidBody
 class MotionCaptureRigidBody :

@@ -16,7 +16,7 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 #include "nexus_common/service_client_bt_node.hpp"
 #include "nexus_common_test/test_utils.hpp"

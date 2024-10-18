@@ -24,7 +24,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 namespace nexus::workcell_orchestrator::test {
 
@@ -41,7 +41,7 @@ TEST_CASE("pose serialization") {
     [&](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<DeserializeDetections>(name, config,
-      *fixture.node);
+        *fixture.node);
     });
 
   auto bt = bt_factory.createTreeFromText(

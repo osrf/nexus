@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:iron-ros-base']
+        docker_image: ['ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 60
@@ -19,8 +19,9 @@ jobs:
     - name: Install deps for Rust
       run: |
         apt update && apt install -y git curl libclang-dev
+    # TODO(luca) Remove once we update to Zenoh 1.0.0
     - name: Setup Rust for nexus_zenoh_bridge
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@1.79
       with:
         components: clippy, rustfmt
     - uses: actions/checkout@v2
@@ -28,9 +29,11 @@ jobs:
       with:
         path: ~/.cache/ccache
         key: ccache
-    - name: vcs
-      run: |
-        vcs import . < abb.repos
+    # TODO(luca) Remove build from source of UR robots
+    # This is only temporary until a new Jazzy sync that includes https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver/pull/1153/ is made
+    - name: TEMPORARY build UR from source
+      run:
+        git clone https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver
     - name: rosdep
       run: |
         apt update

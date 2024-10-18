@@ -95,7 +95,7 @@ bool DetectOffset::on_response(
   pose.pose = found_detection->bbox.center;
   RCLCPP_DEBUG_STREAM(this->_logger,
     *item << " is at " << pose.pose << " frame [" << pose.header.frame_id <<
-      "]");
+    "]");
   this->setOutput("result", pose);
   return true;
 }
@@ -171,7 +171,8 @@ BT::NodeStatus DetectAllItems::onRunning()
     if (d.id != *this->_cur_it)
     {
       RCLCPP_WARN(
-        this->_node->get_logger(), "detector requested to detect [%s] but it responded with [%s], ignoring the result",
+        this->_node->get_logger(),
+        "detector requested to detect [%s] but it responded with [%s], ignoring the result",
         this->_cur_it->c_str(), d.id.c_str());
       continue;
     }

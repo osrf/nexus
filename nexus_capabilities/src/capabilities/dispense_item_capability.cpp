@@ -49,7 +49,7 @@ void DispenseItemCapability::declare_params(
 //==============================================================================
 void DispenseItemCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
-  std::shared_ptr<const ContextManager> /* ctx_mgr */,
+  std::shared_ptr<const ContextManager>/* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
 {
   auto dispenser_ids = node->get_parameter("dispensers").as_string_array();
@@ -74,7 +74,7 @@ void DispenseItemCapability::configure(
     {
       auto node = w_node.lock();
       return std::make_unique<DispenseItem>(name, config,
-      node, this->_dispensers, std::chrono::milliseconds{dispenser_timeout});
+        node, this->_dispensers, std::chrono::milliseconds{dispenser_timeout});
     });
 }
 

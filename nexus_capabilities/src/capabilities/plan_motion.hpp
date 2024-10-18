@@ -82,7 +82,8 @@ public: static BT::PortsList providedPorts()
 public: PlanMotion(const std::string& name,
     const BT::NodeConfiguration& config,
     rclcpp_lifecycle::LifecycleNode& node,
-    rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedPtr client,
+    rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedPtr
+    client,
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster)
   : ServiceClientBtNode<endpoints::GetMotionPlanService::ServiceType>(name,
       config, node.get_logger(), std::chrono::minutes{1}), _node{node},
@@ -100,7 +101,8 @@ protected: endpoints::GetMotionPlanService::ServiceType::Request::SharedPtr
   make_request() final;
 
 protected: bool on_response(
-    rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedResponse resp)
+    rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedResponse
+    resp)
   final;
 
 private: rclcpp_lifecycle::LifecycleNode& _node;

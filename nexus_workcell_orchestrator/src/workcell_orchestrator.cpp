@@ -288,7 +288,8 @@ auto WorkcellOrchestrator::_configure(
       }
       return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     },
-    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
+    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::
+    WorkcellRequestAction::ActionType>>
     goal_handle)
     {
       RCLCPP_DEBUG(this->get_logger(), "Got cancel request");
@@ -315,7 +316,8 @@ auto WorkcellOrchestrator::_configure(
       }
       return rclcpp_action::CancelResponse::ACCEPT;
     },
-    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
+    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::
+    WorkcellRequestAction::ActionType>>
     goal_handle)
     {
       if (this->get_current_state().label() != "active")
@@ -350,7 +352,8 @@ auto WorkcellOrchestrator::_configure(
         if (!this->_can_perform_task(
           ctx->task))
         {
-          auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+          auto result =
+          std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
           result->message = "Workcell cannot perform task " + ctx->task.type;
           result->success = false;
           RCLCPP_ERROR_STREAM(this->get_logger(), result->message);
@@ -367,7 +370,8 @@ auto WorkcellOrchestrator::_configure(
       catch (const std::exception& e)
       {
         std::ostringstream oss;
-        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        auto result =
+        std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
         oss << "Failed to create task: " << e.what();
         result->message = oss.str();
         result->success = false;
@@ -392,8 +396,9 @@ auto WorkcellOrchestrator::_configure(
     });
 
   this->_wc_state_pub =
-    this->create_publisher<endpoints::WorkcellStateTopic::MessageType>(endpoints::WorkcellStateTopic::topic_name(
-        this->get_name()), endpoints::WorkcellStateTopic::qos());
+    this->create_publisher<endpoints::WorkcellStateTopic::MessageType>(
+    endpoints::WorkcellStateTopic::topic_name(
+      this->get_name()), endpoints::WorkcellStateTopic::qos());
   this->_cur_state = WorkcellState();
   this->_cur_state.workcell_id = this->get_name();
   this->_cur_state.status = WorkcellState::STATUS_IDLE;
@@ -411,88 +416,92 @@ auto WorkcellOrchestrator::_configure(
     });
 
   this->_signal_wc_srv =
-    this->create_service<endpoints::SignalWorkcellService::ServiceType>(endpoints::SignalWorkcellService::service_name(
-        this->get_name()),
-      [this](endpoints::SignalWorkcellService::ServiceType::Request::
-      ConstSharedPtr req,
-      endpoints::SignalWorkcellService::ServiceType::Response::SharedPtr resp)
-      {
-        this->_process_signal(req, resp);
-      });
+    this->create_service<endpoints::SignalWorkcellService::ServiceType>(
+    endpoints::SignalWorkcellService::service_name(
+      this->get_name()),
+    [this](endpoints::SignalWorkcellService::ServiceType::Request::
+    ConstSharedPtr req,
+    endpoints::SignalWorkcellService::ServiceType::Response::SharedPtr resp)
+    {
+      this->_process_signal(req, resp);
+    });
 
   // create pause service
   this->_pause_srv =
-    this->create_service<endpoints::PauseWorkcellService::ServiceType>(endpoints::PauseWorkcellService::service_name(
-        this->get_name()),
-      [this](endpoints::PauseWorkcellService::ServiceType::Request::
-      ConstSharedPtr req,
-      endpoints::PauseWorkcellService::ServiceType::Response::SharedPtr resp)
-      {
-        this->_paused = req->pause;
-        resp->success = true;
-        std::string verb = req->pause ? "paused" : "unpaused";
-        RCLCPP_INFO(this->get_logger(), "workcell %s", verb.c_str());
-      });
+    this->create_service<endpoints::PauseWorkcellService::ServiceType>(
+    endpoints::PauseWorkcellService::service_name(
+      this->get_name()),
+    [this](endpoints::PauseWorkcellService::ServiceType::Request::
+    ConstSharedPtr req,
+    endpoints::PauseWorkcellService::ServiceType::Response::SharedPtr resp)
+    {
+      this->_paused = req->pause;
+      resp->success = true;
+      std::string verb = req->pause ? "paused" : "unpaused";
+      RCLCPP_INFO(this->get_logger(), "workcell %s", verb.c_str());
+    });
 
   this->_queue_task_srv =
-    this->create_service<endpoints::QueueWorkcellTaskService::ServiceType>(endpoints::QueueWorkcellTaskService::service_name(
-        this->get_name()),
-      [this](endpoints::QueueWorkcellTaskService::ServiceType::Request::
-      ConstSharedPtr req,
-      endpoints::QueueWorkcellTaskService::ServiceType::Response::SharedPtr resp)
+    this->create_service<endpoints::QueueWorkcellTaskService::ServiceType>(
+    endpoints::QueueWorkcellTaskService::service_name(
+      this->get_name()),
+    [this](endpoints::QueueWorkcellTaskService::ServiceType::Request::
+    ConstSharedPtr req,
+    endpoints::QueueWorkcellTaskService::ServiceType::Response::SharedPtr resp)
+    {
+      const auto it =
+      std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
+      [&req](const std::shared_ptr<Context>& ctx)
       {
-        const auto it =
-        std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
-        [&req](const std::shared_ptr<Context>& ctx)
-        {
-          return ctx->task.id == req->task_id;
-        });
-        if (it != this->_ctxs.end())
-        {
-          resp->success = false;
-          resp->message = "A task with the same id already exists";
-          RCLCPP_INFO(this->get_logger(), "Failed to queue task [%s]: %s",
-          req->task_id.c_str(), resp->message.c_str());
-          return;
-        }
-        const auto& ctx =
-        this->_ctxs.emplace_back(std::make_shared<Context>(*this));
-        ctx->task.id = req->task_id;
-        ctx->task_state.task_id = req->task_id;
-        ctx->task_state.workcell_id = this->get_name();
-        ctx->task_state.status = TaskState::STATUS_ASSIGNED;
-        resp->success = true;
-        RCLCPP_INFO(this->get_logger(), "queued task %s", ctx->task.id.c_str());
+        return ctx->task.id == req->task_id;
       });
+      if (it != this->_ctxs.end())
+      {
+        resp->success = false;
+        resp->message = "A task with the same id already exists";
+        RCLCPP_INFO(this->get_logger(), "Failed to queue task [%s]: %s",
+        req->task_id.c_str(), resp->message.c_str());
+        return;
+      }
+      const auto& ctx =
+      this->_ctxs.emplace_back(std::make_shared<Context>(*this));
+      ctx->task.id = req->task_id;
+      ctx->task_state.task_id = req->task_id;
+      ctx->task_state.workcell_id = this->get_name();
+      ctx->task_state.status = TaskState::STATUS_ASSIGNED;
+      resp->success = true;
+      RCLCPP_INFO(this->get_logger(), "queued task %s", ctx->task.id.c_str());
+    });
 
   this->_remove_pending_task_srv =
-    this->create_service<endpoints::RemovePendingTaskService::ServiceType>(endpoints::RemovePendingTaskService::service_name(
-        this->get_name()),
-      [this](endpoints::RemovePendingTaskService::ServiceType::Request::
-      ConstSharedPtr req,
-      endpoints::RemovePendingTaskService::ServiceType::Response::SharedPtr resp)
+    this->create_service<endpoints::RemovePendingTaskService::ServiceType>(
+    endpoints::RemovePendingTaskService::service_name(
+      this->get_name()),
+    [this](endpoints::RemovePendingTaskService::ServiceType::Request::
+    ConstSharedPtr req,
+    endpoints::RemovePendingTaskService::ServiceType::Response::SharedPtr resp)
+    {
+      RCLCPP_DEBUG(this->get_logger(),
+      "received request to remove pending task [%s]", req->task_id.c_str());
+      const auto it =
+      std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
+      [&req](const std::shared_ptr<Context>& ctx)
       {
-        RCLCPP_DEBUG(this->get_logger(),
-        "received request to remove pending task [%s]", req->task_id.c_str());
-        const auto it =
-        std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
-        [&req](const std::shared_ptr<Context>& ctx)
-        {
-          return ctx->task.id == req->task_id;
-        });
-        if (it == this->_ctxs.end() ||
-        (*it)->task_state.status != TaskState::STATUS_ASSIGNED)
-        {
-          resp->success = false;
-          resp->message = "task does not exist or is not pending";
-          RCLCPP_DEBUG_STREAM(this->get_logger(), resp->message);
-          return;
-        }
-        this->_ctxs.erase(it);
-        RCLCPP_INFO(this->get_logger(), "removed task [%s]",
-        req->task_id.c_str());
-        resp->success = true;
+        return ctx->task.id == req->task_id;
       });
+      if (it == this->_ctxs.end() ||
+      (*it)->task_state.status != TaskState::STATUS_ASSIGNED)
+      {
+        resp->success = false;
+        resp->message = "task does not exist or is not pending";
+        RCLCPP_DEBUG_STREAM(this->get_logger(), resp->message);
+        return;
+      }
+      this->_ctxs.erase(it);
+      RCLCPP_INFO(this->get_logger(), "removed task [%s]",
+      req->task_id.c_str());
+      resp->success = true;
+    });
 
   this->_tf2_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   this->_tf2_listener = std::make_unique<tf2_ros::TransformListener>(
@@ -581,7 +590,7 @@ auto WorkcellOrchestrator::_configure(
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<GetTransform>(name, config, *this,
-      this->_tf2_buffer);
+        this->_tf2_buffer);
     });
 
   this->_bt_factory->registerBuilder<SerializeDetections>(
@@ -704,9 +713,11 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
     if (ctx->tick_count == 1)
     {
       RCLCPP_INFO(
-        this->get_logger(), "Task [%s] is pending, call \"%s\" to start this task",
+        this->get_logger(),
+        "Task [%s] is pending, call \"%s\" to start this task",
         ctx->task.id.c_str(),
-        endpoints::WorkcellRequestAction::action_name(this->get_name()).c_str());
+        endpoints::WorkcellRequestAction::action_name(
+          this->get_name()).c_str());
     }
     return;
   }
@@ -774,7 +785,8 @@ void WorkcellOrchestrator::_tick_all_bts()
       ctx->goal_handle->is_canceling())
     {
       RCLCPP_WARN(
-        this->get_logger(), "Cancelling all tasks because an ongoing task [%s] is being cancelled",
+        this->get_logger(),
+        "Cancelling all tasks because an ongoing task [%s] is being cancelled",
         ctx->task.id.c_str());
       // NOTE: iterators are invalidated, it is important to
       // not access them after this line.
@@ -869,7 +881,7 @@ void WorkcellOrchestrator::_register()
   RCLCPP_INFO(this->get_logger(), "Registering with system orchestrator");
   auto register_cb =
     [this](rclcpp::Client<endpoints::RegisterWorkcellService::ServiceType>::
-      SharedFuture future)
+    SharedFuture future)
     {
       this->_ongoing_register = std::nullopt;
       auto resp = future.get();
@@ -895,7 +907,8 @@ void WorkcellOrchestrator::_register()
       RCLCPP_INFO(this->get_logger(),
         "Successfully registered with system orchestrator");
       this->_register_timer->cancel();
-      this->_register_timer.reset();
+      // TODO(luca) reintroduce once https://github.com/ros2/rclcpp/issues/2652 is fixed and released
+      // this->_register_timer.reset();
     };
 
   if (!this->_register_workcell_client->wait_for_service(

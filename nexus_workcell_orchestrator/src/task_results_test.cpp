@@ -27,7 +27,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 namespace nexus::workcell_orchestrator::test {
 

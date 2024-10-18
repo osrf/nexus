@@ -16,7 +16,7 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 #include "transform_pose.hpp"
 
@@ -148,7 +148,7 @@ TEST_CASE("GetTransform") {
     [&](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<GetTransform>(name, config, *fixture.node,
-      tf2_buffer);
+        tf2_buffer);
     });
 
   auto bt = factory.createTreeFromText(

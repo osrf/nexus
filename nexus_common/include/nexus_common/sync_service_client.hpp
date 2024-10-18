@@ -36,7 +36,7 @@ public: template<typename NodePtrT>
     _cb_group(node->create_callback_group(rclcpp::CallbackGroupType::
       MutuallyExclusive, false)),
     _client(node->template create_client<ServiceT>(
-        service_name, rmw_qos_profile_services_default, this->_cb_group))
+        service_name, rclcpp::ServicesQoS(), this->_cb_group))
   {
     this->_executor.add_callback_group(this->_cb_group,
       node->get_node_base_interface());

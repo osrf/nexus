@@ -29,7 +29,7 @@ namespace nexus::capabilities {
 
 void PlanMotionCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
-  std::shared_ptr<const ContextManager> /* ctx_mgr */,
+  std::shared_ptr<const ContextManager>/* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
 {
   this->_client =
@@ -41,7 +41,7 @@ void PlanMotionCapability::configure(
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<PlanMotion>(name, config, *node, this->_client,
-      tf_broadcaster);
+        tf_broadcaster);
     });
 }
 

@@ -81,10 +81,14 @@ def launch_setup(context, *args, **kwargs):
         "abb_irb1300_10_115_moveit_config", "config/kinematics.yaml"
     )
 
+    joint_limits_yaml = {
+        "robot_description_planning": load_yaml("abb_irb1300_10_115_moveit_config", "config/joint_limits.yaml")
+    }
+
     # Planning Functionality
     ompl_planning_pipeline_config = {
         "move_group": {
-            "planning_plugin": "ompl_interface/OMPLPlanner",
+            "planning_plugins": ["ompl_interface/OMPLPlanner"],
             "request_adapters": """default_planner_request_adapters/AddTimeOptimalParameterization default_planner_request_adapters/ResolveConstraintFrames default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints""",
             "start_state_max_bounds_error": 0.1,
         }
@@ -99,8 +103,8 @@ def launch_setup(context, *args, **kwargs):
         "abb_irb1300_10_115_moveit_config", "config/moveit_controllers.yaml"
     )
     moveit_controllers = {
-        "moveit_simple_controller_manager": moveit_simple_controllers_yaml,
         "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
+        "moveit_simple_controller_manager": moveit_simple_controllers_yaml["moveit_simple_controller_manager"],
     }
 
     trajectory_execution = {
@@ -127,6 +131,7 @@ def launch_setup(context, *args, **kwargs):
             robot_description,
             robot_description_semantic,
             kinematics_yaml,
+            joint_limits_yaml,
             ompl_planning_pipeline_config,
             trajectory_execution,
             moveit_controllers,

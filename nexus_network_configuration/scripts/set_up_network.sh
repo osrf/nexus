@@ -5,7 +5,7 @@
 # 2. Change RMW_IMPLEMENTATION to CycloneDDS
 # 3. Enable multicast on loopback interface
 
-RMW_PACKAGE="ros-iron-rmw-cyclonedds-cpp"
+RMW_PACKAGE="ros-jazzy-rmw-cyclonedds-cpp"
 
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $RMW_PACKAGE|grep "install ok installed")
 

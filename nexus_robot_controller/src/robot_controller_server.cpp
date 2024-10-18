@@ -71,6 +71,7 @@ RobotControllerServer::RobotControllerServer(
 {
   declare_parameter("robot_description", "");
   declare_parameter("managed_controllers", std::vector<std::string>());
+  declare_parameter("ros2_control_params_file", std::string());
 
   pimpl_->server_logging_prefix_ << "[CONTROLLER SERVER: " << pimpl_->ns_ <<
     "/" << node_name << "] ";
@@ -102,11 +103,11 @@ RobotControllerServer::on_configure(const rclcpp_lifecycle::State& /*state*/)
     get_logger(),
     "ROBOT_DESCRIPTION PARAM VALUE:" <<
       node_->get_parameter("robot_description").as_string()
-    );
+  );
   if (node_->get_parameter("robot_description").as_string().empty())
   {
     RCLCPP_WARN_STREAM(get_logger(), pimpl_->server_logging_prefix_.str()
-        << "Failed to configure. Missing robot_description parameter!");
+      << "Failed to configure. Missing robot_description parameter!");
     return CallbackReturn::FAILURE;
   }
 
@@ -134,7 +135,7 @@ RobotControllerServer::on_configure(const rclcpp_lifecycle::State& /*state*/)
             pimpl_->cm_node_->get_logger(),
             cm_logging_prefix_.str() <<
               "'update_rate' parameter not set, using default value."
-    );
+          );
         }
         RCLCPP_INFO_STREAM(
           pimpl_->cm_node_->get_logger(),
@@ -193,6 +194,10 @@ RobotControllerServer::on_configure(const rclcpp_lifecycle::State& /*state*/)
   node_->get_parameter("managed_controllers", managed_controllers);
   for (auto& controller_name : managed_controllers)
   {
+    std::string params_file;
+    node_->get_parameter("ros2_control_params_file", params_file);
+    pimpl_->cm_node_->set_parameter({controller_name + ".params_file",
+        params_file});
     pimpl_->cm_node_->load_controller(controller_name);
     pimpl_->cm_node_->configure_controller(controller_name);
   }
@@ -249,7 +254,7 @@ RobotControllerServer::on_activate(const rclcpp_lifecycle::State& /*state*/)
   std::vector<std::string> controller_names;
   for (auto controller : pimpl_->cm_node_->get_loaded_controllers())
   {
-    if (controller.c->get_state().label() != ACTIVE)
+    if (controller.c->get_lifecycle_state().label() != ACTIVE)
     {
       RCLCPP_INFO_STREAM(
         get_logger(),
@@ -277,7 +282,7 @@ RobotControllerServer::on_deactivate(const rclcpp_lifecycle::State& /*state*/)
   std::vector<std::string> controller_names;
   for (auto controller : pimpl_->cm_node_->get_loaded_controllers())
   {
-    if (controller.c->get_state().label() == ACTIVE)
+    if (controller.c->get_lifecycle_state().label() == ACTIVE)
     {
       RCLCPP_INFO_STREAM(
         get_logger(),
@@ -302,7 +307,7 @@ RobotControllerServer::on_shutdown(const rclcpp_lifecycle::State& state)
     pimpl_->server_logging_prefix_.str() << "Shutting Down");
   RCLCPP_INFO_STREAM(get_logger(),
     pimpl_->server_logging_prefix_.str() <<
-      "Shutdown: Running deactivate and cleanup");
+    "Shutdown: Running deactivate and cleanup");
 
   on_deactivate(state);
   on_cleanup(state);
