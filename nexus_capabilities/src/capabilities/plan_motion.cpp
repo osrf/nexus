@@ -133,14 +133,16 @@ make_request()
 
   RCLCPP_DEBUG_STREAM(this->_logger,
     "planning to " << req->goal_pose.pose << " at frame " <<
-      req->goal_pose.header.frame_id << " with cartesian " << req->cartesian << "and scaled speed of " <<
-      scale_speed);
+    req->goal_pose.header.frame_id << " with cartesian " << req->cartesian <<
+    "and scaled speed of " <<
+    scale_speed);
 
   return req;
 }
 
 bool PlanMotion::on_response(
-  rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedResponse resp)
+  rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::SharedResponse
+  resp)
 {
   if (resp->result.error_code.val !=
     moveit_msgs::msg::MoveItErrorCodes::SUCCESS)

@@ -33,7 +33,7 @@ void GripperCapability::declare_params(rclcpp_lifecycle::LifecycleNode& node)
 
 void GripperCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
-  std::shared_ptr<const ContextManager> /* ctx_mgr */,
+  std::shared_ptr<const ContextManager>/* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
 {
   auto grippers = node->get_parameter("grippers").as_string_array();

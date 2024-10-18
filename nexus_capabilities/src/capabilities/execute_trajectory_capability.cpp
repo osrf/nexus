@@ -27,7 +27,7 @@ namespace nexus::capabilities {
 
 void ExecuteTrajectoryCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
-  std::shared_ptr<const ContextManager> /* ctx_mgr */,
+  std::shared_ptr<const ContextManager>/* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
 {
   bt_factory.registerBuilder<ExecuteTrajectory>(
@@ -38,7 +38,9 @@ void ExecuteTrajectoryCapability::configure(
       auto node = w_node.lock();
       if (!node)
       {
-        std::cerr << "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!" << std::endl;
+        std::cerr <<
+          "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!"
+                  << std::endl;
         std::terminate();
       }
 

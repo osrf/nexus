@@ -142,7 +142,8 @@ class InitialThread : public QThread
   Q_OBJECT
 
 public:
-  InitialThread(std::shared_ptr<nexus::lifecycle_manager::LifecycleManagerClient>&
+  InitialThread(
+    std::shared_ptr<nexus::lifecycle_manager::LifecycleManagerClient>&
     _client_orchestrator)
   : client_orchestrator_(_client_orchestrator)
   {
@@ -161,7 +162,8 @@ public:
         if (status_orchestrator ==
           nexus::lifecycle_manager::SystemStatus::TIMEOUT)
         {
-          status_orchestrator = client_orchestrator_->is_active(std::chrono::seconds(
+          status_orchestrator =
+            client_orchestrator_->is_active(std::chrono::seconds(
                 1));
         }
       }

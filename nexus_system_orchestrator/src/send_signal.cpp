@@ -54,7 +54,8 @@ BT::NodeStatus SendSignal::tick()
     if (it == this->_ctx->workcell_task_assignments.cend())
     {
       RCLCPP_ERROR(
-        this->_ctx->node.get_logger(), "%s: Unable to find workcell assigned to task [%s]",
+        this->_ctx->node.get_logger(),
+        "%s: Unable to find workcell assigned to task [%s]",
         this->name().c_str(), task->id.c_str());
       return BT::NodeStatus::FAILURE;
     }

@@ -94,8 +94,10 @@ WorkcellRequest::make_goal()
   }
   goal.task.previous_results = this->_ctx->task_results;
   RCLCPP_INFO_STREAM(
-    this->_ctx->node.get_logger(), "%s: Sending workcell request:" << std::endl << nexus_orchestrator_msgs::action::to_yaml(
-        goal));
+    this->_ctx->node.get_logger(),
+    "%s: Sending workcell request:" << std::endl <<
+      nexus_orchestrator_msgs::action::to_yaml(
+      goal));
   return goal;
 }
 
@@ -107,7 +109,8 @@ void WorkcellRequest::on_feedback(
 }
 
 bool WorkcellRequest::on_result(
-  const rclcpp_action::ClientGoalHandle<endpoints::WorkcellRequestAction::ActionType>::WrappedResult& result)
+  const rclcpp_action::ClientGoalHandle<endpoints::WorkcellRequestAction::
+  ActionType>::WrappedResult& result)
 {
   if (!result.result->success)
   {
