@@ -106,7 +106,8 @@ public:
   void message(const std::string& msg)
   {
     RCLCPP_INFO(
-      this->node_->get_logger(), ANSI_COLOR_BLUE "\33[1m%s\33[0m" ANSI_COLOR_RESET,
+      this->node_->get_logger(),
+      ANSI_COLOR_BLUE "\33[1m%s\33[0m" ANSI_COLOR_RESET,
       msg.c_str());
   }
 
@@ -127,8 +128,8 @@ public:
   }
 
   void isActiveCallback(
-    const std::shared_ptr<rmw_request_id_t> /*request_header*/,
-    const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
+    const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+    const std::shared_ptr<std_srvs::srv::Trigger::Request>/*request*/,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
     response->success = this->_system_active;

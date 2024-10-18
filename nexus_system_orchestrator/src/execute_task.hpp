@@ -54,7 +54,8 @@ public: ExecuteTask(const std::string& name,
     std::shared_ptr<Context> ctx,
     std::filesystem::path bt_path,
     std::shared_ptr<BT::BehaviorTreeFactory> bt_factory)
-  : BT::StatefulActionNode(name, config), _ctx(std::move(ctx)), _bt_path(std::move(
+  : BT::StatefulActionNode(name, config), _ctx(std::move(ctx)),
+    _bt_path(std::move(
         bt_path)),
     _bt_factory(std::move(bt_factory)) {}
 

@@ -56,7 +56,8 @@ public: inline WorkcellRequest(const std::string& name,
     rclcpp_lifecycle::LifecycleNode& node,
     std::shared_ptr<Context> ctx, OnTaskProgressCb on_task_progress_cb)
   : common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
-      endpoints::WorkcellRequestAction::ActionType>(name, config, &node), _ctx(std::move(
+      endpoints::WorkcellRequestAction::ActionType>(name, config, &node),
+    _ctx(std::move(
         ctx)), _on_task_progress(std::move(on_task_progress_cb)) {}
 
 public: BT::NodeStatus onStart() override;
@@ -71,7 +72,8 @@ protected: void on_feedback(
   override;
 
 protected: bool on_result(
-    const rclcpp_action::ClientGoalHandle<endpoints::WorkcellRequestAction::ActionType>::WrappedResult& result)
+    const rclcpp_action::ClientGoalHandle<endpoints::WorkcellRequestAction::
+    ActionType>::WrappedResult& result)
   override;
 
 private: Task _task;

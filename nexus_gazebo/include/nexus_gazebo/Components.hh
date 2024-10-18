@@ -25,7 +25,7 @@ namespace nexus_gazebo::components {
 using MotionCaptureRigidBody = gz::sim::components::Component<
   std::string,
   class MotionCaptureRigidBodyTag,
-    gz::sim::serializers::StringSerializer>;
+  gz::sim::serializers::StringSerializer>;
 
 GZ_SIM_REGISTER_COMPONENT(
   "nexus_gazebo.components.MotionCaptureRigidBody",

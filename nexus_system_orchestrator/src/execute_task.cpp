@@ -56,7 +56,8 @@ BT::NodeStatus ExecuteTask::onStart()
   if (!std::filesystem::is_regular_file(task_bt_path))
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: no behavior tree to execute task type [%s]",
+      this->_ctx->node.get_logger(),
+      "%s: no behavior tree to execute task type [%s]",
       this->name().c_str(), task->type.c_str());
     return BT::NodeStatus::FAILURE;
   }

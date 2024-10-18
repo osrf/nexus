@@ -85,7 +85,8 @@ protected: endpoints::DispenserService::ServiceType::Request::SharedPtr
   make_request() final;
 
 protected: bool on_response(
-    rclcpp::Client<endpoints::DispenserService::ServiceType>::SharedResponse resp)
+    rclcpp::Client<endpoints::DispenserService::ServiceType>::SharedResponse
+    resp)
   final;
 
 private: std::vector<DispenserSession> _dispensers;

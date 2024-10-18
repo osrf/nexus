@@ -270,7 +270,8 @@ public:
           state.location.pose.position.x += x_increment;
           dist_traveled += abs(x_increment);
           _transporters.at(
-            current_transporter)->current_location.pose = state.location.pose.position.x;
+            current_transporter)->current_location.pose =
+          state.location.pose.position.x;
           feedback_cb(state);
         }
 

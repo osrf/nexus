@@ -54,7 +54,7 @@ Job::Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<GetResult>(name, config, this->_ctx,
-      *this->_node.lock());
+        *this->_node.lock());
     });
 
   this->_bt_factory.registerNodeType<MakeTransform>("MakeTransform");
@@ -63,8 +63,8 @@ Job::Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<ApplyTransform>(name, config,
-      *this->_node.lock(),
-      this->_tf2_buffer);
+        *this->_node.lock(),
+        this->_tf2_buffer);
     });
 
   this->_bt_factory.registerBuilder<SerializeDetections>(
@@ -72,7 +72,7 @@ Job::Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SerializeDetections>(name, config,
-      *this->_node.lock());
+        *this->_node.lock());
     });
   this->_bt_factory.registerBuilder<DeserializeDetections>(
     "DeserializeDetections",
@@ -80,7 +80,7 @@ Job::Job(rclcpp_lifecycle::LifecycleNode::WeakPtr node,
       const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<DeserializeDetections>(name, config,
-      *this->_node.lock());
+        *this->_node.lock());
     });
 
   this->_bt_factory.registerBuilder<WaitForSignal>("WaitForSignal",
