@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:iron-ros-base']
+        docker_image: ['ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 60
