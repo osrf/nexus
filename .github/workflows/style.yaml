@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:iron-ros-base']
+        docker_image: ['ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     steps:
@@ -19,8 +19,8 @@ jobs:
         uses: actions/checkout@v2
       - name: uncrustify
         run: |
-          sudo apt update && sudo apt install -y ros-iron-rmf-utils
-          /ros_entrypoint.sh ament_uncrustify -c /opt/ros/iron/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
+          sudo apt update && sudo apt install -y ros-jazzy-rmf-utils
+          /ros_entrypoint.sh ament_uncrustify -c /opt/ros/jazzy/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
       - name: pycodestyle
         run: |
           sudo apt update && sudo apt install -y pycodestyle curl
