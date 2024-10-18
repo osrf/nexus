@@ -55,8 +55,7 @@ public:
   using WorkcellTask = nexus_orchestrator_msgs::msg::WorkcellTask;
   using WorkOrderState = nexus_orchestrator_msgs::msg::WorkOrderState;
 
-  SystemOrchestrator(
-    const rclcpp::NodeOptions& options = rclcpp::NodeOptions{});
+  SystemOrchestrator(const rclcpp::NodeOptions& options = rclcpp::NodeOptions{});
 
   CallbackReturn on_configure(const rclcpp_lifecycle::State& previous) override;
 
@@ -133,8 +132,7 @@ private:
     endpoints::RegisterWorkcellService::ServiceType::Response::SharedPtr resp);
 
   void _handle_register_transporter(
-    endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr
-    req,
+    endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr req,
     endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr resp);
 
   /**

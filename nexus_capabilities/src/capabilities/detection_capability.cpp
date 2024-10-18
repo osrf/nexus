@@ -63,17 +63,15 @@ void DetectionCapability::configure(
       auto node = w_node.lock();
       if (!node)
       {
-        std::cerr <<
-          "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!"
-                  << std::endl;
+        std::cerr << "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!" << std::endl;
         std::terminate();
       }
 
       return std::make_unique<DetectOffset>(name, config,
-        node->get_logger(), ctx_mgr, [this, node](const std::string& detector)
-        {
-          return this->_clients.at(detector);
-        });
+      node->get_logger(), ctx_mgr, [this, node](const std::string& detector)
+      {
+        return this->_clients.at(detector);
+      });
     });
 
   bt_factory.registerBuilder<DetectAllItems>(
@@ -84,17 +82,15 @@ void DetectionCapability::configure(
       auto node = w_node.lock();
       if (!node)
       {
-        std::cerr <<
-          "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!"
-                  << std::endl;
+        std::cerr << "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES!!!" << std::endl;
         std::terminate();
       }
 
       return std::make_unique<DetectAllItems>(name, config, node, ctx_mgr,
-        [this](const std::string& detector)
-        {
-          return this->_clients.at(detector);
-        });
+      [this](const std::string& detector)
+      {
+        return this->_clients.at(detector);
+      });
     });
 
   bt_factory.registerBuilder<GetDetection>(

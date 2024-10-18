@@ -41,7 +41,7 @@ TEST_CASE("pose serialization") {
     [&](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<DeserializeDetections>(name, config,
-        *fixture.node);
+      *fixture.node);
     });
 
   auto bt = bt_factory.createTreeFromText(

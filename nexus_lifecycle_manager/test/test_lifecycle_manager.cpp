@@ -110,12 +110,10 @@ bool wait_for_service_by_node(
     [node, node_name,
     service]()
     {
-      auto service_names_and_types_by_node =
-      node->get_service_names_and_types_by_node(
+      auto service_names_and_types_by_node = node->get_service_names_and_types_by_node(
         node_name,
         "");
-      return service_names_and_types_by_node.end() !=
-        service_names_and_types_by_node.find(
+      return service_names_and_types_by_node.end() != service_names_and_types_by_node.find(
         service);
     },
     timeout,
@@ -235,8 +233,7 @@ SCENARIO("Test Lifecycle Manager")
 
   node3->trigger_transition(
     lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
-  node3->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+  node3->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
   CHECK(lifecycle_manager->addNodeName("node3"));
   RCLCPP_INFO(node->get_logger(), "Added node 3");

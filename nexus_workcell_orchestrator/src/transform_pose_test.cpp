@@ -148,7 +148,7 @@ TEST_CASE("GetTransform") {
     [&](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<GetTransform>(name, config, *fixture.node,
-        tf2_buffer);
+      tf2_buffer);
     });
 
   auto bt = factory.createTreeFromText(

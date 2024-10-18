@@ -294,8 +294,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       for (auto& p : this->_workcell_sessions)
       {
         auto& wc = p.second;
-        auto wc_req =
-        std::make_shared<endpoints::PauseWorkcellService::ServiceType::Request>();
+        auto wc_req = std::make_shared<endpoints::PauseWorkcellService::ServiceType::Request>();
         wc_req->pause = req->pause;
         reqs.emplace(p.first,
         common::BatchServiceReq<PauseWorkcellService>{
@@ -454,27 +453,27 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<WorkcellRequest>(name, config, *this, ctx,
-        [this, ctx](const auto&)
+      [this, ctx](const auto&)
+      {
+        this->_publish_wo_feedback(*ctx);
+        try
         {
-          this->_publish_wo_feedback(*ctx);
-          try
-          {
-            this->_publish_wo_states(this->_jobs.at(ctx->job_id));
-          }
-          catch (const std::out_of_range&)
-          {
-            RCLCPP_WARN(this->get_logger(),
-            "Error when publishing work order states: Work order [%s] not found",
-            ctx->job_id.c_str());
-          }
-        });
+          this->_publish_wo_states(this->_jobs.at(ctx->job_id));
+        }
+        catch (const std::out_of_range&)
+        {
+          RCLCPP_WARN(this->get_logger(),
+          "Error when publishing work order states: Work order [%s] not found",
+          ctx->job_id.c_str());
+        }
+      });
     });
 
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<BidTransporter>(name, config,
-        this->shared_from_this(), ctx);
+      this->shared_from_this(), ctx);
     });
 
   bt_factory->registerBuilder<TransporterRequest>(
@@ -489,7 +488,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<ForEachTask>(name, config,
-        this->get_logger(), ctx);
+      this->get_logger(), ctx);
     });
 
   bt_factory->registerBuilder<ExecuteTask>("ExecuteTask",
@@ -497,7 +496,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<ExecuteTask>(name, config, ctx, this->_bt_path,
-        bt_factory);
+      bt_factory);
     });
 
   bt_factory->registerBuilder<SendSignal>("SendSignal",
@@ -593,8 +592,7 @@ void SystemOrchestrator::_init_job(
           task_state.workcell_id = *maybe_assignment;
           task_state.task_id = task_id;
           auto req =
-          std::make_shared<endpoints::QueueWorkcellTaskService::ServiceType::
-          Request>();
+          std::make_shared<endpoints::QueueWorkcellTaskService::ServiceType::Request>();
           req->task_id = task_id;
           try
           {
@@ -737,14 +735,11 @@ void SystemOrchestrator::_handle_register_workcell(
       this->create_client<endpoints::PauseWorkcellService::ServiceType>(
         endpoints::
         PauseWorkcellService::service_name(workcell_id)),
-      std::make_unique<common::SyncServiceClient<endpoints::
-      SignalWorkcellService::ServiceType>>(
+      std::make_unique<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>(
         this, endpoints::SignalWorkcellService::service_name(workcell_id)),
-      std::make_unique<common::SyncServiceClient<endpoints::
-      QueueWorkcellTaskService::ServiceType>>(
+      std::make_unique<common::SyncServiceClient<endpoints::QueueWorkcellTaskService::ServiceType>>(
         this, endpoints::QueueWorkcellTaskService::service_name(workcell_id)),
-      std::make_unique<common::SyncServiceClient<endpoints::
-      RemovePendingTaskService::ServiceType>>(
+      std::make_unique<common::SyncServiceClient<endpoints::RemovePendingTaskService::ServiceType>>(
         this, endpoints::RemovePendingTaskService::service_name(workcell_id))
     }));
 
@@ -765,8 +760,7 @@ void SystemOrchestrator::_handle_register_workcell(
 }
 
 void SystemOrchestrator::_handle_register_transporter(
-  endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr
-  req,
+  endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr req,
   endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr resp)
 {
   RCLCPP_DEBUG(this->get_logger(), "Got register transporter request");
@@ -786,8 +780,7 @@ void SystemOrchestrator::_handle_register_transporter(
   this->_transporter_sessions.emplace(transporter_id,
     std::make_shared<TransporterSession>(TransporterSession{
       req->description,
-      this->create_client<endpoints::IsTransporterAvailableService::ServiceType>
-      (
+      this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
           transporter_id))
     }));
@@ -819,8 +812,7 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
       catch (const std::out_of_range&)
       {
         RCLCPP_WARN(
-          this->get_logger(),
-          "Failed to remove pending task [%s]: missing task state",
+          this->get_logger(), "Failed to remove pending task [%s]: missing task state",
           task_id.c_str());
       }
 
@@ -860,8 +852,7 @@ void SystemOrchestrator::_halt_fail_and_remove_job(const std::string& job_id)
   catch (const std::out_of_range&)
   {
     RCLCPP_WARN(
-      this->get_logger(),
-      "Failed to halt, fail and remove job [%s]: job does not exist",
+      this->get_logger(), "Failed to halt, fail and remove job [%s]: job does not exist",
       job_id.c_str());
   }
 }

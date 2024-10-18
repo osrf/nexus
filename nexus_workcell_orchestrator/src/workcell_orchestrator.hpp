@@ -147,8 +147,7 @@ private: void _cancel_all_tasks();
 private: void _register();
 
 private: void _handle_register_response(
-    endpoints::RegisterWorkcellService::ServiceType::Response::ConstSharedPtr
-    resp);
+    endpoints::RegisterWorkcellService::ServiceType::Response::ConstSharedPtr resp);
 
 private: void _process_signal(
     endpoints::SignalWorkcellService::ServiceType::Request::ConstSharedPtr req,

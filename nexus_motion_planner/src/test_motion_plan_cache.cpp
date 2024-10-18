@@ -45,49 +45,49 @@ void check_and_emit(
 moveit_msgs::msg::RobotTrajectory get_dummy_panda_plan()
 {
   static moveit_msgs::msg::RobotTrajectory out = []()
-  {
-    moveit_msgs::msg::RobotTrajectory plan;
+    {
+      moveit_msgs::msg::RobotTrajectory plan;
 
-    auto traj = &plan.joint_trajectory;
-    traj->header.frame_id = g_robot_frame;
+      auto traj = &plan.joint_trajectory;
+      traj->header.frame_id = g_robot_frame;
 
-    traj->joint_names.push_back(g_robot_name + "_joint1");
-    traj->joint_names.push_back(g_robot_name + "_joint2");
-    traj->joint_names.push_back(g_robot_name + "_joint3");
-    traj->joint_names.push_back(g_robot_name + "_joint4");
-    traj->joint_names.push_back(g_robot_name + "_joint5");
-    traj->joint_names.push_back(g_robot_name + "_joint6");
-    traj->joint_names.push_back(g_robot_name + "_joint7");
+      traj->joint_names.push_back(g_robot_name + "_joint1");
+      traj->joint_names.push_back(g_robot_name + "_joint2");
+      traj->joint_names.push_back(g_robot_name + "_joint3");
+      traj->joint_names.push_back(g_robot_name + "_joint4");
+      traj->joint_names.push_back(g_robot_name + "_joint5");
+      traj->joint_names.push_back(g_robot_name + "_joint6");
+      traj->joint_names.push_back(g_robot_name + "_joint7");
 
-    traj->points.emplace_back();
-    traj->points.at(0).positions = {0, 0, 0, 0, 0, 0};
-    traj->points.at(0).velocities = {0, 0, 0, 0, 0, 0};
-    traj->points.at(0).accelerations = {0, 0, 0, 0, 0, 0};
-    traj->points.at(0).time_from_start.sec = 999999;
+      traj->points.emplace_back();
+      traj->points.at(0).positions = {0, 0, 0, 0, 0, 0};
+      traj->points.at(0).velocities = {0, 0, 0, 0, 0, 0};
+      traj->points.at(0).accelerations = {0, 0, 0, 0, 0, 0};
+      traj->points.at(0).time_from_start.sec = 999999;
 
-    return plan;
-  }();
+      return plan;
+    }();
   return out;
 }
 
 std::vector<geometry_msgs::msg::Pose> get_dummy_waypoints()
 {
   static std::vector<geometry_msgs::msg::Pose> out = []()
-  {
-    std::vector<geometry_msgs::msg::Pose> waypoints;
-    for (size_t i = 0; i < 3; i++)
     {
-      waypoints.emplace_back();
-      waypoints.at(i).position.x = i;
-      waypoints.at(i).position.y = i;
-      waypoints.at(i).position.z = i;
-      waypoints.at(i).orientation.w = i;
-      waypoints.at(i).orientation.x = i + 0.1;
-      waypoints.at(i).orientation.y = i + 0.1;
-      waypoints.at(i).orientation.z = i + 0.1;
-    }
-    return waypoints;
-  }();
+      std::vector<geometry_msgs::msg::Pose> waypoints;
+      for (size_t i = 0; i < 3; i++)
+      {
+        waypoints.emplace_back();
+        waypoints.at(i).position.x = i;
+        waypoints.at(i).position.y = i;
+        waypoints.at(i).position.z = i;
+        waypoints.at(i).orientation.w = i;
+        waypoints.at(i).orientation.x = i + 0.1;
+        waypoints.at(i).orientation.y = i + 0.1;
+        waypoints.at(i).orientation.z = i + 0.1;
+      }
+      return waypoints;
+    }();
   return out;
 }
 

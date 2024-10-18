@@ -66,7 +66,7 @@ SCENARIO("Test Gripper Mock")
 
   auto goal_response_callback =
     [&goal_response](GoalHandleGripperAction::SharedPtr
-    goal_handle)
+      goal_handle)
     {
       if (goal_handle)
       {

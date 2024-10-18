@@ -63,8 +63,7 @@ BT::NodeStatus ApplyTransform::tick()
     if (!x || !y || !z || !qx || !qy || !qz || !qw)
     {
       RCLCPP_ERROR(
-        this->_node.get_logger(),
-        "[%s]: Either [transform_from_pose_stamped], [transform_from_pose], or [x, y, z, qx, qy, qz, qw] ports are required.",
+        this->_node.get_logger(), "[%s]: Either [transform_from_pose_stamped], [transform_from_pose], or [x, y, z, qx, qy, qz, qw] ports are required.",
         this->name().c_str());
       return BT::NodeStatus::FAILURE;
     }
@@ -95,12 +94,10 @@ BT::NodeStatus ApplyTransform::tick()
   RCLCPP_INFO_STREAM(
     this->_node.get_logger(),
     "[" << this->name() << "]" << std::endl <<
-      "Base pose: " << base_pose->pose << " frame: " <<
-      base_pose->header.frame_id << std::endl <<
+      "Base pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
       "Transform: " << t << std::endl <<
-      "Result: " << result_pose.pose <<  " frame: " <<
-      result_pose.header.frame_id
-  );
+      "Result: " << result_pose.pose <<  " frame: " << result_pose.header.frame_id
+    );
   this->setOutput("result", result_pose);
   return BT::NodeStatus::SUCCESS;
 }
@@ -150,10 +147,10 @@ BT::NodeStatus GetTransform::tick()
 
   tf2::Transform frame_tf;
   const auto handle_exception = [this](const std::exception& e)
-  {
-    RCLCPP_ERROR(this->_node.get_logger(), "%s", e.what());
-    return BT::NodeStatus::FAILURE;
-  };
+    {
+      RCLCPP_ERROR(this->_node.get_logger(), "%s", e.what());
+      return BT::NodeStatus::FAILURE;
+    };
   try
   {
     const auto tf_msg = this->_tf2_buffer->lookupTransform(
@@ -191,10 +188,8 @@ BT::NodeStatus GetTransform::tick()
   RCLCPP_INFO_STREAM(
     this->_node.get_logger(),
     "[" << this->name() << "]" << std::endl <<
-      "Base pose: " << base_pose->pose << " frame: " <<
-      base_pose->header.frame_id << std::endl <<
-      "Target pose: " << target_pose->pose << "frame: " <<
-      target_pose->header.frame_id << std::endl <<
+      "Base pose: " << base_pose->pose << " frame: " << base_pose->header.frame_id << std::endl <<
+      "Target pose: " << target_pose->pose << "frame: " << target_pose->header.frame_id << std::endl <<
       "Result: " << result_tf;
   );
   this->setOutput("result", tf2::toMsg(result_tf));
