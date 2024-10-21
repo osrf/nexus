@@ -1,6 +1,7 @@
 # NEXUS
-![](https://github.com/osrf/nexus/workflows/style/badge.svg)
-![](https://github.com/osrf/nexus/workflows/integration_tests/badge.svg)
+[![style](https://github.com/osrf/nexus/actions/workflows/style.yaml/badge.svg)](https://github.com/osrf/nexus/actions/workflows/style.yaml)
+[![integration_tests](https://github.com/osrf/nexus/actions/workflows/nexus_integration_tests.yaml/badge.svg)](https://github.com/osrf/nexus/actions/workflows/nexus_integration_tests.yaml)
+[![workcell_editor](https://github.com/osrf/nexus/actions/workflows/nexus_workcell_editor.yaml/badge.svg)](https://github.com/osrf/nexus/actions/workflows/nexus_workcell_editor.yaml)
 
 ![](./docs/media/nexus_architecture.png)
 

@@ -1,0 +1,22 @@
+<package format="3">
+  <name>nexus_workcell_editor</name>
+  <version>0.1.1</version>
+  <description>A GUI to assemble workcells</description>
+  <maintainer email="yadunund@gmail.com">Yadunund</maintainer>
+  <license>Apache License 2.0</license>
+
+  <build_depend>cargo</build_depend>
+
+  <depend>gtk3</depend>
+  <depend>libudev-dev</depend>
+  <depend>libasound2-dev</depend>
+  <depend>nexus_calibration_msgs</depend>
+  <depend>rclrs</depend>
+
+  <test_depend>abb_irb910sc_support</test_depend>
+  <test_depend>nexus_assets</test_depend>
+
+  <export>
+    <build_type>ament_cargo</build_type>
+  </export>
+</package>
