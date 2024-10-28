@@ -25,3 +25,10 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y pycodestyle curl
           pycodestyle nexus_network_configuration/
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.75
+        with:
+          components: clippy, rustfmt
+      - name: rustfmt
+        run: |
+          rustfmt --check --edition 2021 nexus_workcell_editor/src/main.rs
