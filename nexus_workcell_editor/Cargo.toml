@@ -19,4 +19,3 @@ rmf_site_editor = { git = "https://github.com/open-rmf/rmf_site", rev = "f4bed77
 rmf_site_format = { git = "https://github.com/open-rmf/rmf_site", rev = "f4bed77" }
 rclrs = "0.4.0"
 nexus_calibration_msgs = "*"
-libm = "=0.2.8"
