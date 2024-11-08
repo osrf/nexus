@@ -45,12 +45,16 @@ public:
   ///
   /// \param[in] expiration_time
   ///   The time until when this itinerary is valid
+  ///
+  /// \param[in] source
+  ///   The source for this itinerary
   Itinerary(
     std::string id,
     std::string destination,
     std::string transporter_name,
     rclcpp::Time estimated_finish_time,
-    rclcpp::Time expiration_time
+    rclcpp::Time expiration_time,
+    std::string source = ""
   );
 
   /// Get the id
@@ -58,6 +62,12 @@ public:
 
   /// Set the id
   Itinerary& id(std::string id);
+
+  /// Get the source
+  const std::string& source() const;
+
+  /// Set the source
+  Itinerary& source(std::string source);
 
   /// Get the destination
   const std::string& destination() const;

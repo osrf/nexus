@@ -209,10 +209,12 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         return rclcpp_action::GoalResponse::REJECT;
       }
       // TODO(YV): Book keeping
+      // TODO(luca) make source std::optional
       auto itinerary =
       data->transporter->get_itinerary(
         goal->request.id,
-        goal->request.destination);
+        goal->request.destination,
+        goal->request.source);
       if (!itinerary.has_value())
       {
         if (node)

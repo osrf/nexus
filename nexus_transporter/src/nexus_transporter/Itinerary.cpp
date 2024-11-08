@@ -30,6 +30,7 @@ public:
   std::string transporter_name;
   rclcpp::Time finish_time;
   rclcpp::Time expiration_time;
+  std::string source;
 };
 
 //==============================================================================
@@ -42,6 +43,19 @@ const std::string& Itinerary::id() const
 Itinerary& Itinerary::id(std::string id)
 {
   _pimpl->id = std::move(id);
+  return *this;
+}
+
+//==============================================================================
+const std::string& Itinerary::source() const
+{
+  return _pimpl->source;
+}
+
+//==============================================================================
+Itinerary& Itinerary::source(std::string source)
+{
+  _pimpl->source= std::move(source);
   return *this;
 }
 
@@ -103,14 +117,16 @@ Itinerary::Itinerary(
   std::string destination,
   std::string transporter_name,
   rclcpp::Time estimated_finish_time,
-  rclcpp::Time expiration_time)
+  rclcpp::Time expiration_time,
+  std::string source)
 : _pimpl(rmf_utils::make_impl<Implementation>(
       Implementation{
         std::move(id),
         std::move(destination),
         std::move(transporter_name),
         std::move(estimated_finish_time),
-        std::move(expiration_time)
+        std::move(expiration_time),
+        std::move(source),
       }))
 {
   // Do nothing

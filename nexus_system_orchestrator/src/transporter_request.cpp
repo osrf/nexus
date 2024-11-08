@@ -51,6 +51,13 @@ BT::NodeStatus TransporterRequest::onStart()
   }
   this->_destination = maybe_destination.value();
 
+  // Source is not a mandatory parameter
+  auto maybe_source = this->getInput<std::string>("source");
+  if (maybe_source)
+  {
+    this->_source = maybe_source.value();
+  }
+
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
       endpoints::TransportAction::ActionType>::
     onStart();
@@ -68,6 +75,7 @@ make_goal()
   goal.request.id = this->_ctx->job_id;
   goal.request.requester = this->_node->get_name();
   goal.request.destination = this->_destination;
+  goal.request.source = this->_source;
   return goal;
 }
 

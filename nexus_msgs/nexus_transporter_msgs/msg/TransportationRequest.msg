@@ -9,6 +9,9 @@ string id
 # The name of the destination
 string destination
 
+# The name of the source location
+string source
+
 # The items that need to be transported to the destination.
 # A json schema may be defined in the future for the contents of this field.
 string payload

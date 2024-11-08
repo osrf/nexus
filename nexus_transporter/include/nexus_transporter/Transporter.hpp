@@ -61,11 +61,15 @@ public:
   ///
   /// \param[in] destination
   /// The name of the destination
+  ///
+  /// \param[in] source
+  /// The name of the source, empty if not needed (i.e. for a conveyor belt)
   /// \return A nullopt is returned if the destination is not valid.
   // TODO(YV): Consider creating a separate class for destination
   virtual std::optional<Itinerary> get_itinerary(
     const std::string& job_id,
-    const std::string& destination) = 0;
+    const std::string& destination,
+    const std::string& source = "") = 0;
 
   /// Request the transporter to go to a destination. This call should be
   /// non-blocking.

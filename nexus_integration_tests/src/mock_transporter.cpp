@@ -135,7 +135,8 @@ public:
 
   std::optional<Itinerary> get_itinerary(
     const std::string& id,
-    const std::string& destination)
+    const std::string& destination,
+    const std::string& /* source */)
   {
     if (_destinations.find(destination) == _destinations.end())
       return std::nullopt;
