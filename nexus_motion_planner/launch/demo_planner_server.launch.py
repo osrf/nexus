@@ -95,8 +95,16 @@ def launch_setup(context, *args, **kwargs):
 
     # Planning Functionality
     ompl_planning_pipeline_config = {
-        "move_group": load_yaml(moveit_config_package, "config/ompl_planning.yaml")
+        "move_group": {
+            "planning_plugins": ["ompl_interface/OMPLPlanner"],
+            "request_adapters": """default_planner_request_adapters/AddTimeOptimalParameterization default_planner_request_adapters/ResolveConstraintFrames default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints""",
+            "start_state_max_bounds_error": 0.1,
+        }
     }
+    ompl_planning_yaml = load_yaml(
+        moveit_config_package.perform(context), "config/ompl_planning.yaml"
+    )
+    ompl_planning_pipeline_config["move_group"].update(ompl_planning_yaml)
 
     # Trajectory Execution Functionality
     moveit_simple_controllers_yaml = load_yaml(
