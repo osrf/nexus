@@ -17,5 +17,5 @@ repositories:
     version: rolling
   thirdparty/abb/abb_ros2:
     type: git
-    url: https://github.com/yadunund/abb_ros2.git
-    version: main
+    url: https://github.com/luca-della-vedova/abb_ros2.git
+    version: luca/jazzy
