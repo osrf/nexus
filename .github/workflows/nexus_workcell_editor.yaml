@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:iron-ros-base']
+        docker_image: ['ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 30
@@ -26,13 +26,17 @@ jobs:
     - name: Install colcon cargo
       run: |
         cargo install --debug cargo-ament-build  # --debug is faster to install
-        pip install git+https://github.com/colcon/colcon-cargo.git
-        pip install git+https://github.com/colcon/colcon-ros-cargo.git
+        pip install colcon-cargo --break-system-packages
+        pip install colcon-ros-cargo --break-system-packages
     - uses: actions/checkout@v2
     - name: vcs
+      # TODO(luca) Go back to cloning a tag when a new version is released with jazzy repos file
       run: |
-        git clone https://github.com/ros2-rust/ros2_rust.git -b 0.4.0
-        vcs import . < ros2_rust/ros2_rust_iron.repos
+        git clone https://github.com/ros2-rust/ros2_rust.git
+        cd ros2_rust
+        git checkout f45a66f47dc727e3ccb13037a6c57923af1446c7
+        cd ..
+        vcs import . < ros2_rust/ros2_rust_jazzy.repos
     - name: rosdep
       run: |
         rosdep update
