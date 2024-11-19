@@ -14,7 +14,6 @@
 
 import os
 import yaml
-import xacro
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -51,8 +50,6 @@ def launch_setup(context, *args, **kwargs):
     robot_xacro_file = LaunchConfiguration("robot_xacro_file")
     moveit_config_package = LaunchConfiguration("moveit_config_package")
     moveit_config_file = LaunchConfiguration("moveit_config_file")
-    ur_type = LaunchConfiguration("ur_type")
-    ur_name = LaunchConfiguration("ur_name")
 
     planner_server_params = PathJoinSubstitution(
         [
@@ -69,7 +66,6 @@ def launch_setup(context, *args, **kwargs):
             PathJoinSubstitution(
                 [FindPackageShare(support_package), "urdf", robot_xacro_file]
             ),
-            " use_mock_hardware:=true name:=", ur_name.perform(context), " ur_type:=", ur_type.perform(context),
         ]
     )
     robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
@@ -79,17 +75,16 @@ def launch_setup(context, *args, **kwargs):
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare(moveit_config_package), "srdf", moveit_config_file]
+                [FindPackageShare(moveit_config_package), "config", moveit_config_file]
             ),
-            " name:=", ur_name.perform(context),
         ]
     )
     robot_description_semantic = {
         "robot_description_semantic": ParameterValue(robot_description_semantic_content, value_type=str)
     }
 
-    kinematics_yaml = {"robot_description_kinematics": load_yaml(
-        moveit_config_package.perform(context), "config/kinematics.yaml")}
+    kinematics_yaml = load_yaml(
+        moveit_config_package.perform(context), "config/kinematics.yaml")
 
     joint_limits_yaml = {
         "robot_description_planning": load_yaml(moveit_config_package.perform(context), "config/joint_limits.yaml")
@@ -238,28 +233,28 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "support_package",
-            default_value="ur_robot_driver",
+            default_value="abb_irb1300_support",
             description="Name of the support package",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_xacro_file",
-            default_value="ur.urdf.xacro",
+            default_value="irb1300_10_115.xacro",
             description="Xacro describing the robot.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "moveit_config_package",
-            default_value="ur_moveit_config",
+            default_value="abb_irb1300_10_115_moveit_config",
             description="Name of the support package",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "moveit_config_file",
-            default_value="ur.srdf.xacro",
+            default_value="abb_irb1300_10_115.srdf.xacro",
             description="Name of the SRDF file",
         )
     )
@@ -275,20 +270,6 @@ def generate_launch_description():
             "publish_item",
             default_value="true",
             description="Publish the static transform for item",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "ur_name",
-            default_value="ur5e",
-            description="Name of the UR robot",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "ur_type",
-            default_value="ur5e",
-            description="UR robot type (i.e. ur5e, ur10, etc.) to be used for xacro generation",
         )
     )
     return LaunchDescription(

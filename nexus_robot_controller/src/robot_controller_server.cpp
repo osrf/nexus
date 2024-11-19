@@ -71,7 +71,6 @@ RobotControllerServer::RobotControllerServer(
 {
   declare_parameter("robot_description", "");
   declare_parameter("managed_controllers", std::vector<std::string>());
-  declare_parameter("ros2_control_params_file", std::string());
 
   pimpl_->server_logging_prefix_ << "[CONTROLLER SERVER: " << pimpl_->ns_ <<
     "/" << node_name << "] ";
@@ -194,9 +193,6 @@ RobotControllerServer::on_configure(const rclcpp_lifecycle::State& /*state*/)
   node_->get_parameter("managed_controllers", managed_controllers);
   for (auto& controller_name : managed_controllers)
   {
-    std::string params_file;
-    node_->get_parameter("ros2_control_params_file", params_file);
-    pimpl_->cm_node_->set_parameter({controller_name + ".params_file", params_file});
     pimpl_->cm_node_->load_controller(controller_name);
     pimpl_->cm_node_->configure_controller(controller_name);
   }

@@ -1,9 +1,9 @@
 motion_planner_server:
   ros__parameters:
     # List of robots to generate motion plans for
-    manipulators: ["ur5e"]
+    manipulators: ["abb_irb1300"]
     # The default moveit group for each manipulator
-    default_group_name: "ur_manipulator"
+    default_group_name: "manipulator"
     # Seconds to wait to connect to an action or service server
     timeout_duration: 5
     # Configure the planner_server to query motion plans directly from a move_group

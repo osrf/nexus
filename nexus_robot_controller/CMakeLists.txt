@@ -63,7 +63,7 @@ if(BUILD_TESTING)
 
   find_package(launch_testing_ament_cmake)
   install(DIRECTORY test DESTINATION share/${PROJECT_NAME})
-  add_launch_test(test/robot_controller_ur5e.test.py)
+  add_launch_test(test/robot_controller_abb_irb910sc.test.py)
 endif()
 
 ament_export_include_directories(include)

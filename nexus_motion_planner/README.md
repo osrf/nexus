@@ -36,14 +36,14 @@ Explanation of each configuration parameter are commented in [planner_params.yam
 ## 2. Launch the motion planner server
 
 A demo script that launches `move_group` along with the `motion_planner_server` is included.
-By default the `ur5e` robot is used.
+By default the `abb_irb1300` robot is used.
 ```bash
 ros2 launch nexus_motion_planner demo_planner_server.launch.py
 ```
 
 To try a different robot, launch with some parameter substitutions.
 ```bash
-ros2 launch nexus_motion_planner demo_planner_server.launch.py support_package:=ur_robot_driver robot_xacro_file:=ur.urdf.xacro moveit_config_package:=ur_moveit_config moveit_config_file:=ur.srdf.xacro
+ros2 launch nexus_motion_planner demo_planner_server.launch.py support_package:=abb_irb910sc_support robot_xacro_file:=irb910sc_3_45.xacro moveit_config_package:=abb_irb910sc_3_45_moveit_config moveit_config_file:=abb_irb910sc_3_45.srdf.xacro
 ```
 
 ## 3. Configuring and activating up the Motion Planner Server lifecycle node
@@ -61,15 +61,34 @@ ros2 lifecycle set /motion_planner_server activate
 Refer to [src/test_request.cpp](src/test_request.cpp) for an example on how to interact with the Motion Planner Server via the [nexus_motion_planner_msgs::GetMotionPlan](nexus_msgs/nexus_motion_planner_msgs/srv/GetMotionPlan.srv) service.
 Below are some example poses/joint values given for manual testing.
 
-### UR5E
+### IRB910SC
 ```bash
 # Specifying end-effector poses. Optionally, start value can be specified "-s <pose_string>"
-# test_state state: 0.594981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107
-ros2 run nexus_motion_planner test_request -name ur5e -frame_id item -goal_type 0 -t 0.594981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107
+# Home state (frame_id: item): 0.150,-0.200,0.051,1,0,0,0
+# paste_item state (frame_id: item): 0.145,-0.166,-0.053,1.00,0.0,0.0,0.0
+# pick_item state (frame_id: item): -0.384,0.193,0.046,1.00,0.0,0.0,0.0
+ros2 run nexus_motion_planner test_request -name abb_irb910sc -frame_id item -goal_type 0 -t -0.384,0.193,0.046,1.00,0.0,0.0,0.0
+
+# Specifying joint values. Optionally, start value can be specified "-sj <joint_values_string>"
+# home state: 0,0,0,0
+# paste_item state: 0,0,-0.1,0
+# pick_item state: 1.2,1.2,-0.1,0.1
+ros2 run nexus_motion_planner test_request -name abb_irb910sc -frame_id item -goal_type 1 -tj 1.2,1.2,-0.1,0.1
+```
+
+### IRB1300
+```bash
+# Specifying end-effector poses. Optionally, start value can be specified "-s <pose_string>"
+# Home state: 0.654250,0.0,1.143500,0.0,0.707107,0.0,0.707107
+# paste_item state: 0.794981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107
+# pick_item state: 0.054310,0.765854,0.677203,-0.498732,0.592116,0.454073,0.441002
+ros2 run nexus_motion_planner test_request -name abb_irb1300 -frame_id item -goal_type 0 -t 0.794981,0.000000,0.063564,0.000000,0.707107,0.000000,0.707107
 
 # Specifying joint values. Optionally, start value can be specified "-sj <joint_values_string>"
 # home state: 0,0,0,0,0,0
-ros2 run nexus_motion_planner test_request -name ur5e -frame_id item -goal_type 1 -tj 1.5,0.5,0.5,0,-0.8,0.1
+# paste_item state: 0,1.3,0,0,0,0
+# pick_item state: 1.5,0.5,0.5,0,-0.8,0.1
+ros2 run nexus_motion_planner test_request -name abb_irb1300 -frame_id item -goal_type 1 -tj 1.5,0.5,0.5,0,-0.8,0.1
 ```
 > Note: For debugging purposes, you can also add a `-send_traj` flag which will publish a joint trajectory message on "/manipulator_controller/joint_trajectory".
 

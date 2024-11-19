@@ -28,11 +28,9 @@ jobs:
       with:
         path: ~/.cache/ccache
         key: ccache
-    # TODO(luca) Remove build from source of UR robots
-    # This is only temporary until a new Jazzy sync that includes https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver/pull/1153/ is made
-    - name: TEMPORARY build UR from source
-      run:
-        git clone -b 2.4.13 https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver
+    - name: vcs
+      run: |
+        vcs import . < abb.repos
     - name: rosdep
       run: |
         apt update

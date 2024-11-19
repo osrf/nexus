@@ -77,7 +77,6 @@ def launch_setup(context, *args, **kwargs):
     bt_path = LaunchConfiguration("bt_path")
     ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
-    ur_type = LaunchConfiguration("ur_type")
     controller_config_package = LaunchConfiguration("controller_config_package")
     planner_config_package = LaunchConfiguration("planner_config_package")
     planner_config_file = LaunchConfiguration("planner_config_file")
@@ -95,11 +94,6 @@ def launch_setup(context, *args, **kwargs):
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
 
-    controller_path = os.path.join(
-        get_package_share_directory(controller_config_package.perform(context)),
-        "config",
-        controllers_file.perform(context),
-    )
     workcell_id_str = workcell_id.perform(context)
 
     mock_dispenser_node = LifecycleNode(
@@ -184,7 +178,7 @@ def launch_setup(context, *args, **kwargs):
             ),
             Parameter(
                 "robot_name",
-                "ur5e",
+                "abb_irb1300",
             ),
             Parameter("gripper_max_effort", 0.0),
         ],
@@ -202,21 +196,20 @@ def launch_setup(context, *args, **kwargs):
                 IncludeLaunchDescription(
                     [
                         PathJoinSubstitution([
-                            FindPackageShare("ur_robot_driver"),
+                            FindPackageShare("abb_bringup"),
                             'launch',
-                            'ur_control.launch.py',
+                            'abb_control.launch.py',
                         ])
                     ],
                     launch_arguments=[
-                        ("ur_type", ur_type),
                         ("runtime_config_package", controller_config_package),
-                        ("controllers_file", controller_path),
+                        ("controllers_file", controllers_file),
+                        ("description_package", support_package),
+                        ("description_file", robot_xacro_file),
                         ("launch_rviz", "false"),
-                        ("headless_mode", headless),
-                        ("use_mock_hardware", use_fake_hardware),
-                        ("mock_sensor_commands", use_fake_hardware),
-                        ("robot_ip", robot_ip),
-                        ("initial_joint_controller", "joint_trajectory_controller"),
+                        ("moveit_config_package", moveit_config_package),
+                        ("use_fake_hardware", use_fake_hardware),
+                        ("rws_ip", robot_ip),
                     ],
                 )
             ]
@@ -303,13 +296,8 @@ def generate_launch_description():
             description="Launch in headless mode (no gui)",
         ),
         DeclareLaunchArgument(
-            "ur_type",
-            default_value="ur5e",
-            description="Type of UR robot (i.e. ur5e, ur10, etc.)",
-        ),
-        DeclareLaunchArgument(
             "controller_config_package",
-            default_value="ur_robot_driver",
+            default_value="nexus_integration_tests",
             description="Package with the controller\'s configuration in 'config' folder",
         ),
         DeclareLaunchArgument(
@@ -324,27 +312,27 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "support_package",
-            default_value="ur_robot_driver",
+            default_value="abb_irb910sc_support",
             description="Name of the support package",
         ),
         DeclareLaunchArgument(
             "robot_xacro_file",
-            default_value="ur.urdf.xacro",
+            default_value="irb910sc_3_45.xacro",
             description="Xacro describing the robot.",
         ),
         DeclareLaunchArgument(
             "moveit_config_package",
-            default_value="ur_moveit_config",
+            default_value="abb_irb910sc_3_45_moveit_config",
             description="MoveIt configuration package for the robot",
         ),
         DeclareLaunchArgument(
             "moveit_config_file",
-            default_value="ur.srdf.xacro",
+            default_value="abb_irb910sc_3_45.srdf.xacro",
             description="Name of the SRDF file",
         ),
         DeclareLaunchArgument(
             "controllers_file",
-            default_value="ur_controllers.yaml",
+            default_value="abb_irb910sc_controllers.yaml",
             description="YAML file with the controllers configuration.",
         ),
         DeclareLaunchArgument(
@@ -354,7 +342,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "sku_detection_params_file",
-            default_value="product_detector_config.yaml",
+            default_value="irb910sc_detection.yaml",
             description="Config file with the detected SKU poses",
         ),
         DeclareLaunchArgument(
@@ -365,7 +353,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "use_fake_hardware",
             default_value="True",
-            description="Set True if simulating without real hardware.",
+            description="Set True if running with real hardware.",
         ),
         DeclareLaunchArgument(
             "robot_ip",

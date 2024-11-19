@@ -31,7 +31,7 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>xacro</exec_depend>
 
-  <test_depend>ur_robot_driver</test_depend>
+  <test_depend>abb_irb910sc_support</test_depend>
   <test_depend>ament_cmake_uncrustify</test_depend>
   <test_depend>rmf_utils</test_depend>
   <test_depend>ros2_control</test_depend>
