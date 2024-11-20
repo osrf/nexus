@@ -19,10 +19,6 @@ jobs:
     - name: Install deps for Rust
       run: |
         apt update && apt install -y git curl libclang-dev
-    - name: Setup Rust for nexus_zenoh_bridge
-      uses: dtolnay/rust-toolchain@1.75
-      with:
-        components: clippy, rustfmt
     - uses: actions/checkout@v2
     - uses: actions/cache@v3
       with:
