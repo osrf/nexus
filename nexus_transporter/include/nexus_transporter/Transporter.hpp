@@ -82,10 +82,32 @@ public:
   ///
   /// \param[in] completed_cb
   ///   A callback to execute to when the transportation has failed or succeeded
+  ///
+  /// \param[in] signal_destination
+  ///   The entity to send a signal to when the transporter is at the destination
+  ///
+  /// \param[in] signal_source
+  ///   The entity to send a signal to when the transporter is at the source
+  // TODO(luca) strings are easily swapped, create a class or wrap into itinerary
   virtual void transport_to_destination(
     const Itinerary& itinerary,
     TransportFeedback feedback_cb,
-    TransportCompleted completed_cb) = 0;
+    TransportCompleted completed_cb,
+    const std::string& signal_destination = "",
+    const std::string& signal_source = "") = 0;
+
+  /// Process a signal sent to this transporter, not all transporter might need
+  /// this interface so it is not mandatory to implement it.
+  /// \param[in] job_id
+  ///   The id to send the signal to
+  ///
+  /// \param[in] signal
+  ///   The signal to send
+  ///
+  /// \return An error message if the request failed, std::nullopt otherwise.
+  virtual std::optional<std::string> process_signal(
+    const std::string& /*job_id*/,
+    const std::string& /*signal*/) { return "Transporter doesn't implement signals"; };
 
   /// Cancel the presently assigned task
   /// \param[in] itinerary

@@ -932,7 +932,7 @@ void WorkcellOrchestrator::_process_signal(
 {
   for (const auto& ctx : this->_ctxs)
   {
-    if (ctx->task.id == req->task_id)
+    // if (ctx->task.id == req->task_id)
     {
       RCLCPP_INFO(
         this->get_logger(),

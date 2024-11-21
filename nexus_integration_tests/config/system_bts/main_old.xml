@@ -1,24 +1,20 @@
 <root main_tree_to_execute="main">
   <BehaviorTree ID="main">
     <ReactiveSequence>
-      <!--IsPauseTriggered paused="{paused}"/-->
+      <IsPauseTriggered paused="{paused}"/>
       <Fallback>
-        <!--PausableSequence pause="{paused}"-->
-        <Sequence>
-          <ForEachTaskPair place_task="{place_task}" source="{source}" destination="{destination}" pick_task="{pick_task}">
-            <ExecuteTaskPair place_task="{place_task}" source="{source}" destination="{destination}" pick_task="{pick_task}"/>
-          </ForEachTaskPair>
+        <PausableSequence pause="{paused}">
+          <ForEachTask task="{task}" workcell="{workcell}">
+            <ExecuteTask task="{task}" workcell="{workcell}"/>
+          </ForEachTask>
           <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
           <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
-        </Sequence>
-        <!--/PausableSequence-->
-        <!--PausableSequence pause="{paused}"-->
-        <Sequence>
+        </PausableSequence>
+        <PausableSequence pause="{paused}">
           <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
           <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
           <AlwaysFailure/>
-        </Sequence>
-        <!--/PausableSequence-->
+        </PausableSequence>
       </Fallback>
     </ReactiveSequence>
   </BehaviorTree>

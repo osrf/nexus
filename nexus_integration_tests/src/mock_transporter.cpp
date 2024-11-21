@@ -182,7 +182,9 @@ public:
   void transport_to_destination(
     const Itinerary& itinerary,
     Transporter::TransportFeedback feedback_cb,
-    Transporter::TransportCompleted completed_cb) final
+    Transporter::TransportCompleted completed_cb,
+    const std::string&,
+    const std::string&) final
   {
     const auto& current_transporter = itinerary.transporter_name();
     const auto& current_location =

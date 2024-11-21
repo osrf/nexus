@@ -20,7 +20,9 @@ set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 add_library(${PROJECT_NAME}_plugin SHARED
   src/bid_transporter.cpp
   src/execute_task.cpp
+  src/execute_task_pair.cpp
   src/for_each_task.cpp
+  src/for_each_task_pair.cpp
   src/send_signal.cpp
   src/system_orchestrator.cpp
   src/transporter_request.cpp

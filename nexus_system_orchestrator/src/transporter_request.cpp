@@ -26,7 +26,11 @@ using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
 BT::PortsList TransporterRequest::providedPorts()
 {
   return { BT::InputPort<std::string>("transporter"),
-    BT::InputPort<std::string>("destination") };
+    BT::InputPort<std::string>("destination"),
+    BT::InputPort<std::string>("source"),
+    BT::InputPort<std::string>("signal_destination"),
+    BT::InputPort<std::string>("signal_source")
+  };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
@@ -50,12 +54,31 @@ BT::NodeStatus TransporterRequest::onStart()
     return BT::NodeStatus::FAILURE;
   }
   this->_destination = maybe_destination.value();
+  RCLCPP_ERROR(
+    this->_node->get_logger(), "DESTINATION IS %s",
+    this->_destination.c_str());
 
-  // Source is not a mandatory parameter
-  auto maybe_source = this->getInput<std::string>("source");
-  if (maybe_source)
+  // The following are not mandatory parameters
+  if (auto maybe_source = this->getInput<std::string>("source"))
   {
     this->_source = maybe_source.value();
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "SOURCE IS %s",
+      this->_source.c_str());
+  }
+  if (auto maybe_signal_source = this->getInput<std::string>("signal_source"))
+  {
+    this->_signal_source = maybe_signal_source.value();
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "SIGNAL SOURCE IS %s",
+      this->_signal_source.c_str());
+  }
+  if (auto maybe_signal_destination = this->getInput<std::string>("signal_destination"))
+  {
+    this->_signal_destination = maybe_signal_destination.value();
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "SIGNAL DESTINATION IS %s",
+      this->_signal_destination.c_str());
   }
 
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
@@ -76,6 +99,8 @@ make_goal()
   goal.request.requester = this->_node->get_name();
   goal.request.destination = this->_destination;
   goal.request.source = this->_source;
+  goal.request.signal_destination = this->_signal_destination;
+  goal.request.signal_source = this->_signal_source;
   return goal;
 }
 

@@ -1,14 +1,24 @@
 <root main_tree_to_execute="pick_and_place">
   <BehaviorTree ID="pick_and_place">
     <ReactiveSequence>
-      <IsPauseTriggered paused="{paused}"/>
+      <!--IsPauseTriggered paused="{paused}"/-->
       <Parallel success_threshold="-1">
         <Sequence>
-          <BidTransporter name="bid_transporterasdasd" destination="{workcell}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}"/>
-          <SendSignal task="{task}" signal="transporter_done"/>
+          <BidTransporter name="bid_transporter" source="{source}" destination="{destination}" result="{transporter}"/>
+          <!-- Transporter will signal source / destination when it arrives -->
+          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal_source="{source}" signal_destination="{destination}"/>
         </Sequence>
-        <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+        <Sequence>
+          <!-- Inside workcell behavior tree, have a wait for signal for transporter_at_source -->
+          <WorkcellRequest name="workcell_request" workcell="{source}" task="{place_task}"/>
+          <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
+          <SendSignal transporter="{transporter}" signal="place_done"/>
+          <!-- Inside workcell behavior tree, have a wait for signal for transporter_at_destination -->
+          <WorkcellRequest name="workcell_request" workcell="{destination}" task="{pick_task}"/>
+          <!-- TODO(luca) we can actually send this earlier, inside the task, as soon as the robot picked up the item -->
+          <!-- The transporter will listen and send an appropriate ingestor result for RMF or noop for conveyor belt-->
+          <SendSignal transporter="{transporter}" signal="pick_done"/>
+        </Sequence>
       </Parallel>
     </ReactiveSequence>
   </BehaviorTree>

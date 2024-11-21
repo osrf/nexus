@@ -21,7 +21,7 @@ namespace nexus::system_orchestrator {
 
 BT::PortsList BidTransporter::providedPorts()
 {
-  return { BT::InputPort<std::string>("destination"),
+  return { BT::InputPort<std::string>("destination"), BT::InputPort<std::string>("source"),
     BT::OutputPort<std::string>("result") };
 }
 
@@ -133,6 +133,7 @@ BT::NodeStatus BidTransporter::_update_ongoing_requests()
     {
       finished_requests.emplace_back(transporter_id);
       auto resp = ongoing_req.fut.get();
+      // TODO(luca) make this proper bidding
       // use first available transporter
       if (resp->available)
       {

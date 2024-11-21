@@ -21,7 +21,9 @@
 #include "context.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
+#include "execute_task_pair.hpp"
 #include "for_each_task.hpp"
+#include "for_each_task_pair.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
 #include "transporter_request.hpp"
@@ -491,12 +493,28 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       this->get_logger(), ctx);
     });
 
+  bt_factory->registerBuilder<ForEachTaskPair>("ForEachTaskPair",
+    [this, ctx](const std::string& name,
+    const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<ForEachTaskPair>(name, config,
+        this->get_logger(), ctx);
+    });
+
   bt_factory->registerBuilder<ExecuteTask>("ExecuteTask",
     [this, ctx, bt_factory](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<ExecuteTask>(name, config, ctx, this->_bt_path,
       bt_factory);
+    });
+
+  bt_factory->registerBuilder<ExecuteTaskPair>("ExecuteTaskPair",
+    [this, ctx, bt_factory](const std::string& name,
+    const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<ExecuteTaskPair>(name, config, ctx, this->_bt_path,
+        bt_factory);
     });
 
   bt_factory->registerBuilder<SendSignal>("SendSignal",
@@ -782,6 +800,11 @@ void SystemOrchestrator::_handle_register_transporter(
       req->description,
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
+          transporter_id)),
+      std::make_unique<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>
+      (
+       this,
+        endpoints::SignalTransporterService::service_name(
           transporter_id))
     }));
 

@@ -35,10 +35,12 @@ namespace nexus::system_orchestrator {
  */
 class SendSignal : public BT::SyncActionNode
 {
+public: using WorkcellTask = nexus_orchestrator_msgs::msg::WorkcellTask;
 public: static BT::PortsList providedPorts()
   {
     return { BT::InputPort<nexus_orchestrator_msgs::msg::WorkcellTask>("task",
         "The task the signal is tied to."),
+      BT::InputPort<std::string>("transporter", "The transporter to signal"),
       BT::InputPort<std::string>(
         "signal", "Signal to send.") };
   }
@@ -48,6 +50,9 @@ public: SendSignal(const std::string& name, const BT::NodeConfiguration& config,
   : BT::SyncActionNode(name, config), _ctx(std::move(ctx)) {}
 
 public: BT::NodeStatus tick() override;
+
+private: BT::NodeStatus signal_task(const WorkcellTask& task, const std::string& signal);
+private: BT::NodeStatus signal_transporter(const std::string& transporter, const std::string& signal);
 
 private: std::shared_ptr<Context> _ctx;
 };
