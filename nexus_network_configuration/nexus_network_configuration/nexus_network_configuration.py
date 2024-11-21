@@ -48,10 +48,7 @@ class NEXUSConfigGenerator:
 
         # Set global variables
         self.enable_rest_api = self.nexus_net_cfg["enable_rest_api"]
-        self.add_allowed_endpoints = self.nexus_net_cfg[
-            "add_allowed_endpoints"]
         self.bridge_mode = self.nexus_net_cfg["mode"]
-        self.forward_discovery = self.nexus_net_cfg["forward_discovery"]
 
         self.zenoh_cfg_file_extension = "json5"
 
@@ -146,11 +143,11 @@ class NEXUSConfigGenerator:
 
         zenoh_dict = {
             "plugins": {
-                "dds": {
+                "ros2dds": {
                     "domain": orchestrator["domain_id"],
-                    "group_member_id": orchestrator["ros_namespace"],
-                    "forward_discovery": self.forward_discovery,
-                    "allow": allowed_endpoints,
+                    "namespace": orchestrator["namespace"],
+                    "allow": orchestrator["allow"],
+                    "queries_timeout": orchestrator["queries_timeout"],
                 },
             },
             "mode": self.bridge_mode,
@@ -180,7 +177,7 @@ class NEXUSConfigGenerator:
         orchestrators_zenoh_cfg = []
 
         allowed_endpoints = self.generate_allowed_endpoints(
-            self.redf_cfg, self.add_allowed_endpoints)
+            self.redf_cfg)
 
         # Generate system orchestrator zenoh dictionary
         for orchestrator in nexus_net_cfg["system_orchestrators"]:
@@ -212,18 +209,17 @@ class NEXUSConfigGenerator:
         for zenoh_cfg in orchestrators_zenoh_cfg:
             write_filepath = os.path.join(
                 output_dir,
-                zenoh_cfg["plugins"]["dds"]["group_member_id"]
+                zenoh_cfg["plugins"]["ros2dds"]["namespace"]
                 + "."
                 + self.zenoh_cfg_file_extension,
             )
-            # This has been removed in Zenoh 1.0.0
-            del zenoh_cfg["plugins"]["dds"]["group_member_id"]
+            del zenoh_cfg["plugins"]["ros2dds"]["namespace"]
             self.write_to_json(write_filepath, zenoh_cfg)
             print(f"Generated Zenoh configuration at {write_filepath}")
 
     def generate_allowed_endpoints(self,
-                                   redf_cfg,
-                                   add_allowed_endpoints):
+                                   redf_cfg
+                                   ):
         """
         Generate allowed endpoints string from REDF configuration.
 
@@ -234,8 +230,6 @@ class NEXUSConfigGenerator:
         ----------
         redf_cfg : dict
             REDF Configuration dictionary
-        add_allowed_endpoints : array
-            Additional endpoints allowed
 
         Returns
         -------
@@ -252,8 +246,6 @@ class NEXUSConfigGenerator:
                 allowed_endpoints.append(endpoint["action_name"])
             elif endpoint.get("service_name"):
                 allowed_endpoints.append(endpoint["service_name"])
-
-        allowed_endpoints.extend(add_allowed_endpoints)
 
         allowed_endpoints_str = ""
         for endpoint_str in allowed_endpoints:
