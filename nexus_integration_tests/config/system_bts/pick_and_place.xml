@@ -6,7 +6,7 @@
         <Sequence>
           <BidTransporter name="bid_transporter" source="{source}" destination="{destination}" result="{transporter}"/>
           <!-- Transporter will signal source / destination when it arrives -->
-          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal_source="{source}" signal_destination="{destination}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal_source="{place_task}" signal_destination="{pick_task}"/>
         </Sequence>
         <Sequence>
           <!-- Inside workcell behavior tree, have a wait for signal for transporter_at_source -->

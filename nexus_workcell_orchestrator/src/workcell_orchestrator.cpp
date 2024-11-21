@@ -932,7 +932,7 @@ void WorkcellOrchestrator::_process_signal(
 {
   for (const auto& ctx : this->_ctxs)
   {
-    // if (ctx->task.id == req->task_id)
+    if (ctx->task.id == req->task_id)
     {
       RCLCPP_INFO(
         this->get_logger(),
@@ -940,6 +940,7 @@ void WorkcellOrchestrator::_process_signal(
         req->signal.c_str(), req->task_id.c_str());
       ctx->signals.emplace(req->signal);
       resp->success = true;
+      return;
     }
   }
 

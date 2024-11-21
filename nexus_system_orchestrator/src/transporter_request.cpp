@@ -28,8 +28,8 @@ BT::PortsList TransporterRequest::providedPorts()
   return { BT::InputPort<std::string>("transporter"),
     BT::InputPort<std::string>("destination"),
     BT::InputPort<std::string>("source"),
-    BT::InputPort<std::string>("signal_destination"),
-    BT::InputPort<std::string>("signal_source")
+    BT::InputPort<Task>("signal_destination"),
+    BT::InputPort<Task>("signal_source")
   };
 }
 
@@ -54,31 +54,19 @@ BT::NodeStatus TransporterRequest::onStart()
     return BT::NodeStatus::FAILURE;
   }
   this->_destination = maybe_destination.value();
-  RCLCPP_ERROR(
-    this->_node->get_logger(), "DESTINATION IS %s",
-    this->_destination.c_str());
 
   // The following are not mandatory parameters
   if (auto maybe_source = this->getInput<std::string>("source"))
   {
     this->_source = maybe_source.value();
-    RCLCPP_ERROR(
-      this->_node->get_logger(), "SOURCE IS %s",
-      this->_source.c_str());
   }
-  if (auto maybe_signal_source = this->getInput<std::string>("signal_source"))
+  if (auto maybe_signal_source = this->getInput<Task>("signal_source"))
   {
-    this->_signal_source = maybe_signal_source.value();
-    RCLCPP_ERROR(
-      this->_node->get_logger(), "SIGNAL SOURCE IS %s",
-      this->_signal_source.c_str());
+    this->_signal_source = maybe_signal_source.value().id;
   }
-  if (auto maybe_signal_destination = this->getInput<std::string>("signal_destination"))
+  if (auto maybe_signal_destination = this->getInput<Task>("signal_destination"))
   {
-    this->_signal_destination = maybe_signal_destination.value();
-    RCLCPP_ERROR(
-      this->_node->get_logger(), "SIGNAL DESTINATION IS %s",
-      this->_signal_destination.c_str());
+    this->_signal_destination = maybe_signal_destination.value().id;
   }
 
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
