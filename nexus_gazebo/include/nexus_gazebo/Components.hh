@@ -16,18 +16,18 @@
 #define NEXUS_GAZEBO__COMPONENTS_HH_
 
 #include <string>
-#include <ignition/gazebo/components/Component.hh>
-#include <ignition/gazebo/components/Factory.hh>
-#include <ignition/gazebo/components/Serialization.hh>
-#include <ignition/gazebo/config.hh>
+#include <gz/sim/components/Component.hh>
+#include <gz/sim/components/Factory.hh>
+#include <gz/sim/components/Serialization.hh>
+#include <gz/sim/config.hh>
 
 namespace nexus_gazebo::components {
-using MotionCaptureRigidBody = ignition::gazebo::components::Component<
+using MotionCaptureRigidBody = gz::sim::components::Component<
   std::string,
   class MotionCaptureRigidBodyTag,
-    ignition::gazebo::serializers::StringSerializer>;
+    gz::sim::serializers::StringSerializer>;
 
-IGN_GAZEBO_REGISTER_COMPONENT(
+GZ_SIM_REGISTER_COMPONENT(
   "nexus_gazebo.components.MotionCaptureRigidBody",
   MotionCaptureRigidBody)
 

@@ -10,7 +10,7 @@ A ROS 2 framework which enables configuration and orchestration of process workf
 For details on architecture and concepts [see](./docs/concepts.md).
 
 ## Requirements
-* [ROS 2 Iron](https://docs.ros.org/en/iron/Installation/Ubuntu-Install-Debians.html) on `Ubuntu 22.04`
+* [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debians.html) on `Ubuntu 24.04`
 
 ## Setup
 
@@ -34,12 +34,12 @@ cd ~/ws_nexus/src/
 git clone git@github.com:osrf/nexus
 vcs import . < nexus/abb.repos
 cd ~/ws_nexus
-rosdep install --from-paths src --ignore-src --rosdistro iron -y -r
+rosdep install --from-paths src --ignore-src --rosdistro jazzy -y -r
 ```
 
 ### Build the NEXUS workspace
 ```bash
-source /opt/ros/iron/setup.bash
+source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
@@ -103,10 +103,10 @@ The linter of choice is `uncrustify` and the configuration used may be reference
 Instead of invoking `uncrustify` directly, use `ament_uncrustify` instead which is a wrapper around a specific version of `uncrustify`.
 You may locally run the linter as follows
 ```bash
-sudo apt update && sudo apt install -y ros-iron-rmf-utils # This is a one-time step
-source /opt/ros/iron/setup.bash
+sudo apt update && sudo apt install -y ros-jazzy-rmf-utils # This is a one-time step
+source /opt/ros/jazzy/setup.bash
 cd ~/ws_nexus/src/nexus
-ament_uncrustify -c /opt/ros/iron/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
+ament_uncrustify -c /opt/ros/jazzy/share/rmf_utils/rmf_code_style.cfg . --language C++ --exclude nexus_endpoints/nexus_endpoints.hpp
 ```
 To automatically reformat the code, append `--reformat` to the `ament_uncrustify` line above.
 It is highly recommended to audit the changes by the linter before committing.

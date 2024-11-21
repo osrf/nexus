@@ -16,8 +16,8 @@
   <depend>rclcpp</depend>
   <depend>vrpn</depend>
 
-  <depend condition="$GZ_VERSION == '' and $IGNITION_VERSION == ''">ignition-gazebo6</depend>
-  <depend condition="$GZ_VERSION == '' and $IGNITION_VERSION == ''">ignition-math6</depend>
+  <depend>gz_sim_vendor</depend>
+  <depend>gz_math_vendor</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

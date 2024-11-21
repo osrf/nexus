@@ -6,7 +6,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(ignition-gazebo6 REQUIRED)
+find_package(gz_sim_vendor REQUIRED)
+find_package(gz-sim REQUIRED)
 find_package(VRPN REQUIRED)
 
 #===============================================================================
@@ -16,7 +17,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ignition-gazebo6::core
+  gz-sim::core
   ${VRPN_LIBRARIES}
 )
 
@@ -27,7 +28,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 ament_target_dependencies(${PROJECT_NAME}
-  ignition-gazebo6
+  gz-sim
   VRPN)
 
 

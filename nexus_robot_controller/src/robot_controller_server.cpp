@@ -249,7 +249,7 @@ RobotControllerServer::on_activate(const rclcpp_lifecycle::State& /*state*/)
   std::vector<std::string> controller_names;
   for (auto controller : pimpl_->cm_node_->get_loaded_controllers())
   {
-    if (controller.c->get_state().label() != ACTIVE)
+    if (controller.c->get_lifecycle_state().label() != ACTIVE)
     {
       RCLCPP_INFO_STREAM(
         get_logger(),
@@ -277,7 +277,7 @@ RobotControllerServer::on_deactivate(const rclcpp_lifecycle::State& /*state*/)
   std::vector<std::string> controller_names;
   for (auto controller : pimpl_->cm_node_->get_loaded_controllers())
   {
-    if (controller.c->get_state().label() == ACTIVE)
+    if (controller.c->get_lifecycle_state().label() == ACTIVE)
     {
       RCLCPP_INFO_STREAM(
         get_logger(),

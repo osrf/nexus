@@ -19,10 +19,10 @@
   <depend>yaml-cpp</depend>
 
   <build_depend>nexus_cmake</build_depend>
+  <build_depend>rmf_utils</build_depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <test_depend>rmf_utils</test_depend>
   <test_depend>ament_cmake_catch2</test_depend>
   <test_depend>ament_cmake_uncrustify</test_depend>
   <test_depend>example_interfaces</test_depend>

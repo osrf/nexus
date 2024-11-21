@@ -15,9 +15,9 @@
 #include "nexus_gazebo/MotionCaptureRigidBody.hh"
 #include "nexus_gazebo/Components.hh"
 
-#include <ignition/plugin/RegisterMore.hh>
-#include <ignition/gazebo/components/Name.hh>
-#include <ignition/gazebo/components/ParentEntity.hh>
+#include <gz/plugin/RegisterMore.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/ParentEntity.hh>
 
 constexpr const char* kRigidBodyLabel = "rigid_body_label";
 
@@ -41,7 +41,7 @@ void MotionCaptureRigidBody::Configure(
     // In the case that the user hasn't overridden the label, then use
     // the name of the entity we are attached to.
     this->rigid_body_label =
-      _ecm.Component<ignition::gazebo::components::Name>(_entity)->Data();
+      _ecm.Component<gz::sim::components::Name>(_entity)->Data();
   }
 
   _ecm.CreateComponent<components::MotionCaptureRigidBody>(_entity,
@@ -49,7 +49,7 @@ void MotionCaptureRigidBody::Configure(
 }
 }  // namespace nexus_gazebo
 
-IGNITION_ADD_PLUGIN(
+GZ_ADD_PLUGIN(
   nexus_gazebo::MotionCaptureRigidBody,
   nexus_gazebo::System,
   nexus_gazebo::MotionCaptureRigidBody::ISystemConfigure);

@@ -32,9 +32,7 @@ public:
       "Mock printer is running..."
     );
 
-    bool autostart;
-    this->declare_parameter<bool>("autostart", false);
-    this->get_parameter<bool>("autostart", autostart);
+    bool autostart = this->declare_parameter<bool>("autostart", false);
     // If 'autostart' parameter is true, the node self-transitions to 'active' state upon startup
     if (autostart)
     {

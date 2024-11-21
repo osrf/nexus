@@ -23,6 +23,7 @@
   <depend>rclpy</depend>
   <depend>std_srvs</depend>
   <depend>tf2_ros</depend>
+  <depend>yaml-cpp</depend>
   <depend>yaml_cpp_vendor</depend>
   <depend>rmw_cyclonedds_cpp</depend>
 

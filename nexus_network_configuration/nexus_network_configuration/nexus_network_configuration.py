@@ -216,6 +216,8 @@ class NEXUSConfigGenerator:
                 + "."
                 + self.zenoh_cfg_file_extension,
             )
+            # This has been removed in Zenoh 1.0.0
+            del zenoh_cfg["plugins"]["dds"]["group_member_id"]
             self.write_to_json(write_filepath, zenoh_cfg)
             print(f"Generated Zenoh configuration at {write_filepath}")
 

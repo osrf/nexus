@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:iron-ros-base']
+        docker_image: ['ros:jazzy-ros-base']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 60
@@ -19,10 +19,6 @@ jobs:
     - name: Install deps for Rust
       run: |
         apt update && apt install -y git curl libclang-dev
-    - name: Setup Rust for nexus_zenoh_bridge
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy, rustfmt
     - uses: actions/checkout@v2
     - uses: actions/cache@v3
       with:

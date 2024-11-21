@@ -15,7 +15,7 @@
  *
  */
 
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 #include "batch_service_call.hpp"
 #include "nexus_common_test/test_utils.hpp"
