@@ -71,13 +71,14 @@ def load_yaml(package_name, file_path):
 @pytest.mark.launch_test
 @launch_testing.markers.keep_alive
 def generate_test_description():
-    robot_description_path = get_package_share_directory("abb_irb910sc_support")
+    robot_description_path = get_package_share_directory("ur_robot_driver")
     robot_description_config = xacro.process_file(
         os.path.join(
             robot_description_path,
             "urdf",
-            "irb910sc_3_45.xacro",
-        )
+            "ur.urdf.xacro",
+        ),
+        mappings={"ur_type": "ur5e", "name": "ur5e", "use_mock_hardware": "true"},
     )
     robot_description = {"robot_description": robot_description_config.toxml()}
 
@@ -103,7 +104,7 @@ def generate_test_description():
         name="rviz2",
         arguments=[
             "-d",
-            os.path.join(robot_description_path, "rviz", "urdf_description.rviz"),
+            os.path.join(robot_description_path, "rviz", "view_robot.rviz"),
         ],
         output="log",
         condition=IfCondition(start_rviz),
@@ -111,11 +112,15 @@ def generate_test_description():
 
     robot_controller_path = get_package_share_directory("nexus_robot_controller")
     robot_controller_test_params = PathJoinSubstitution(
-        [robot_controller_path, "test", "abb_irb910sc_test_params.yaml"]
+        [robot_controller_path, "test", "ur5e_test_params.yaml"]
     )
     controller_params = PathJoinSubstitution(
-        [robot_controller_path, "config", "test_abb_irb910sc_controllers.yaml"]
+        [robot_controller_path, "config", "test_ur5e_controllers.yaml"]
     )
+    ros2_control_params = PathJoinSubstitution(
+        [robot_controller_path, "config", "ur5e_forward_position_controller.yaml"]
+    )
+    controller_params_file = {"ros2_control_params_file": controller_params}
     remappings = []
 
     return LaunchDescription(declared_arguments + [
@@ -126,7 +131,7 @@ def generate_test_description():
             package='nexus_robot_controller',
             executable='robot_controller_server',
             output='screen',
-            parameters=[robot_controller_test_params, controller_params, robot_description],
+            parameters=[robot_controller_test_params, controller_params, controller_params_file, robot_description],
             remappings=remappings
         ),
 
@@ -155,8 +160,8 @@ class TestLifeCycle(unittest.TestCase):
             proc_info.assertWaitForStartup(process=echo_joint_states, timeout=5)
 
             os.system('ros2 topic pub -1 '
-                      'forward_command_controller_position/commands std_msgs/msg/Float64MultiArray '
-                      '"{data: [-5.0, -5.0, -5.0, -5.0]}"')
+                      'forward_position_controller/commands std_msgs/msg/Float64MultiArray '
+                      '"{data: [-5.0, -5.0, -5.0, -5.0, -5.0, -5.0]}"')
 
             proc_output.assertWaitFor('- -5.', timeout=10, stream='stdout')
 
@@ -169,14 +174,14 @@ class TestLifeCycle(unittest.TestCase):
             proc_output.assertWaitFor('Switched on Controllers', timeout=10, stream='stderr')
 
             os.system('ros2 topic pub -1 '
-                      'forward_command_controller_position/commands std_msgs/msg/Float64MultiArray '
-                      '"{data: [5.0, 5.0, 5.0, 5.0]}"')
+                      'forward_position_controller/commands std_msgs/msg/Float64MultiArray '
+                      '"{data: [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]}"')
 
             proc_output.assertWaitFor('- 5.', timeout=10, stream='stdout')
 
             os.system('ros2 topic pub -1 '
-                      'forward_command_controller_position/commands std_msgs/msg/Float64MultiArray '
-                      '"{data: [0.0, 0.0, 0.0, 0.0]}"')
+                      'forward_position_controller/commands std_msgs/msg/Float64MultiArray '
+                      '"{data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}"')
 
         os.system('ros2 lifecycle set /robot_controller_server deactivate')
         proc_output.assertWaitFor('Deactivating', timeout=10, stream='stderr')

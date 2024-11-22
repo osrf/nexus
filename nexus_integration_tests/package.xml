@@ -27,11 +27,9 @@
   <depend>yaml_cpp_vendor</depend>
   <depend>rmw_cyclonedds_cpp</depend>
 
-  <exec_depend>abb_bringup</exec_depend>
-  <exec_depend>abb_irb1300_support</exec_depend>
-  <exec_depend>abb_irb1300_10_115_moveit_config</exec_depend>
-  <exec_depend>abb_irb910sc_support</exec_depend>
-  <exec_depend>abb_irb910sc_3_45_moveit_config</exec_depend>
+  <exec_depend>ur_robot_driver</exec_depend>
+  <exec_depend>ur_description</exec_depend>
+  <exec_depend>ur_moveit_config</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_xml</exec_depend>
