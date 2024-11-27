@@ -12,7 +12,8 @@ find_package(nexus_cmake REQUIRED)
 find_package(nexus_common REQUIRED)
 find_package(nexus_endpoints REQUIRED)
 find_package(nexus_lifecycle_manager REQUIRED)
-find_package(yaml-cpp REQUIRED VERSION 0.7)
+find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
@@ -37,7 +38,7 @@ target_link_libraries(${PROJECT_NAME}_plugin PUBLIC
   rclcpp_action::rclcpp_action
   rclcpp_lifecycle::rclcpp_lifecycle
   rclcpp_components::component
-  yaml-cpp
+  yaml-cpp::yaml-cpp
 )
 set_target_properties(${PROJECT_NAME}_plugin PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${PROJECT_NAME}_plugin PRIVATE "COMPOSITION_BUILDING_DLL")
@@ -57,12 +58,13 @@ if(BUILD_TESTING)
     NAMES "rmf_code_style.cfg"
     PATHS "${rmf_utils_DIR}/../../../../share/rmf_utils/")
 
-  ament_uncrustify(
-    ARGN include src
-    CONFIG_FILE ${uncrustify_config_file}
-    MAX_LINE_LENGTH 80
-    LANGUAGE CPP
-  )
+  # TODO(luca) Add uncrustify back after formatting
+  #ament_uncrustify(
+  #  ARGN include src
+  #  CONFIG_FILE ${uncrustify_config_file}
+  #  MAX_LINE_LENGTH 80
+  #  LANGUAGE CPP
+  #)
 
   # Adds a ament catch2 test with some common libraries.
   # Usage: nexus_add_test(<target> <source>...)

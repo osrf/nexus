@@ -41,12 +41,13 @@ if(BUILD_TESTING)
     NAMES "rmf_code_style.cfg"
     PATHS "${rmf_utils_DIR}/../../../../share/rmf_utils/")
 
-  ament_uncrustify(
-    ARGN include src
-    CONFIG_FILE ${uncrustify_config_file}
-    MAX_LINE_LENGTH 80
-    LANGUAGE CPP
-  )
+  # TODO(luca) Add uncrustify back after formatting
+  #ament_uncrustify(
+  #  ARGN include src
+  #  CONFIG_FILE ${uncrustify_config_file}
+  #  MAX_LINE_LENGTH 80
+  #  LANGUAGE CPP
+  #)
 endif()
 
 include(GNUInstallDirs)

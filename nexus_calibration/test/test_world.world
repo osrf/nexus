@@ -1,0 +1,55 @@
+<sdf version="1.9">
+  <world name="test_nexus_calibration">
+
+    <model name="mocap">
+        <pose>0 0 0 0 0 0</pose>
+        <static>true</static>
+        <link name="motion_capture_origin"/>
+        <plugin filename="nexus_gazebo" name="nexus_gazebo::MotionCaptureSystem">
+          <port>3883</port>
+          <update_frequency>50.0</update_frequency>
+          <stream_rigid_bodies>true</stream_rigid_bodies>
+        </plugin>
+    </model>
+
+    <model name="mocap_rotated">
+        <pose>0 0 0 0 0 1.5707</pose>
+        <static>true</static>
+        <link name="motion_capture_origin"/>
+        <plugin filename="nexus_gazebo" name="nexus_gazebo::MotionCaptureSystem">
+          <port>3884</port>
+          <update_frequency>50.0</update_frequency>
+          <stream_rigid_bodies>true</stream_rigid_bodies>
+        </plugin>
+    </model>
+
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>table_calibration_link</name>
+      <pose>0.5 0.3 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>robot_calibration_link</name>
+      <pose>0.1 -0.1 0.1 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>dispenser_calibration_link</name>
+      <pose>0.38 -0.4 0.02 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://motion_capture_rigid_body</uri>
+      <name>pallet_calibration_link</name>
+      <pose>0.25 0.25 0.1 0 0 0</pose>
+      <static>true</static>
+    </include>
+  </world>
+</sdf>

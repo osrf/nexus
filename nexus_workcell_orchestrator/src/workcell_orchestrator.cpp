@@ -665,7 +665,8 @@ void WorkcellOrchestrator::_register()
       RCLCPP_INFO(this->get_logger(),
         "Successfully registered with system orchestrator");
       this->_register_timer->cancel();
-      this->_register_timer.reset();
+      // TODO(luca) reintroduce once https://github.com/ros2/rclcpp/issues/2652 is fixed and released
+      // this->_register_timer.reset();
     };
 
   if (!this->_register_workcell_client->wait_for_service(

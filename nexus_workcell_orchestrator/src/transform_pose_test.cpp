@@ -15,7 +15,8 @@
  *
  */
 
-#include <catch2/catch.hpp>
+#define CATCH_CONFIG_MAIN
+#include <rmf_utils/catch.hpp>
 
 #include "transform_pose.hpp"
 

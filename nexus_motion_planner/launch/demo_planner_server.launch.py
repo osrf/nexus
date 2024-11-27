@@ -96,7 +96,7 @@ def launch_setup(context, *args, **kwargs):
     # Planning Functionality
     ompl_planning_pipeline_config = {
         "move_group": {
-            "planning_plugin": "ompl_interface/OMPLPlanner",
+            "planning_plugins": ["ompl_interface/OMPLPlanner"],
             "request_adapters": """default_planner_request_adapters/AddTimeOptimalParameterization default_planner_request_adapters/ResolveConstraintFrames default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints""",
             "start_state_max_bounds_error": 0.1,
         }
@@ -111,7 +111,7 @@ def launch_setup(context, *args, **kwargs):
         moveit_config_package.perform(context), "config/moveit_controllers.yaml"
     )
     moveit_controllers = {
-        "moveit_simple_controller_manager": moveit_simple_controllers_yaml,
+        "moveit_simple_controller_manager": moveit_simple_controllers_yaml["moveit_simple_controller_manager"],
         "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
     }
 

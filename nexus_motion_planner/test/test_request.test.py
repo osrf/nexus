@@ -150,10 +150,14 @@ def generate_test_description():
     kinematics_yaml = load_yaml(
         moveit_config_package, "config/kinematics.yaml")
 
+    joint_limits_yaml = {
+        "robot_description_planning": load_yaml(moveit_config_package, "config/joint_limits.yaml")
+    }
+
     # Planning Functionality
     ompl_planning_pipeline_config = {
         "move_group": {
-            "planning_plugin": "ompl_interface/OMPLPlanner",
+            "planning_plugins": ["ompl_interface/OMPLPlanner"],
             "request_adapters": """default_planner_request_adapters/AddTimeOptimalParameterization default_planner_request_adapters/ResolveConstraintFrames default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints""",
             "start_state_max_bounds_error": 0.1,
         }
@@ -224,6 +228,7 @@ def generate_test_description():
             robot_description,
             robot_description_semantic,
             kinematics_yaml,
+            joint_limits_yaml,
             ompl_planning_pipeline_config,
             trajectory_execution,
             moveit_controllers,

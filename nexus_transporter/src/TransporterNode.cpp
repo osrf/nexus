@@ -110,7 +110,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       response->transporter = itinerary->transporter_name();
       response->estimated_finish_time = itinerary->estimated_finish_time();
     },
-    rmw_qos_profile_services_default,
+    rclcpp::ServicesQoS(),
     _data->cb_group
     );
 
@@ -464,7 +464,7 @@ bool TransporterNode::registration_callback()
   RCLCPP_INFO(this->get_logger(), "Registering with system orchestrator...");
   auto client = this->create_client<RegisterTransporter>(
     RegisterTransporterService::service_name(),
-    rmw_qos_profile_services_default,
+    rclcpp::ServicesQoS(),
     _data->cb_group
   );
 

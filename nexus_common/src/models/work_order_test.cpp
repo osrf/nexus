@@ -15,7 +15,7 @@
  *
  */
 
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 #include "models/work_order.hpp"
 

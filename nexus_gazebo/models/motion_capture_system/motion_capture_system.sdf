@@ -1,0 +1,13 @@
+<sdf version="1.9">
+    <model name="motion_capture_system">
+        <static>true</static>
+        <link name="motion_capture_origin"/>
+        <plugin filename="nexus_gazebo" name="nexus_gazebo::MotionCaptureSystem">
+          <port>3883</port>
+          <update_frequency>50.0</update_frequency>
+          <stream_rigid_bodies>true</stream_rigid_bodies>
+          <stream_labeled_markers>true</stream_labeled_markers>
+          <stream_unlabeled_markers>true</stream_unlabeled_markers>
+        </plugin>
+    </model>
+</sdf>

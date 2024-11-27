@@ -5,7 +5,7 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 
 >NOTE: The ROS_DOMAIN_ID occupied by the Zenoh bridges during launch time may be different from the `domain` values in the Zenoh bridge configurations. This is because the launch file overrides the domain ID of the zenoh bridges to ensure that it is same as that of the orchestrator.
 
-### Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
+### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
 > NOTE: Before running any of these commands, you must set the rmw implmentation to cyclonedds with
 `export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
@@ -13,7 +13,7 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 ros2 launch nexus_integration_tests launch.py headless:=False
 ```
 
-### Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
+### Method 2: Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
 Launch with Workcell 1
 ```bash
 ros2 launch nexus_integration_tests launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
@@ -46,12 +46,8 @@ ros2 launch nexus_integration_tests workcell.launch.py workcell_id:=workcell_1 r
 ros2 launch nexus_integration_tests workcell.launch.py workcell_id:=workcell_2 ros_domain_id:=2 support_package:=abb_irb1300_support robot_xacro_file:=irb1300_10_115.xacro moveit_config_package:=abb_irb1300_10_115_moveit_config controllers_file:=abb_irb1300_controllers.yaml moveit_config_file:=abb_irb1300_10_115.srdf.xacro tf_publisher_launch_file:=irb1300_tf.launch.py sku_detection_params_file:=irb1300_detection.yaml zenoh_config_file:=workcell_2.json5 headless:=False
 ```
 
-### Send a goal to the workcell orchestrator
-```bash
-ros2 action send_goal /test_workcell/request nexus_orchestrator_msgs/action/WorkcellTask "$(cat config/workcell_task.yaml)" -f
-```
+## Submit a job
 
-### Send a work order to the system orchestrator
 > Note: Set your ROS_DOMAIN_ID environment variable to that of the system orchestrator before executing the work order
 
 `place_on_conveyor` work order:
@@ -62,6 +58,16 @@ ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs
 `pick_from_conveyor` work order:
 ```bash
 ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {id: '24', work_order: '$(cat config/pick_from_conveyor.json)'}}"
+```
+
+## Debugging
+
+## workcell
+
+Send a request to a specific workcell, eg. `test_workcell`.
+
+```bash
+ros2 action send_goal /test_workcell/request nexus_orchestrator_msgs/action/WorkcellTask "$(cat config/workcell_task.yaml)" -f
 ```
 
 ## mock gripper and mock detection
