@@ -56,9 +56,9 @@ public: static BT::PortsList providedPorts();
 
 public: BidTransporter(const std::string& name,
     const BT::NodeConfiguration& config,
-    rclcpp_lifecycle::LifecycleNode::WeakPtr w_node,
+    rclcpp_lifecycle::LifecycleNode::SharedPtr node,
     std::shared_ptr<Context> ctx)
-  : BT::StatefulActionNode{name, config}, _w_node{w_node}, _ctx{std::move(ctx)}
+  : BT::StatefulActionNode{name, config}, _node{node}, _ctx{std::move(ctx)}
   {
   }
 
@@ -73,7 +73,7 @@ private: struct OngoingRequest
     FutureAndRequestId fut;
   };
 
-private: rclcpp_lifecycle::LifecycleNode::WeakPtr _w_node;
+private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: std::shared_ptr<Context> _ctx;
 private: std::unordered_map<std::string, OngoingRequest> _ongoing_requests;
 private: std::chrono::steady_clock::time_point _time_limit;

@@ -19,8 +19,8 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
-#include "exceptions.hpp"
 #include "execute_task.hpp"
+#include "exit_code.hpp"
 #include "for_each_task.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
@@ -53,6 +53,11 @@ using WorkcellState = endpoints::WorkcellStateTopic::MessageType;
 
 using rcl_interfaces::msg::ParameterDescriptor;
 
+class DuplicatedWorkOrderError : public std::runtime_error
+{
+public: using std::runtime_error::runtime_error;
+};
+
 /**
  * Error thrown when a work order cannot be completed.
  */
@@ -75,7 +80,8 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     this->_bt_path = this->declare_parameter("bt_path", "", desc);
     if (this->_bt_path.empty())
     {
-      throw std::runtime_error("param [bt_path] is required");
+      RCLCPP_FATAL(this->get_logger(), "param [bt_path] is required");
+      std::exit(EXIT_CODE_INVALID_PARAMETER);
     }
 
     // check if "main.xml" exists
@@ -83,8 +89,10 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     if (!std::filesystem::exists(main_bt) ||
       !std::filesystem::is_regular_file(main_bt))
     {
-      throw std::runtime_error(
-              "path specified in [bt_path] param must contain \"main.xml\"");
+      RCLCPP_FATAL(
+        this->get_logger(),
+        "path specified in [bt_path] param must contain \"main.xml\"");
+      std::exit(EXIT_CODE_INVALID_PARAMETER);
     }
   }
 
@@ -170,25 +178,23 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
     std::shared_ptr<const WorkOrderActionType::Goal> goal)
     -> rclcpp_action::GoalResponse
     {
-      try
+      if (this->_max_parallel_jobs > 0 &&
+      this->_jobs.size() >= static_cast<size_t>(this->_max_parallel_jobs))
       {
-        if (this->_max_parallel_jobs > 0 &&
-        this->_jobs.size() >= static_cast<size_t>(this->_max_parallel_jobs))
-        {
-          auto result = std::make_shared<WorkOrderActionType::Result>();
-          result->message = "Max number of parallel work orders reached";
-          RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
-          return rclcpp_action::GoalResponse::REJECT;
-        }
-
-        this->_create_job(*goal);
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-      }
-      catch (const std::exception& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "Failed to create job: %s", e.what());
+        auto result = std::make_shared<WorkOrderActionType::Result>();
+        result->message = "Max number of parallel work orders reached";
+        RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
         return rclcpp_action::GoalResponse::REJECT;
       }
+
+      const auto r = this->_create_job(*goal);
+      if (r.error())
+      {
+        RCLCPP_ERROR(this->get_logger(), "Failed to create job: %s",
+        r.error()->what());
+        return rclcpp_action::GoalResponse::REJECT;
+      }
+      return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     },
     [this](const std::shared_ptr<WorkOrderGoalHandle> goal_handle)
     -> rclcpp_action::CancelResponse
@@ -508,7 +514,8 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
   return bt_factory->createTreeFromFile(this->_bt_path / "main.xml");
 }
 
-void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
+common::Result<void> SystemOrchestrator::_create_job(
+  const WorkOrderActionType::Goal& goal)
 {
   auto wo =
     YAML::Load(goal.order.work_order).as<common::WorkOrder>();
@@ -530,8 +537,9 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
     auto result = std::make_shared<WorkOrderActionType::Result>();
     result->message = "A work order with the same id is already running!";
     RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
-    throw DuplicatedWorkOrderError{result->message};
+    return DuplicatedWorkOrderError(result->message);
   }
+  return common::Result<void>();
 }
 
 void SystemOrchestrator::_init_job(

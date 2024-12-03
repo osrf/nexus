@@ -17,7 +17,7 @@
 
 #include "workcell_orchestrator.hpp"
 
-#include "exceptions.hpp"
+#include "exit_code.hpp"
 #include "get_joint_constraints.hpp"
 #include "get_result.hpp"
 #include "make_transform.hpp"
@@ -27,7 +27,6 @@
 #include "transform_pose.hpp"
 
 #include <nexus_capabilities/context.hpp>
-#include <nexus_capabilities/exceptions.hpp>
 #include <nexus_capabilities/utils.hpp>
 #include <nexus_common/logging.hpp>
 #include <nexus_common/pausable_sequence.hpp>
@@ -83,7 +82,8 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     auto param = this->declare_parameter<std::string>("bt_path", "", desc);
     if (param.empty())
     {
-      throw std::runtime_error("param [bt_path] is required");
+      RCLCPP_FATAL(this->get_logger(), "param [bt_path] is required");
+      std::exit(EXIT_CODE_INVALID_PARAMETER);
     }
     this->_bt_path = std::move(param);
   }
@@ -214,7 +214,7 @@ auto WorkcellOrchestrator::on_activate(
   RCLCPP_INFO(this->get_logger(), "Workcell activated");
   this->_bt_timer = this->create_wall_timer(BT_TICK_RATE, [this]()
       {
-        this->_job_mgr.value().tick();
+        this->_job_mgr.value().tick().value();
       });
   return CallbackReturn::SUCCESS;
 }
@@ -224,7 +224,7 @@ auto WorkcellOrchestrator::on_deactivate(
 {
   RCLCPP_INFO(this->get_logger(),
     "Halting ongoing task before deactivating workcell");
-  this->_job_mgr->halt_all_jobs();
+  this->_job_mgr->halt_all_jobs().value();
 
   this->_bt_timer->cancel();
   this->_bt_timer.reset();
@@ -245,7 +245,7 @@ auto WorkcellOrchestrator::on_cleanup(
   this->_signal_wc_srv.reset();
   this->_task_doable_srv.reset();
   this->_cmd_server.reset();
-  this->_job_mgr->halt_all_jobs();
+  this->_job_mgr->halt_all_jobs().value();
   RCLCPP_INFO(this->get_logger(), "Cleaned up");
   return CallbackReturn::SUCCESS;
 }
@@ -301,7 +301,7 @@ auto WorkcellOrchestrator::_configure(
           "Cancelling specific task is no longer supported, all tasks will be cancelled together to ensure line consistency");
       }
 
-      this->_job_mgr->halt_all_jobs();
+      this->_job_mgr->halt_all_jobs().value();
       return rclcpp_action::CancelResponse::ACCEPT;
     },
     [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
@@ -316,17 +316,30 @@ auto WorkcellOrchestrator::_configure(
         return;
       }
 
-      auto ctx = std::make_shared<Context>(this->shared_from_this());
-      ctx->task = this->_task_parser.parse_task(goal_handle->get_goal()->task);
-      auto bt = this->_create_bt(ctx);
-      try
+      auto ctx = std::make_shared<Context>(
+        this->shared_from_this(), goal_handle);
+      auto task_result =
+      this->_task_parser.parse_task(goal_handle->get_goal()->task);
+      if (task_result.error())
       {
-        this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
+        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->success = false;
+        result->message = task_result.error()->what();
+        goal_handle->abort(result);
+        return;
       }
-      catch (const JobError& e)
+      ctx->task = task_result.value();
+
+      auto bt = this->_create_bt(ctx);
+      auto job_result =
+      this->_job_mgr->queue_task(goal_handle, ctx, std::move(bt));
+      if (job_result.error())
       {
-        RCLCPP_ERROR(this->get_logger(), "Failed to queue task [%s]: %s",
-        goal_handle->get_goal()->task.id.c_str(), e.what());
+        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->success = false;
+        result->message = job_result.error()->what();
+        goal_handle->abort(result);
+        return;
       }
     });
 
@@ -380,18 +393,14 @@ auto WorkcellOrchestrator::_configure(
       ConstSharedPtr req,
       endpoints::QueueWorkcellTaskService::ServiceType::Response::SharedPtr resp)
       {
-        try
-        {
-          this->_job_mgr->assign_task(req->task_id);
-          resp->success = true;
-        }
-        catch (const JobError& e)
+        auto r = this->_job_mgr->assign_task(req->task_id);
+        if (r.error())
         {
           resp->success = false;
-          resp->message = e.what();
-          RCLCPP_ERROR(this->get_logger(), "Failed to assign task [%s]: %s",
-          req->task_id.c_str(), e.what());
+          resp->message = r.error()->what();
+          return;
         }
+        resp->success = true;
       });
 
   this->_remove_pending_task_srv =
@@ -403,19 +412,14 @@ auto WorkcellOrchestrator::_configure(
       {
         RCLCPP_DEBUG(this->get_logger(),
         "received request to remove pending task [%s]", req->task_id.c_str());
-        try
+        auto r = this->_job_mgr->remove_assigned_task(req->task_id);
+        if (r.error())
         {
-          this->_job_mgr->remove_assigned_task(req->task_id);
-          resp->success = true;
-        }
-        catch (const JobError& e)
-        {
-          RCLCPP_WARN(this->get_logger(),
-          "Failed to remove assigned task [%s]: %s", req->task_id.c_str(),
-          e.what());
           resp->success = false;
-          resp->message = e.what();
+          resp->message = r.error()->what();
+          return;
         }
+        resp->success = true;
       });
 
   this->_tf2_buffer = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -560,29 +564,27 @@ auto WorkcellOrchestrator::_configure(
   }
 
   // configure capabilities
-  try
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Configuring generic capabilities..."
+  );
+  for (auto& [cap_id, cap] : this->_capabilities)
   {
     RCLCPP_INFO(
       this->get_logger(),
-      "Configuring generic capabilities..."
+      "configuring capability [%s]",
+      cap_id.c_str()
     );
-    for (auto& [cap_id, cap] : this->_capabilities)
+    const auto r = cap->configure(
+      this->shared_from_this(), this->_job_mgr->context_manager(),
+      *_bt_factory);
+    if (r.error())
     {
-      RCLCPP_INFO(
-        this->get_logger(),
-        "configuring capability [%s]",
-        cap_id.c_str()
-      );
-      cap->configure(
-        this->shared_from_this(), this->_job_mgr->context_manager(),
-        *_bt_factory);
+      RCLCPP_ERROR(
+        this->get_logger(), "Failed to configure capability (%s)",
+        r.error()->what());
+      return CallbackReturn::FAILURE;
     }
-  }
-  catch (const CapabilityError& e)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(), "Failed to configure capability (%s)", e.what());
-    return CallbackReturn::FAILURE;
   }
 
   // Create map for remapping capabilities
@@ -658,7 +660,7 @@ void WorkcellOrchestrator::_register()
             RCLCPP_FATAL(this->get_logger(),
               "Failed to register with system orchestrator! [%s]",
               resp->message.c_str());
-            throw RegistrationError(resp->message, resp->error_code);
+            std::exit(EXIT_CODE_REGISTRATION_FAILED);
         }
         return;
       }
@@ -736,8 +738,13 @@ void WorkcellOrchestrator::_handle_task_doable(
   RCLCPP_DEBUG(this->get_logger(), "Got request to check task doable");
   try
   {
-    auto task = this->_task_parser.parse_task(req->task);
-    resp->success = this->_can_perform_task(task);
+    auto r = this->_task_parser.parse_task(req->task);
+    if (r.error())
+    {
+      resp->success = false;
+      return;
+    }
+    resp->success = this->_can_perform_task(r.value());
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");

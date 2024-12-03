@@ -22,6 +22,7 @@
 #include "session.hpp"
 
 #include <nexus_common/action_client_bt_node.hpp>
+#include <nexus_common/error.hpp>
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_common/sync_service_client.hpp>
 #include <nexus_endpoints.hpp>
@@ -110,7 +111,8 @@ private:
    * required contexts and start the job.
    * @throws std::exception
    */
-  void _create_job(const WorkOrderActionType::Goal& goal);
+  [[nodiscard]] common::Result<void> _create_job(
+    const WorkOrderActionType::Goal& goal);
 
   /**
    * Assigns all tasks and start the job associated with the goal handle.
