@@ -219,13 +219,13 @@ void DetectAllItems::_send_next_request()
 
 BT::NodeStatus GetDetection::tick()
 {
-  auto ctx = this->_ctx_mgr->current_context();
-  auto detections = this->getInput<vision_msgs::msg::Detection3DArray>(
+  const auto ctx = this->_ctx_mgr->current_context();
+  const auto detections = this->getInput<vision_msgs::msg::Detection3DArray>(
     "detections");
   if (!detections)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [detections] is required",
+      ctx->node->get_logger(), "%s: port [detections] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -235,7 +235,7 @@ BT::NodeStatus GetDetection::tick()
   if (!idx && !id)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [idx] or [id] is required",
+      ctx->node->get_logger(), "%s: port [idx] or [id] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -251,7 +251,7 @@ BT::NodeStatus GetDetection::tick()
     if (it == detections->detections.cend())
     {
       RCLCPP_ERROR(
-        ctx->node.get_logger(), "%s: cannot find detection with id [%s]",
+        ctx->node->get_logger(), "%s: cannot find detection with id [%s]",
         this->name().c_str(), id->c_str());
       return BT::NodeStatus::FAILURE;
     }
@@ -266,12 +266,13 @@ BT::NodeStatus GetDetection::tick()
 
 BT::NodeStatus GetDetectionPose::tick()
 {
-  auto ctx = this->_ctx_mgr->current_context();
-  auto detection = this->getInput<vision_msgs::msg::Detection3D>("detection");
+  const auto ctx = this->_ctx_mgr->current_context();
+  const auto detection = this->getInput<vision_msgs::msg::Detection3D>(
+    "detection");
   if (!detection)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [detection] is required",
+      ctx->node->get_logger(), "%s: port [detection] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }

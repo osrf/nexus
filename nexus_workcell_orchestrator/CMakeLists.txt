@@ -30,6 +30,7 @@ endif()
 add_library(${PROJECT_NAME}_plugin SHARED
   src/get_result.cpp
   src/get_joint_constraints.cpp
+  src/job_manager.cpp
   src/make_transform.cpp
   src/serialization.cpp
   src/set_result.cpp
@@ -109,6 +110,10 @@ if(BUILD_TESTING)
     src/task_results_test.cpp
   )
   nexus_add_test(transform_pose_test src/transform_pose_test.cpp)
+  nexus_add_test(job_manager_test
+    src/main_test.cpp
+    src/job_manager_test.cpp
+  )
 endif()
 
 ament_package()

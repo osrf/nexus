@@ -20,44 +20,53 @@
 
 #include "task.hpp"
 
-#include <nexus_common/logging.hpp>
-#include <nexus_endpoints.hpp>
-#include <nexus_orchestrator_msgs/msg/task_state.hpp>
-
-#include <behaviortree_cpp_v3/bt_factory.h>
-
-#include <rclcpp/logger.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
-#include <yaml-cpp/yaml.h>
-
-#include <functional>
-#include <istream>
-#include <unordered_map>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 //==============================================================================
 namespace nexus {
 
 class Context
 {
-public: using GoalHandlePtr =
-    std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>;
-public: using TaskState = nexus_orchestrator_msgs::msg::TaskState;
-
-  // using reference to prevent circular references
-public: rclcpp_lifecycle::LifecycleNode& node;
-public: BT::Tree bt;
-public: GoalHandlePtr goal_handle;
+  /**
+   * There are several choices we can use here, each having their own pros and cons.
+   *
+   * shared_ptr:
+   *   + Api friendly
+   *   - Will cause circular references
+   *   - Cannot create an instance in the node constructor (cannot call `shared_from_this`
+   *     in constructor)
+   *
+   * weak_ptr:
+   *   - Will almost always cause circular reference. Most ROS apis don't support weak_ptr,
+   *     attempting to `lock()` and passing the `shared_ptr` will almost always cause a
+   *     circular reference.
+   *   - Cannot create create an instance in the node constructor (cannot call `weak_from_this`
+   *     in constructor)
+   *
+   * raw_ptr:
+   *   + Api friendly
+   *   - Unsafe
+   *
+   * reference:
+   *   - Unsafe. Reference does not protect from UAF, also most ROS apis don't support references,
+   *     those that use templates may work with either shared or raw pointers.
+   *     We can't get a shared_ptr from a reference so we may end up using raw pointers.
+   *
+   * `shared_ptr` is chosen due to api friendliness, the consequences of circular reference
+   * is negligible since the node should never go out of scope.
+   */
+public: std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node;
 public: Task task;
 public: std::vector<std::string> errors;
-public: std::unique_ptr<common::BtLogging> bt_logging;
 public: std::unordered_set<std::string> signals;
-public: TaskState task_state;
-public: uint64_t tick_count = 0;
 
-public: Context(rclcpp_lifecycle::LifecycleNode& node)
-  : node(node) {}
+public: Context(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node)
+  : node(std::move(node)) {}
 };
 
 } // namespace nexus

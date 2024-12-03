@@ -29,14 +29,14 @@ BT::NodeStatus SetResult::tick()
   if (!key)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [key] is required",
+      ctx->node->get_logger(), "%s: port [key] is required",
       this->name().c_str());
   }
   auto val = this->getInput<std::string>("value");
   if (!val)
   {
     RCLCPP_ERROR(
-      ctx->node.get_logger(), "%s: port [value] is required",
+      ctx->node->get_logger(), "%s: port [value] is required",
       this->name().c_str());
   }
   ctx->task.previous_results[*key] = *val;
