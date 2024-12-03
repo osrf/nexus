@@ -94,7 +94,7 @@ if(BUILD_TESTING)
   # Adds a ament catch2 test with some common libraries.
   # Usage: nexus_add_test(<target> <source>...)
   function(nexus_add_test target)
-    ament_add_catch2(${target} src/main_test.cpp ${ARGN})
+    ament_add_catch2(${target} ${ARGN})
     target_link_libraries(${target} PRIVATE
       ${PROJECT_NAME}_plugin
       nexus_common::nexus_common_test
@@ -102,13 +102,18 @@ if(BUILD_TESTING)
   endfunction()
 
   nexus_add_test(serialization_tests
+    src/main_test.cpp
     src/serialization_test.cpp
   )
   nexus_add_test(task_results_tests
+    src/main_test.cpp
     src/task_results_test.cpp
   )
   nexus_add_test(transform_pose_test src/transform_pose_test.cpp)
-  nexus_add_test(job_manager_test src/job_manager_test.cpp)
+  nexus_add_test(job_manager_test
+    src/main_test.cpp
+    src/job_manager_test.cpp
+  )
 endif()
 
 ament_package()
