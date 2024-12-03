@@ -19,7 +19,7 @@
 
 #include <nexus_common_test/test_utils.hpp>
 
-#include <catch2/catch.hpp>
+#include <rmf_utils/catch.hpp>
 
 namespace nexus::workcell_orchestrator::test {
 
