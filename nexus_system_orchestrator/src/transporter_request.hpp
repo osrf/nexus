@@ -64,8 +64,7 @@ private: std::shared_ptr<Context> _ctx;
 private: std::string _transporter;
 private: std::string _destination;
 private: std::string _source;
-private: std::string _signal_source;
-private: std::string _signal_destination;
+private: bool _signal = false;
 };
 
 }

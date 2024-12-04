@@ -28,8 +28,7 @@ BT::PortsList TransporterRequest::providedPorts()
   return { BT::InputPort<std::string>("transporter"),
     BT::InputPort<std::string>("destination"),
     BT::InputPort<std::string>("source"),
-    BT::InputPort<Task>("signal_destination"),
-    BT::InputPort<Task>("signal_source")
+    BT::InputPort<bool>("signal")
   };
 }
 
@@ -60,13 +59,9 @@ BT::NodeStatus TransporterRequest::onStart()
   {
     this->_source = maybe_source.value();
   }
-  if (auto maybe_signal_source = this->getInput<Task>("signal_source"))
+  if (auto maybe_signal = this->getInput<bool>("signal"))
   {
-    this->_signal_source = maybe_signal_source.value().id;
-  }
-  if (auto maybe_signal_destination = this->getInput<Task>("signal_destination"))
-  {
-    this->_signal_destination = maybe_signal_destination.value().id;
+    this->_signal = maybe_signal.value();
   }
 
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
@@ -87,8 +82,11 @@ make_goal()
   goal.request.requester = this->_node->get_name();
   goal.request.destination = this->_destination;
   goal.request.source = this->_source;
-  goal.request.signal_destination = this->_signal_destination;
-  goal.request.signal_source = this->_signal_source;
+  if (this->_signal)
+  {
+    goal.request.signal_destination = this->_ctx->job_id;
+    goal.request.signal_source = this->_ctx->job_id;
+  }
   return goal;
 }
 

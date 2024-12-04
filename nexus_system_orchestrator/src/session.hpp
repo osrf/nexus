@@ -40,6 +40,7 @@ struct WorkcellSession
     task_doable_client;
   rclcpp::Client<endpoints::PauseWorkcellService::ServiceType>::SharedPtr
     pause_client;
+  // TODO(luca) remove this?
   std::unique_ptr<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>
   signal_wc_client;
   std::unique_ptr<common::SyncServiceClient<endpoints::QueueWorkcellTaskService::ServiceType>>

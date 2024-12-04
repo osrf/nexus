@@ -23,7 +23,7 @@ add_library(${PROJECT_NAME}_plugin SHARED
   src/execute_task_pair.cpp
   src/for_each_task.cpp
   src/for_each_task_pair.cpp
-  src/send_signal.cpp
+  src/signals.cpp
   src/system_orchestrator.cpp
   src/transporter_request.cpp
   src/workcell_request.cpp

@@ -6,16 +6,15 @@
         <Sequence>
           <BidTransporter name="bid_transporter" source="{source}" destination="{destination}" result="{transporter}"/>
           <!-- Transporter will signal source / destination when it arrives -->
-          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal_source="{place_task}" signal_destination="{pick_task}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal="true"/>
         </Sequence>
         <Sequence>
-          <!-- Inside workcell behavior tree, have a wait for signal for transporter_at_source -->
+          <WaitForSignal name="wait_for_amr" signal="transporter_at_source" clear="true"/>
           <WorkcellRequest name="workcell_request" workcell="{source}" task="{place_task}"/>
           <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
           <SendSignal transporter="{transporter}" signal="place_done"/>
-          <!-- Inside workcell behavior tree, have a wait for signal for transporter_at_destination -->
+          <WaitForSignal name="wait_for_amr" signal="transporter_at_destination" clear="true"/>
           <WorkcellRequest name="workcell_request" workcell="{destination}" task="{pick_task}"/>
-          <!-- TODO(luca) we can actually send this earlier, inside the task, as soon as the robot picked up the item -->
           <!-- The transporter will listen and send an appropriate ingestor result for RMF or noop for conveyor belt-->
           <SendSignal transporter="{transporter}" signal="pick_done"/>
         </Sequence>

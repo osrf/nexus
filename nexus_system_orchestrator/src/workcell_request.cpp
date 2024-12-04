@@ -81,9 +81,12 @@ WorkcellRequest::make_goal()
   goal.task = this->_task;
   try
   {
+    // TODO(luca) fully remove this
+    /*
     auto& signals = this->_ctx->queued_signals.at(this->_task.id);
     goal.start_signals = signals;
     signals.clear();
+    */
   }
   catch (const std::out_of_range&)
   {

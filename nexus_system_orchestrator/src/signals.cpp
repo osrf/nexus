@@ -15,7 +15,7 @@
  *
  */
 
-#include "send_signal.hpp"
+#include "signals.hpp"
 
 #include <nexus_endpoints.hpp>
 
@@ -56,6 +56,8 @@ BT::NodeStatus SendSignal::tick()
 
 BT::NodeStatus SendSignal::signal_task(const WorkcellTask& task, const std::string& signal)
 {
+  // TODO(luca) remove this
+  /*
   auto it = std::find_if(
     this->_ctx->workcell_task_assignments.cbegin(),
     this->_ctx->workcell_task_assignments.cend(),
@@ -97,6 +99,7 @@ BT::NodeStatus SendSignal::signal_task(const WorkcellTask& task, const std::stri
       this->name().c_str(), signal.c_str());
     this->_ctx->queued_signals[task.id].emplace_back(signal);
   }
+  */
 
   return BT::NodeStatus::SUCCESS;
 }
@@ -143,6 +146,70 @@ BT::NodeStatus SendSignal::signal_transporter(const std::string& transporter, co
   }
 
   return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus WaitForSignal::onStart()
+{
+  const auto signal = this->getInput<std::string>("signal");
+  if (!signal)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->node.get_logger(), "%s: [signal] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  auto& signals = this->_ctx->queued_signals;
+  if (auto signal_it = std::find(signals.begin(), signals.end(), *signal); signal_it != signals.end())
+  {
+    RCLCPP_DEBUG(
+      this->_ctx->node.get_logger(), "%s: signal [%s] already set",
+      this->name().c_str(), signal->c_str());
+    auto clear = this->getInput<bool>("clear");
+    if (clear && *clear)
+    {
+      signals.erase(signal_it);
+      RCLCPP_INFO(
+        this->_ctx->node.get_logger(), "%s: cleared signal [%s]",
+        this->name().c_str(), signal->c_str());
+    }
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::RUNNING;
+}
+
+BT::NodeStatus WaitForSignal::onRunning()
+{
+  const auto signal = this->getInput<std::string>("signal");
+  if (!signal)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->node.get_logger(), "%s: [signal] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  auto& signals = this->_ctx->queued_signals;
+  for (const auto& signal : signals)
+  {
+    RCLCPP_INFO(
+      this->_ctx->node.get_logger(), "%s: Signal available [%s]",
+      this->name().c_str(), signal.c_str());
+  }
+  if (auto signal_it = std::find(signals.begin(), signals.end(), *signal); signal_it != signals.end())
+  {
+    RCLCPP_DEBUG(
+      this->_ctx->node.get_logger(), "%s: signal [%s] already set",
+      this->name().c_str(), signal->c_str());
+    auto clear = this->getInput<bool>("clear");
+    if (clear && *clear)
+    {
+      signals.erase(signal_it);
+      RCLCPP_INFO(
+        this->_ctx->node.get_logger(), "%s: cleared signal [%s]",
+        this->name().c_str(), signal->c_str());
+    }
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::RUNNING;
 }
 
 }
