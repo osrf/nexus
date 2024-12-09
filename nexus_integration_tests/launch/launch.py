@@ -97,7 +97,7 @@ def launch_setup(context, *args, **kwargs):
                     "ros_domain_id": str(control_center_domain_id),
                     "zenoh_config_package": "nexus_integration_tests",
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
-                    "transporter_plugin": "rmf_nexus_transporter::RmfNexusTransporter",
+                    "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
                     "headless": headless,
                 }.items(),

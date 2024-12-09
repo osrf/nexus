@@ -2,24 +2,18 @@
   <BehaviorTree ID="main">
     <ReactiveSequence>
       <!--IsPauseTriggered paused="{paused}"/-->
-      <Fallback>
-        <!--PausableSequence pause="{paused}"-->
+      <!--PausableSequence pause="{paused}"-->
+      <Parallel success_threshold="-1">
+        <!-- Iterates over all task assignments and dispatches an AMR -->
         <Sequence>
-          <ForEachTaskPair place_task="{place_task}" source="{source}" destination="{destination}" pick_task="{pick_task}">
-            <ExecuteTaskPair place_task="{place_task}" source="{source}" destination="{destination}" pick_task="{pick_task}"/>
-          </ForEachTaskPair>
-          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
+          <DispatchTransporter name="bid_amr_transporter" result="{amr_transporter}" transport_task="{transport_task}"/>
+          <WorkcellRequest name="amr_request" workcell="{amr_transporter}" task="{transport_task}"/>
         </Sequence>
-        <!--/PausableSequence-->
-        <!--PausableSequence pause="{paused}"-->
-        <Sequence>
-          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
-          <AlwaysFailure/>
-        </Sequence>
-        <!--/PausableSequence-->
-      </Fallback>
+        <ForEachTask task="{task}" workcell="{workcell}">
+          <ExecuteTask task="{task}" workcell="{workcell}"/>
+        </ForEachTask>
+      </Parallel>
+      <!--/PausableSequence-->
     </ReactiveSequence>
   </BehaviorTree>
 </root>

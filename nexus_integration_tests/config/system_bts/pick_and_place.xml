@@ -2,23 +2,12 @@
   <BehaviorTree ID="pick_and_place">
     <ReactiveSequence>
       <!--IsPauseTriggered paused="{paused}"/-->
-      <Parallel success_threshold="-1">
-        <Sequence>
-          <BidTransporter name="bid_transporter" source="{source}" destination="{destination}" result="{transporter}"/>
-          <!-- Transporter will signal source / destination when it arrives -->
-          <TransporterRequest name="transporter_request" transporter="{transporter}" source="{source}" destination="{destination}" signal="true"/>
-        </Sequence>
-        <Sequence>
-          <WaitForSignal name="wait_for_amr" signal="transporter_at_source" clear="true"/>
-          <WorkcellRequest name="workcell_request" workcell="{source}" task="{place_task}"/>
-          <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
-          <SendSignal transporter="{transporter}" signal="place_done"/>
-          <WaitForSignal name="wait_for_amr" signal="transporter_at_destination" clear="true"/>
-          <WorkcellRequest name="workcell_request" workcell="{destination}" task="{pick_task}"/>
-          <!-- The transporter will listen and send an appropriate ingestor result for RMF or noop for conveyor belt-->
-          <SendSignal transporter="{transporter}" signal="pick_done"/>
-        </Sequence>
-      </Parallel>
+      <Sequence>
+        <WaitForSignal name="wait_for_amr" signal="{workcell}" clear="true"/>
+        <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+        <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
+        <SendSignal workcell="rmf_nexus_transporter" signal="{workcell}"/>
+      </Sequence>
     </ReactiveSequence>
   </BehaviorTree>
 </root>
