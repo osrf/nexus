@@ -860,7 +860,7 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
         std::make_shared<endpoints::RemovePendingTaskService::ServiceType::Request>();
       req->task_id = task_id;
       const auto resp =
-        this->_workcell_sessions.at(task_id)->remove_pending_task_client->
+        this->_workcell_sessions.at(wc_id)->remove_pending_task_client->
         send_request(req);
       if (!resp->success)
       {
