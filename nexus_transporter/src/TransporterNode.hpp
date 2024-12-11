@@ -40,11 +40,8 @@ class TransporterNode : public rclcpp_lifecycle::LifecycleNode
 public:
   using CallbackReturn = rclcpp_lifecycle::LifecycleNode::CallbackReturn;
   using State = rclcpp_lifecycle::State;
-  using SendSignalService = 
-    nexus::endpoints::SignalTransporterService;
   using IsTransporterAvailableService =
     nexus::endpoints::IsTransporterAvailableService;
-  using SendSignal = SendSignalService::ServiceType;
   using IsTransporterAvailable = IsTransporterAvailableService::ServiceType;
   using RegisterTransporterService =
     nexus::endpoints::RegisterTransporterService;
@@ -69,13 +66,6 @@ public:
 
 private:
 
-  struct ItineraryEntry
-  {
-    Itinerary itinerary;
-    std::string signal_destination;
-    std::string signal_source;
-  };
-
   // Bundling all member variables into a data struct and capturing a shared_ptr
   // of this struct within lambdas of various callbacks will guarantee thread
   // safety over capturing "this" raw ptr by reference.
@@ -94,9 +84,6 @@ private:
     /// Service server to process IsTransporterAvailable requests.
     rclcpp::Service<IsTransporterAvailable>::SharedPtr availability_srv;
 
-    /// Service server to process SendSignal requests.
-    rclcpp::Service<SendSignal>::SharedPtr send_signal_srv;
-
     // ROS 2 Action server to handle Transport requests.
     rclcpp_action::Server<ActionType>::SharedPtr
       action_srv;
@@ -106,7 +93,8 @@ private:
     rclcpp::CallbackGroup::SharedPtr cb_group;
 
     // Map itinerary id to GoalData.
-    std::unordered_map<rclcpp_action::GoalUUID, ItineraryEntry> itineraries;
+    std::unordered_map<rclcpp_action::GoalUUID, std::unique_ptr<Itinerary>>
+    itineraries;
 
     // TF broadcaster for transporter poses during action feedback.
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;

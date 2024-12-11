@@ -135,8 +135,7 @@ public:
 
   std::optional<Itinerary> get_itinerary(
     const std::string& id,
-    const std::string& destination,
-    const std::string& /* source */)
+    const std::string& destination)
   {
     if (_destinations.find(destination) == _destinations.end())
       return std::nullopt;
@@ -182,9 +181,7 @@ public:
   void transport_to_destination(
     const Itinerary& itinerary,
     Transporter::TransportFeedback feedback_cb,
-    Transporter::TransportCompleted completed_cb,
-    const std::string&,
-    const std::string&) final
+    Transporter::TransportCompleted completed_cb) final
   {
     const auto& current_transporter = itinerary.transporter_name();
     const auto& current_location =

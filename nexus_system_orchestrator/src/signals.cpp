@@ -67,7 +67,7 @@ BT::NodeStatus SendSignal::signal_workcell(const std::string& workcell, const st
   }
 
   auto req =
-    std::make_shared<endpoints::SignalTransporterService::ServiceType::Request>();
+    std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
   // TODO(luca) Using job id for task id is not scalable, generate uuids?
   req->task_id = this->_ctx->job_id;
   req->signal = signal;

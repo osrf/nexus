@@ -33,6 +33,7 @@
 
 #include <string>
 
+
 namespace nexus::endpoints {
 
 class ListWorkcellsService {
@@ -378,26 +379,6 @@ public:
   template<typename NodePtrT>
   static rclcpp_action::Client<TransportAction::ActionType>::SharedPtr create_client(NodePtrT node, const std::string& transporter_id) {
     return rclcpp_action::create_client<TransportAction::ActionType>(node, TransportAction::action_name(transporter_id));
-  }
-};
-
-class SignalTransporterService {
-public:
-  using ServiceType = nexus_orchestrator_msgs::srv::SignalWorkcell;
-
-  static inline std::string service_name(const std::string& transporter_id) {
-    const std::string name = "/" + transporter_id + "/signal";
-    return name;
-  }
-
-  template<typename NodePtrT, typename CallbackT>
-  static rclcpp::Service<SignalTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, const std::string& transporter_id, CallbackT&& callback) {
-    return node->template create_service<SignalTransporterService::ServiceType>(SignalTransporterService::service_name(transporter_id), std::forward<CallbackT>(callback));
-  }
-
-  template<typename NodePtrT>
-  static rclcpp::Client<SignalTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node, const std::string& transporter_id) {
-    return node->template create_client<SignalTransporterService::ServiceType>(SignalTransporterService::service_name(transporter_id));
   }
 };
 

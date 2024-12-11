@@ -63,8 +63,6 @@ protected: std::optional<endpoints::TransportAction::ActionType::Goal> make_goal
 private: std::shared_ptr<Context> _ctx;
 private: std::string _transporter;
 private: std::string _destination;
-private: std::string _source;
-private: bool _signal = false;
 };
 
 }

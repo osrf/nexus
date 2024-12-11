@@ -21,7 +21,7 @@ namespace nexus::system_orchestrator {
 
 BT::PortsList BidTransporter::providedPorts()
 {
-  return { BT::InputPort<std::string>("destination"), BT::InputPort<std::string>("source"),
+  return { BT::InputPort<std::string>("destination"),
     BT::OutputPort<std::string>("result") };
 }
 
@@ -46,20 +46,11 @@ BT::NodeStatus BidTransporter::onStart()
   }
   const auto& destination = maybe_destination.value();
 
-  // Source is not a mandatory parameter
-  std::string source = "";
-  auto maybe_source = this->getInput<std::string>("source");
-  if (maybe_source)
-  {
-    source = maybe_source.value();
-  }
-
   auto req =
     std::make_shared<endpoints::IsTransporterAvailableService::ServiceType::Request>();
   req->request.id = this->_ctx->job_id;
   req->request.requester = node->get_name();
   req->request.destination = destination;
-  req->request.source = source;
   // send request to all transporters in parallel
   for (auto& [transporter_id, session] : this->_ctx->transporter_sessions)
   {
@@ -133,7 +124,6 @@ BT::NodeStatus BidTransporter::_update_ongoing_requests()
     {
       finished_requests.emplace_back(transporter_id);
       auto resp = ongoing_req.fut.get();
-      // TODO(luca) make this proper bidding
       // use first available transporter
       if (resp->available)
       {

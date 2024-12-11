@@ -114,74 +114,6 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
     _data->cb_group
     );
 
-  // Setup service server to process IsTransportAvailable requests
-  _data->send_signal_srv =
-    this->create_service<SendSignal>(
-    SendSignalService::service_name(this->get_name()),
-    [data = _data](
-      SendSignal::Request::ConstSharedPtr request,
-      SendSignal::Response::SharedPtr response)
-    {
-      response->success = false;
-      auto node = data->w_node.lock();
-      if (node == nullptr)
-      {
-        return;
-      }
-
-      RCLCPP_INFO(
-        node->get_logger(),
-        "Received transporter signal [%s] for task [%s].",
-        request->task_id.c_str(),
-        request->signal.c_str()
-      );
-
-      if (request->task_id.empty())
-      {
-        std::string msg = "Ignoring request as task_id is empty.";
-        response->message = msg;
-        RCLCPP_WARN(node->get_logger(), msg.c_str());
-        return;
-      }
-
-      if (request->signal.empty())
-      {
-        std::string msg = "Ignoring request as signal is empty.";
-        response->message = msg;
-        RCLCPP_WARN(node->get_logger(), msg.c_str());
-        return;
-      }
-
-      if (node->get_current_state().label() != "active")
-      {
-        std::string msg = "Node is not active. Ignoring SendSignal request.";
-        response->message = msg;
-        RCLCPP_WARN(node->get_logger(), msg.c_str());
-        return;
-      }
-
-      if (data->transporter == nullptr || !data->transporter->ready())
-      {
-        std::string msg = "The transporter [%s] is not yet ready. Please try again later.";
-        response->message = msg;
-        RCLCPP_WARN(node->get_logger(), msg.c_str());
-        return;
-      }
-
-      auto result = data->transporter->process_signal(request->task_id, request->signal);
-      if (result.has_value())
-      {
-        response->message = *result;
-      }
-      else
-      {
-        response->success = true;
-      }
-    },
-    rclcpp::ServicesQoS(),
-    _data->cb_group
-    );
-
   // Load transporter plugin
   if (_data->transporter_plugin_name.empty())
   {
@@ -277,12 +209,10 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         return rclcpp_action::GoalResponse::REJECT;
       }
       // TODO(YV): Book keeping
-      // TODO(luca) make source std::optional
       auto itinerary =
       data->transporter->get_itinerary(
         goal->request.id,
-        goal->request.destination,
-        goal->request.source);
+        goal->request.destination);
       if (!itinerary.has_value())
       {
         if (node)
@@ -306,11 +236,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           itinerary->transporter_name().c_str()
         );
       }
-      data->itineraries.insert({uuid, ItineraryEntry {
-        itinerary.value(),
-          goal->request.signal_destination,
-          goal->request.signal_source
-      }});
+      data->itineraries[uuid] =
+      std::make_unique<Itinerary>(std::move(itinerary.value()));
       return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     },
     [data = _data](const std::shared_ptr<GoalHandle> goal_handle)
@@ -337,7 +264,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         }
         return rclcpp_action::CancelResponse::ACCEPT;
       }
-      const bool ok = data->transporter->cancel(it->second.itinerary);
+      const bool ok = data->transporter->cancel(*(it->second));
       if (ok)
       {
         if (node)
@@ -345,8 +272,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           RCLCPP_INFO(
             node->get_logger(),
             "Successfully cancelled transport with id [%s] to destination [%s]",
-            it->second.itinerary.id().c_str(),
-            it->second.itinerary.destination().c_str()
+            it->second->id().c_str(),
+            it->second->destination().c_str()
           );
         }
         return rclcpp_action::CancelResponse::ACCEPT;
@@ -358,8 +285,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           RCLCPP_INFO(
             node->get_logger(),
             "Unable to cancel transport with id [%s] to destination [%s]",
-            it->second.itinerary.id().c_str(),
-            it->second.itinerary.destination().c_str()
+            it->second->id().c_str(),
+            it->second->destination().c_str()
           );
         }
         return rclcpp_action::CancelResponse::REJECT;
@@ -389,7 +316,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         );
       }
       data->transporter->transport_to_destination(
-        it->second.itinerary,
+        *(it->second),
         [handle = goal_handle,
         data = data](const Transporter::TransporterState& state)
         {
@@ -437,10 +364,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
             }
             handle->abort(result_msg);
           }
-        },
-        it->second.signal_destination,
-        it->second.signal_source
-        );
+        });
 
     },
     rcl_action_server_get_default_options(),
@@ -491,7 +415,7 @@ auto TransporterNode::on_deactivate(const State& /*previous_state*/)
   for (auto it = _data->itineraries.begin(); it != _data->itineraries.end();
     ++it)
   {
-    _data->transporter->cancel(it->second.itinerary);
+    _data->transporter->cancel(*(it->second));
   }
   RCLCPP_INFO(this->get_logger(), "Successfully deactivated.");
   return CallbackReturn::SUCCESS;

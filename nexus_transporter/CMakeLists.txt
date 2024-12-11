@@ -34,8 +34,8 @@ target_link_libraries(nexus_transporter
   PUBLIC
     ${nexus_transporter_msgs_TARGETS}
     rclcpp::rclcpp
-    rclcpp_action::rclcpp_action
-    rclcpp_lifecycle::rclcpp_lifecycle
+    ${rclcpp_action_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
     rmf_utils::rmf_utils
 )
 
@@ -44,12 +44,16 @@ target_include_directories(nexus_transporter
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     ${nexus_transporter_msgs_INCLUDE_DIRS}
+    ${rclcpp_INCLUDE_DIRS}
+    ${rclcpp_action_INCLUDE_DIRS}
+    ${rclcpp_lifecycle_INCLUDE_DIRS}
+    ${rmf_utils_INCLUDE_DIRS}
 )
 
 target_compile_features(nexus_transporter INTERFACE cxx_std_17)
 
 ament_export_targets(nexus_transporter HAS_LIBRARY_TARGET)
-ament_export_dependencies(rclcpp rclcpp_action rclcpp_lifecycle nexus_transporter_msgs rmf_utils)
+ament_export_dependencies(rclcpp rclcpp_lifecycle nexus_transporter_msgs rmf_utils)
 #===============================================================================
 add_library(nexus_transporter_component SHARED src/TransporterNode.cpp)
 
@@ -61,8 +65,8 @@ target_link_libraries(nexus_transporter_component
     ${geometry_msgs_TARGETS}
     pluginlib::pluginlib
     rclcpp::rclcpp
-    rclcpp_lifecycle::rclcpp_lifecycle
-    rclcpp_components::component
+    ${rclcpp_components_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
     ${tf2_ros_TARGETS}
 )
 
@@ -70,8 +74,13 @@ target_include_directories(nexus_transporter_component
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    ${nexus_endpoints_INCLUDE_DIRS}
     ${nexus_transporter_msgs_INCLUDE_DIRS}
     ${geometry_msgs_INCLUDE_DIRS}
+    ${pluginlib_INCLUDE_DIRS}
+    ${rclcpp_INCLUDE_DIRS}
+    ${rclcpp_components_INCLUDE_DIRS}
+    ${rclcpp_lifecycle_INCLUDE_DIRS}
     ${tf2_ros_INCLUDE_DIRS}
 )
 
@@ -82,7 +91,6 @@ rclcpp_components_register_node(nexus_transporter_component
   EXECUTABLE nexus_transporter_node
   EXECUTOR MultiThreadedExecutor)
 
-ament_export_dependencies(rclcpp rclcpp_lifecycle nexus_endpoints pluginlib nexus_transporter_msgs geometry_msgs tf2_ros)
 #===============================================================================
 find_package(ament_cmake_uncrustify QUIET)
 find_package(ament_cmake_catch2 QUIET)

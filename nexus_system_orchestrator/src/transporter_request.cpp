@@ -26,10 +26,7 @@ using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
 BT::PortsList TransporterRequest::providedPorts()
 {
   return { BT::InputPort<std::string>("transporter"),
-    BT::InputPort<std::string>("destination"),
-    BT::InputPort<std::string>("source"),
-    BT::InputPort<bool>("signal")
-  };
+    BT::InputPort<std::string>("destination") };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
@@ -54,16 +51,6 @@ BT::NodeStatus TransporterRequest::onStart()
   }
   this->_destination = maybe_destination.value();
 
-  // The following are not mandatory parameters
-  if (auto maybe_source = this->getInput<std::string>("source"))
-  {
-    this->_source = maybe_source.value();
-  }
-  if (auto maybe_signal = this->getInput<bool>("signal"))
-  {
-    this->_signal = maybe_signal.value();
-  }
-
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
       endpoints::TransportAction::ActionType>::
     onStart();
@@ -81,12 +68,6 @@ make_goal()
   goal.request.id = this->_ctx->job_id;
   goal.request.requester = this->_node->get_name();
   goal.request.destination = this->_destination;
-  goal.request.source = this->_source;
-  if (this->_signal)
-  {
-    goal.request.signal_destination = this->_ctx->job_id;
-    goal.request.signal_source = this->_ctx->job_id;
-  }
   return goal;
 }
 

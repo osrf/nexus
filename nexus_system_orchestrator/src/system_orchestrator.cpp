@@ -817,11 +817,6 @@ void SystemOrchestrator::_handle_register_transporter(
       req->description,
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
-          transporter_id)),
-      std::make_unique<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>
-      (
-       this,
-        endpoints::SignalTransporterService::service_name(
           transporter_id))
     }));
 
