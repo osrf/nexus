@@ -18,4 +18,8 @@
   <class type="nexus::capabilities::PlanMotionCapability" base_class_type="nexus::Capability">
     <description>PlanMotion capability.</description>
   </class>
+
+  <class type="nexus::capabilities::TransportAmrCapability" base_class_type="nexus::Capability">
+    <description>TransportAmr capability.</description>
+  </class>
 </library>

@@ -120,9 +120,15 @@ def launch_setup(context, *args, **kwargs):
     rmf_transporter_node = LifecycleNode(
         name="rmf_nexus_transporter",
         namespace="",
-        package="rmf_nexus_transporter",
-        executable="rmf_nexus_transporter",
-        parameters=[],
+        package="nexus_workcell_orchestrator",
+        executable="nexus_workcell_orchestrator",
+        parameters=[
+            {
+                "capabilities": ["nexus::capabilities::TransportAmrCapability"],
+                "bt_path": (FindPackageShare("nexus_integration_tests"), "/config/rmf_bts"),
+            }
+        ],
+        arguments=['--ros-args', '--log-level', 'info'],
     )
 
     system_orchestrator_node = LifecycleNode(
@@ -177,7 +183,7 @@ def launch_setup(context, *args, **kwargs):
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
-        # rmf_transporter_node,
+        rmf_transporter_node,
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
