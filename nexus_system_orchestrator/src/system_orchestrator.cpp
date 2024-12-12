@@ -177,7 +177,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
         RCLCPP_WARN(this->get_logger(), "Job %s is not being executed", req->task_id.c_str());
         return;
       }
-      job_it->second.ctx->queued_signals.push_back(req->signal);
+      job_it->second.ctx->orchestrator_signals.push_back(req->signal);
       resp->success = true;
     });
 

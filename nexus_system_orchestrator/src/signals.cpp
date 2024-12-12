@@ -98,7 +98,7 @@ BT::NodeStatus WaitForSignal::onStart()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
-  auto& signals = this->_ctx->queued_signals;
+  auto& signals = this->_ctx->orchestrator_signals;
   if (auto signal_it = std::find(signals.begin(), signals.end(), *signal); signal_it != signals.end())
   {
     RCLCPP_DEBUG(
@@ -127,7 +127,7 @@ BT::NodeStatus WaitForSignal::onRunning()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
-  auto& signals = this->_ctx->queued_signals;
+  auto& signals = this->_ctx->orchestrator_signals;
   for (const auto& signal : signals)
   {
     RCLCPP_INFO(

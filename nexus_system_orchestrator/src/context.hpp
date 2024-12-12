@@ -66,9 +66,15 @@ public: std::vector<std::string> errors;
 public: std::string task_results;
 
   /**
-   * List of queued signals for the system orchestrator.
+   * Map of workcell task ids and their queued signals.
    */
-public: std::vector<std::string> queued_signals;
+public: std::unordered_map<std::string,
+    std::vector<std::string>> queued_signals;
+
+  /**
+   * List of signals queued for the system orchestrator itself.
+   */
+public: std::vector<std::string> orchestrator_signals;
 };
 
 }

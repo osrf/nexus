@@ -222,9 +222,6 @@ BT::NodeStatus LoopDestinations::tick()
 
   while (this->_queue.size() > 0)
   {
-    RCLCPP_INFO(
-      this->_node->get_logger(), "%s: [queue] has %u items",
-      this->name().c_str(), this->_queue.size());
     auto current_value = this->_queue.front();
     this->setOutput("value", current_value);
 
@@ -290,9 +287,6 @@ void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
 
 BT::NodeStatus WaitForAmr::onRunning()
 {
-  RCLCPP_INFO(
-    this->_node->get_logger(), "%s: Waiting for AMR to reach %s",
-    this->name().c_str(), this->_workcell.c_str());
   if (this->_amr_ready)
   {
     this->_amr_ready = false;
