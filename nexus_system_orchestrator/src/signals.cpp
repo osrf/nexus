@@ -23,11 +23,12 @@ namespace nexus::system_orchestrator {
 
 BT::NodeStatus SendSignal::tick()
 {
-  auto workcell = this->getInput<std::string>("workcell");
-  if (!workcell)
+  auto task =
+    this->getInput<nexus_orchestrator_msgs::msg::WorkcellTask>("task");
+  if (!task)
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s [workcell] is required",
+      this->_ctx->node.get_logger(), "%s: port [task] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -41,48 +42,47 @@ BT::NodeStatus SendSignal::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  return signal_workcell(*workcell, *signal);
-}
-
-BT::NodeStatus SendSignal::signal_workcell(const std::string& workcell, const std::string& signal)
-{
-  auto it = this->_ctx->workcell_sessions.find(workcell);
-  if (it == this->_ctx->workcell_sessions.cend())
+  try
   {
-    RCLCPP_ERROR(
-      this->_ctx->node.get_logger(),
-      "%s: Unable to find workcell [%s]",
-      this->name().c_str(), workcell.c_str());
+    auto it = std::find_if(
+      this->_ctx->workcell_task_assignments.cbegin(),
+      this->_ctx->workcell_task_assignments.cend(),
+      [&task](const std::pair<std::string, std::string>& p)
+      {
+        return p.first == task->id;
+      });
+    if (it == this->_ctx->workcell_task_assignments.cend())
+    {
+      RCLCPP_ERROR(
+        this->_ctx->node.get_logger(), "%s: Unable to find workcell assigned to task [%s]",
+        this->name().c_str(), task->id.c_str());
+      return BT::NodeStatus::FAILURE;
+    }
+    const auto& workcell = it->second;
+
+    const auto& session = this->_ctx->workcell_sessions.at(workcell);
+    auto req =
+      std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
+    req->task_id = task->id;
+    req->signal = *signal;
+    auto resp = session->signal_wc_client->send_request(req);
+    RCLCPP_INFO(
+      this->_ctx->node.get_logger(), "%s: Sent signal [%s] to workcell [%s]",
+      this->name().c_str(), signal->c_str(), workcell.c_str());
+    if (!resp->success)
+    {
+      RCLCPP_WARN(
+        this->_ctx->node.get_logger(),
+        "%s: Workcell is not able to accept [%s] signal now. Queuing the signal to be sent on the next task request.",
+        this->name().c_str(), signal->c_str());
+      this->_ctx->queued_signals[task->id].emplace_back(*signal);
+    }
+  }
+  catch (const std::out_of_range& e)
+  {
+    RCLCPP_ERROR(this->_ctx->node.get_logger(), "%s: %s",
+      this->name().c_str(), e.what());
     return BT::NodeStatus::FAILURE;
-  }
-  const auto& session = it->second;
-  if (!session)
-  {
-    // TODO(luca) implement a queueing mechanism if the workcell is not available?
-    RCLCPP_WARN(
-      this->_ctx->node.get_logger(),
-      "%s: No session found for workcell [%s], skipping signaling",
-      this->name().c_str(), workcell.c_str());
-    return BT::NodeStatus::SUCCESS;
-  }
-
-  auto req =
-    std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
-  // TODO(luca) Using job id for task id is not scalable, generate uuids?
-  req->task_id = this->_ctx->job_id;
-  req->signal = signal;
-  auto resp = session->signal_wc_client->send_request(req);
-  RCLCPP_INFO(
-    this->_ctx->node.get_logger(), "%s: Sent signal [%s] to workcell [%s]",
-    this->name().c_str(), signal.c_str(), workcell.c_str());
-  if (!resp->success)
-  {
-    // TODO(luca) implement a queueing mechanism if the request fails?
-    RCLCPP_WARN(
-      this->_ctx->node.get_logger(),
-      "%s: Workcell [%s] is not able to accept [%s] signal now. Skipping signaling, error: [%s]",
-      this->name().c_str(), workcell.c_str(), signal.c_str(), resp->message.c_str());
-    return BT::NodeStatus::SUCCESS;
   }
 
   return BT::NodeStatus::SUCCESS;

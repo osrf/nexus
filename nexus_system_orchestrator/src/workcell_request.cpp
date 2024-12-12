@@ -102,9 +102,7 @@ WorkcellRequest::make_goal()
 void WorkcellRequest::on_feedback(
   endpoints::WorkcellRequestAction::ActionType::Feedback::ConstSharedPtr msg)
 {
-  // Will insert a new state if one was not created at work order creation time
-  // i.e. for transportation requests that are done after task assignments
-  this->_ctx->task_states[this->_task.id] = msg->state;
+  this->_ctx->task_states.at(this->_task.id) = msg->state;
   this->_on_task_progress(this->_ctx->task_states);
 }
 

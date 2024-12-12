@@ -15,6 +15,8 @@
  *
  */
 
+#include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
+
 #include <yaml-cpp/yaml.h>
 
 #include "dispatch_transporter.hpp"
@@ -54,6 +56,7 @@ BT::NodeStatus DispatchTransporter::onStart()
     }
     // Multipickup task
     // TODO(luca) Consider encoding where is a pickup and where a dropoff
+    // TODO(luca) remove consecutive duplicates (multiple tasks to same workcell that don't need transportation)
     YAML::Node order;
     order["type"] = "pickup";
     order["destination"] = assignment_it->second;
@@ -151,6 +154,13 @@ BT::NodeStatus DispatchTransporter::_update_ongoing_requests()
           workcell_id.c_str());
         this->setOutput("result", workcell_id);
         this->setOutput("transport_task", this->_transport_task);
+        // Update the context
+        const auto& task_id = this->_transport_task.id;
+        this->_ctx->workcell_task_assignments.emplace(task_id, workcell_id);
+        auto p = this->_ctx->task_states.emplace(task_id, nexus_orchestrator_msgs::msg::TaskState());
+        auto& task_state = p.first->second;
+        task_state.workcell_id = workcell_id;
+        task_state.task_id = task_id;
         return BT::NodeStatus::SUCCESS;
       }
       else

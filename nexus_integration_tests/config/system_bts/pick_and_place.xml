@@ -6,7 +6,7 @@
         <WaitForSignal name="wait_for_amr" signal="{workcell}" clear="true"/>
         <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
         <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
-        <SendSignal workcell="rmf_nexus_transporter" signal="{workcell}"/>
+        <SendSignal task="{transport_task}" signal="{workcell}"/>
       </Sequence>
     </ReactiveSequence>
   </BehaviorTree>
