@@ -38,7 +38,7 @@ class ParallelWoTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_integration_tests", "office.launch.xml"),
+            ("ros2", "launch", "nexus_integration_tests", "office.launch.xml", "sim_update_rate:=10000"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)

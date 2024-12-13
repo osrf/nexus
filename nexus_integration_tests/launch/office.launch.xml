@@ -1,7 +1,7 @@
 <?xml version='1.0' ?>
 
 <launch>
-  <arg name="headless" default="false"/>
+  <arg name="headless" default="true"/>
   <arg name="use_simulator" default="true"/>
   <arg name="sim_update_rate" default='100'/>
 
