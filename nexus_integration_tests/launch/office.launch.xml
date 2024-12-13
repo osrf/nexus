@@ -9,21 +9,13 @@
   <include file="$(find-pkg-share rmf_demos)/common.launch.xml">
     <arg name="headless" value="$(var headless)" />
     <arg name="use_sim_time" value="$(var use_simulator)"/>
-    <arg name="viz_config_file" value ="$(find-pkg-share nexus_demos)/include/office/office.rviz"/>
-    <arg name="config_file" value="$(find-pkg-share nexus_demos)/office/office.building.yaml"/>
+    <arg name="viz_config_file" value ="$(find-pkg-share nexus_integration_tests)/launch/include/office/office.rviz"/>
+    <arg name="config_file" value="$(find-pkg-share nexus_integration_tests)/office/office.building.yaml"/>
   </include>
 
   <!-- Nexus Common launch -->
-  <include file="$(find-pkg-share nexus_demos)/common.launch.xml">
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/common.launch.xml">
     <arg name="headless" value="$(var headless)" />
-    <arg name="use_sim_time" value="$(var use_simulator)"/>
-  </include>
-
-  <!-- Bringup from integration tests -->
-  <!-- TODO(luca) should we move the integration launch here instead? -->
-  <include file="$(find-pkg-share nexus_integration_tests)/launch/launch.py">
-    <!-- Set as true to make it auto bringup and remove all the extra rviz launches -->
-    <arg name="headless" value="true" />
     <arg name="use_sim_time" value="$(var use_simulator)"/>
   </include>
 
@@ -31,8 +23,8 @@
   <group>
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_simulator)"/>
-      <arg name="nav_graph_file" value="$(find-pkg-share nexus_demos)/maps/office/nav_graphs/0.yaml" />
-      <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/office/tinyRobot_config.yaml"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share nexus_integration_tests)/maps/office/nav_graphs/0.yaml" />
+      <arg name="config_file" value="$(find-pkg-share nexus_integration_tests)/config/office/tinyRobot_config.yaml"/>
     </include>
   </group>
 
@@ -42,6 +34,14 @@
     <arg name="map_name" value="office" />
     <arg name="gazebo_version" value="8" />
     <arg name="sim_update_rate" value="$(var sim_update_rate)"/>
+  </include>
+
+  <!-- Bringup from integration tests -->
+  <!-- TODO(luca) should we move the integration launch here instead? -->
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/launch.py">
+    <!-- Set as true to make it auto bringup and remove all the extra rviz launches -->
+    <arg name="headless" value="true" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
   </include>
 
 </launch>

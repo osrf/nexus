@@ -40,7 +40,7 @@ class PickAndPlaceTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_integration_tests", "launch.py"),
+            ("ros2", "launch", "nexus_integration_tests", "office.launch.xml"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
