@@ -1,0 +1,12 @@
+<?xml version='1.0' ?>
+
+<launch>
+  <arg name="use_sim_time" default="false" description="Use the /clock topic for time to sync with simulation"/>
+
+  <!-- Visualizer -->
+  <group>
+    <node pkg="nexus_visualization" exec="workcell_state_visualizer_node">
+      <param name="use_sim_time" value="$(var use_sim_time)"/>
+    </node>
+  </group>
+</launch>
