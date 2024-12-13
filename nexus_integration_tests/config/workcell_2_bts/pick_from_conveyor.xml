@@ -3,7 +3,6 @@
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
       <StringToVector string="productA," delimiter="," strings="{items}"/>
-      <!--
       <detection.DetectAllItems name="detect_items" detector="workcell_2_mock_product_detector" items="{items}" result="{all_products}" />
       <detection.GetDetection detections="{all_products}" idx="0" result="{current_product_detection}" />
       <detection.GetDetectionPose detection="{current_product_detection}" result="{current_product_pose}" />
@@ -29,7 +28,6 @@
 
       <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb1300" goal="home" scale_speed="0.5" start_constraints="{joint_constraints}" result="{home_traj}" />
       <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
-      -->
     </Sequence>
   </BehaviorTree>
 </root>
