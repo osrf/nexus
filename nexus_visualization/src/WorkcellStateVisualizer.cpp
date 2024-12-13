@@ -124,8 +124,6 @@ void WorkcellStateVisualizer::initialize_state_subscriptions()
 
 void WorkcellStateVisualizer::timer_cb()
 {
-  RCLCPP_INFO(this->get_logger(), "Publishing updated markers");
-
   auto set_body_pose =
   [](const WorkcellState& state, Marker& marker)
   {
