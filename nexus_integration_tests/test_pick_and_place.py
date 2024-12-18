@@ -51,6 +51,8 @@ class PickAndPlaceTest(NexusTestCase):
         print("all workcells are ready")
         await self.wait_for_transporters("transporter_node")
         print("all transporters are ready")
+        await self.wait_for_robot_state()
+        print("AMRs are ready")
 
         # give some time for discovery to happen
         await self.ros_sleep(5)
