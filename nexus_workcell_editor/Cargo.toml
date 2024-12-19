@@ -9,13 +9,10 @@ name = "nexus_workcell_editor"
 
 [dependencies]
 bevy = "0.12"
-bevy_egui = "0.23"
-# TODO(luca) Just use the version used by site editor once released
-bevy_impulse = { git = "https://github.com/open-rmf/bevy_impulse", branch = "main" }
 clap = { version = "4.0.10", features = ["color", "derive", "help", "usage", "suggestions"] }
 crossbeam-channel = "0.5.8"
 # TODO(luca) back to main when PR is merged
-rmf_site_editor = { git = "https://github.com/open-rmf/rmf_site", rev = "f4bed77" }
-rmf_site_format = { git = "https://github.com/open-rmf/rmf_site", rev = "f4bed77" }
+rmf_workcell_editor = { git = "https://github.com/luca-della-vedova/rmf_workcell", branch = "first_commit" }
+rmf_workcell_format = { git = "https://github.com/luca-della-vedova/rmf_workcell", branch = "first_commit" }
 rclrs = "0.4.0"
 nexus_calibration_msgs = "*"
