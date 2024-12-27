@@ -12,7 +12,7 @@ find_package(ament_cmake_vendor_package REQUIRED)
 
 ament_vendor(zeno_bridge_dds_vendor
   VCS_URL https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds.git
-  VCS_VERSION 1.0.4
+  VCS_VERSION 1.0.3
 )
 
 # TODO(sloretz) make a nice way to get this path from ament_vendor
