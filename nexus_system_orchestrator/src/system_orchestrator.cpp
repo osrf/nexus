@@ -87,26 +87,6 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
   }
 
   {
-    _task_remaps =
-      std::make_shared<std::unordered_map<std::string, std::string>>();
-    ParameterDescriptor desc;
-    desc.read_only = true;
-    desc.description =
-      "A yaml containing a dictionary of task types and an array of remaps.";
-    const auto yaml = this->declare_parameter("remap_task_types", "", desc);
-    const auto remaps = YAML::Load(yaml);
-    for (const auto& n : remaps)
-    {
-      const auto task_type = n.first.as<std::string>();
-      const auto& mappings = n.second;
-      for (const auto& m : mappings)
-      {
-        this->_task_remaps->emplace(m.as<std::string>(), task_type);
-      }
-    }
-  }
-
-  {
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
@@ -506,7 +486,7 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 
   // using `new` because make_shared does not work with aggregate initializer
   std::shared_ptr<Context> ctx{new Context{*this,
-      goal.order.id, wo, tasks, this->_task_remaps,
+      goal.order.id, wo, tasks,
       std::unordered_map<std::string, std::string>{},
       this->_workcell_sessions,
       this->_transporter_sessions, {}, nullptr,
