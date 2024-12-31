@@ -126,7 +126,7 @@ def launch_setup(context, *args, **kwargs):
             {
                 "bt_path": (
                     FindPackageShare("nexus_integration_tests"),
-                    "/config/system_bts",
+                    "/config/system_bts/pick_and_place.xml",
                 ),
                 "remap_task_types":
                     """{

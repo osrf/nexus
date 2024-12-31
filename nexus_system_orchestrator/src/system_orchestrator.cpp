@@ -20,7 +20,6 @@
 #include "bid_transporter.hpp"
 #include "context.hpp"
 #include "exceptions.hpp"
-#include "execute_task.hpp"
 #include "for_each_task.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
@@ -71,20 +70,19 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "Path to a directory containing behavior trees. Each file in the directory should be a behavior tree xml, the file name denotes the task type for that behavior tree. In addition, there must be a file named \"main.xml\" which will be used to perform the work order.";
+      "Path to a behavior tree.";
     this->_bt_path = this->declare_parameter("bt_path", "", desc);
     if (this->_bt_path.empty())
     {
       throw std::runtime_error("param [bt_path] is required");
     }
 
-    // check if "main.xml" exists
-    const auto main_bt = this->_bt_path / "main.xml";
-    if (!std::filesystem::exists(main_bt) ||
-      !std::filesystem::is_regular_file(main_bt))
+    // check if behavior tree exists
+    if (!std::filesystem::exists(this->_bt_path) ||
+      !std::filesystem::is_regular_file(this->_bt_path))
     {
       throw std::runtime_error(
-              "path specified in [bt_path] param must contain \"main.xml\"");
+              "path specified in [bt_path] param must point to a file");
     }
   }
 
@@ -491,21 +489,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       this->get_logger(), ctx);
     });
 
-  bt_factory->registerBuilder<ExecuteTask>("ExecuteTask",
-    [this, ctx, bt_factory](const std::string& name,
-    const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<ExecuteTask>(name, config, ctx, this->_bt_path,
-      bt_factory);
-    });
-
   bt_factory->registerBuilder<SendSignal>("SendSignal",
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SendSignal>(name, config, ctx);
     });
 
-  return bt_factory->createTreeFromFile(this->_bt_path / "main.xml");
+  return bt_factory->createTreeFromFile(this->_bt_path);
 }
 
 void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
