@@ -24,16 +24,16 @@ endforeach()
 #===============================================================================
 add_library(workcell_state_visualizer SHARED src/WorkcellStateVisualizer.cpp)
 
-ament_target_dependencies(workcell_state_visualizer
+target_link_libraries(workcell_state_visualizer
   PUBLIC
-    rclcpp
-    rclcpp_components
-    nexus_endpoints
-    nexus_orchestrator_msgs
-    rmf_building_map_msgs
-    rmf_visualization_msgs
-    visualization_msgs
-    geometry_msgs
+    rclcpp::rclcpp
+    ${rclcpp_components_TARGETS}
+    nexus_endpoints::nexus_endpoints
+    ${nexus_orchestrator_msgs_TARGETS}
+    ${rmf_building_map_msgs_TARGETS}
+    ${rmf_visualization_msgs_TARGETS}
+    ${visualization_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
 )
 
 target_include_directories(workcell_state_visualizer
