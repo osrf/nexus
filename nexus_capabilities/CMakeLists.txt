@@ -150,4 +150,32 @@ install(
 
 pluginlib_export_plugin_description_file(nexus_capabilities src/capabilities/plugins.xml)
 
+#===============================================================================
+# builtin task checkers
+#===============================================================================
+add_library(nexus_builtin_task_checkers SHARED
+  src/task_checkers/filepath_checker.cpp
+)
+
+target_compile_options(nexus_builtin_task_checkers PUBLIC INTERFACE cxx_std_17)
+
+target_link_libraries(nexus_builtin_task_checkers
+  PUBLIC
+    ${PROJECT_NAME}
+    nexus_common::nexus_common
+    nexus_endpoints::nexus_endpoints
+    pluginlib::pluginlib
+    rclcpp::rclcpp
+)
+
+install(
+  TARGETS
+  nexus_builtin_task_checkers
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+pluginlib_export_plugin_description_file(nexus_capabilities src/task_checkers/plugins.xml)
+
 ament_package()
