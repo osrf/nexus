@@ -20,6 +20,7 @@ set(dep_pkgs
   rclcpp_lifecycle
   rmf_dispenser_msgs
   rmf_task_msgs
+  yaml_cpp_vendor
   yaml-cpp
 )
 foreach(pkg ${dep_pkgs})
@@ -83,7 +84,7 @@ target_link_libraries(${PROJECT_NAME}
     BT::behaviortree_cpp_v3
     rclcpp::rclcpp
     rclcpp_lifecycle::rclcpp_lifecycle
-    yaml-cpp
+    yaml-cpp::yaml-cpp
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
