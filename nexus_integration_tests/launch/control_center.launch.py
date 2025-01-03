@@ -128,10 +128,7 @@ def launch_setup(context, *args, **kwargs):
                     FindPackageShare("nexus_integration_tests"),
                     "/config/system_bts",
                 ),
-                "remap_task_types":
-                    """{
-                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
-                    }""",
+                "bt_filename": "pick_and_place.xml",
                 "max_jobs": 2,
             }
         ],
