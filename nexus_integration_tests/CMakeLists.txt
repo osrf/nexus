@@ -115,7 +115,7 @@ add_custom_target(generate_zenoh_bridge_configs ALL
   COMMAND ros2 run nexus_network_configuration nexus_network_configuration -n ${nexus_network_cfg_path} -o ${zenoh_cfg_output_dir}
 )
 
-install(DIRECTORY launch config rviz scripts maps/ DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch config rviz scripts templates maps/ DESTINATION share/${PROJECT_NAME})
 # Install the zenoh config directory containing generated configs.
 message("zenoh_cfg_output_dir: " ${zenoh_cfg_output_dir})
 install(DIRECTORY ${zenoh_cfg_output_dir} DESTINATION share/${PROJECT_NAME}/config/)
@@ -190,6 +190,7 @@ foreach(path ${traffic_editor_paths})
   set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/maps/${output_world_name})
   set(output_world_path ${output_dir}/${output_world_name}.world)
   set(output_model_dir ${output_dir}/models)
+  set(world_template_path ${CMAKE_CURRENT_SOURCE_DIR}/templates/depot_world.sdf)
 
   ##############################################################################
   # Generate Gz world and download Models
@@ -199,14 +200,14 @@ foreach(path ${traffic_editor_paths})
   if (NO_DOWNLOAD_MODELS)
     add_custom_command(
       DEPENDS ${map_path}
-      COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${map_path} ${output_world_path} ${output_model_dir}
+      COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${world_template_path}
       OUTPUT ${output_world_path}
     )
   else()
     message("DOWNLOADING MODELS WITH COMMAND: ros2 run rmf_building_map_tools building_map_model_downloader ${map_path}")
     add_custom_command(
       DEPENDS ${map_path}
-      COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${map_path} ${output_world_path} ${output_model_dir}
+      COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${world_template_path}
       COMMAND ros2 run rmf_building_map_tools building_map_model_downloader ${map_path} -e ~/.gazebo/models
       OUTPUT ${output_world_path}
     )

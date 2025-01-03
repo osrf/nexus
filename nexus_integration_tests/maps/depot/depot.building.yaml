@@ -1,0 +1,101 @@
+coordinate_system: reference_image
+crowd_sim:
+  agent_groups:
+    - {agents_name: [deliveryRobot1, deliveryRobot2], agents_number: 2, group_id: 0, profile_selector: external_agent, state_selector: external_static, x: 0, y: 0}
+  agent_profiles:
+    - {ORCA_tau: 1, ORCA_tauObst: 0.40000000000000002, class: 1, max_accel: 0, max_angle_vel: 0, max_neighbors: 10, max_speed: 0, name: external_agent, neighbor_dist: 5, obstacle_set: 1, pref_speed: 0, r: 0.25}
+  enable: 0
+  goal_sets: []
+  model_types: []
+  obstacle_set: {class: 1, file_name: L1_navmesh.nav, type: nav_mesh}
+  states:
+    - {final: 1, goal_set: -1, name: external_static, navmesh_file_name: ""}
+  transitions: []
+  update_time_step: 0.10000000000000001
+graphs:
+  {}
+levels:
+  L1:
+    drawing:
+      filename: depot_scan.png
+    elevation: 0
+    lanes:
+      - [14, 15, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [14, 18, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [19, 15, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [22, 17, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [20, 22, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [21, 22, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [22, 23, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [17, 16, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [16, 24, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [24, 25, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [15, 26, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [26, 27, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [27, 23, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [16, 28, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [23, 29, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [29, 30, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [29, 18, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [24, 31, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [31, 18, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [32, 33, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [33, 34, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [34, 35, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [35, 36, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [25, 33, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [34, 18, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+    layers:
+      {}
+    measurements:
+      - [0, 1, {distance: [3, 30.199999999999999]}]
+    models:
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.75, y: 95.497, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.67400000000001, y: 114.333, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.773, y: 133.21299999999999, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 173.39400000000001, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 211.125, yaw: -3.1415999999999999, z: 0.80000000000000004}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 192.25899999999999, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/TeleportDispenser, name: OpenRobotics/TeleportDispenser, static: true, x: 152.58099999999999, y: 95.144999999999996, yaw: 1.5708, z: 0.72999999999999998}
+      - {dispensable: false, model_name: OpenRobotics/Coke, name: OpenRobotics/Coke, static: true, x: 152.624, y: 95.186999999999998, yaw: 1.5708, z: 0.72999999999999998}
+      - {dispensable: false, model_name: OpenRobotics/TeleportIngestor, name: OpenRobotics/TeleportIngestor, static: true, x: 152.69200000000001, y: 211.52099999999999, yaw: 1.5708, z: 0.72999999999999998}
+    vertices:
+      - [0.104, 307.17000000000002, 0, ""]
+      - [604.029, 307.00799999999998, 0, ""]
+      - [2.0099999999999998, 1.994, 0, ""]
+      - [602.91899999999998, 1.0029999999999999, 0, ""]
+      - [603.96900000000005, 301.74000000000001, 0, ""]
+      - [1.7090000000000001, 304.33499999999998, 0, ""]
+      - [147.125, 72.120000000000005, 0, ""]
+      - [157.90799999999999, 72.030000000000001, 0, ""]
+      - [158.08799999999999, 82.813999999999993, 0, ""]
+      - [146.76499999999999, 82.903999999999996, 0, ""]
+      - [147.178, 222.09899999999999, 0, ""]
+      - [158.00399999999999, 222.04900000000001, 0, ""]
+      - [158.05500000000001, 233.12899999999999, 0, ""]
+      - [147.02600000000001, 233.02699999999999, 0, ""]
+      - [266.71499999999997, 281.97899999999998, 0, ""]
+      - [336.75999999999999, 281.38200000000001, 0, ""]
+      - [386.298, 26.616, 0, ""]
+      - [531.37300000000005, 25.829000000000001, 0, ""]
+      - [269.13, 166.73500000000001, 0, ""]
+      - [336.38900000000001, 243.58099999999999, 0, "", {is_holding_point: [4, true]}]
+      - [565.23000000000002, 112.59399999999999, 0, deliveryRobotCharger1, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot1], spawn_robot_type: [1, DeliveryRobot]}]
+      - [565.84900000000005, 136.12799999999999, 0, deliveryRobotCharger2, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot2], spawn_robot_type: [1, DeliveryRobot]}]
+      - [531.54300000000001, 124.38500000000001, 0, ""]
+      - [530.75400000000002, 166.578, 0, ""]
+      - [312.75099999999998, 26.198, 0, ""]
+      - [183.06100000000001, 26.294, 0, ""]
+      - [564.48400000000004, 281.22500000000002, 0, ""]
+      - [564.399, 166.97300000000001, 0, ""]
+      - [386.291, 67.531999999999996, 0, "", {is_holding_point: [4, true]}]
+      - [448.29300000000001, 167.16200000000001, 0, ""]
+      - [448.29300000000001, 197.09399999999999, 0, "", {is_holding_point: [4, true]}]
+      - [313.17000000000002, 124.905, 0, ""]
+      - [162.601, 95.055000000000007, 0, workcell_1, {is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
+      - [182.399, 94.969999999999999, 0, ""]
+      - [182.173, 151.29400000000001, 0, ""]
+      - [181.989, 211.273, 0, ""]
+      - [164.63399999999999, 211.655, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
+lifts: {}
+name: depot
