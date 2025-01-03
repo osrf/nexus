@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef NEXUS_WORKCELL_ORCHESTRATOR__TRANSPORT_AMR_HPP
-#define NEXUS_WORKCELL_ORCHESTRATOR__TRANSPORT_AMR_HPP
+#ifndef NEXUS_WORKCELL_ORCHESTRATOR__RMF_REQUEST_HPP
+#define NEXUS_WORKCELL_ORCHESTRATOR__RMF_REQUEST_HPP
 
 #include <nexus_capabilities/context_manager.hpp>
 #include <nexus_common/sync_service_client.hpp>
@@ -35,6 +35,8 @@
 
 namespace nexus::capabilities {
 
+namespace rmf {
+
 struct AmrDestination {
   // Either "pickup" or "dropoff"
   std::string action;
@@ -48,7 +50,7 @@ struct AmrDestination {
  *   signal |std::string| Signal to wait for.
  *   clear |bool| Set this to true to clear the signal when this node is finished.
  */
-class DispatchRmfRequest : public BT::StatefulActionNode
+class DispatchRequest : public BT::StatefulActionNode
 {
 // RMF interfaces
 public: using ApiRequest = rmf_task_msgs::msg::ApiRequest;
@@ -61,7 +63,7 @@ public: static BT::PortsList providedPorts()
     };
   }
 
-public: DispatchRmfRequest(const std::string& name,
+public: DispatchRequest(const std::string& name,
     const BT::NodeConfiguration& config,
     rclcpp_lifecycle::LifecycleNode::SharedPtr node)
   : BT::StatefulActionNode(name, config), _node(std::move(node)) {}
@@ -247,6 +249,7 @@ private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: std::shared_ptr<const ContextManager> _ctx_mgr;
 };
 
+}
 }
 
 #endif

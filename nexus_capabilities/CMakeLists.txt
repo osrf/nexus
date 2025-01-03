@@ -130,8 +130,8 @@ add_library(nexus_builtin_capabilities SHARED
   src/capabilities/gripper_control.cpp
   src/capabilities/plan_motion_capability.cpp
   src/capabilities/plan_motion.cpp
-  src/capabilities/transport_amr.cpp
-  src/capabilities/transport_amr_capability.cpp
+  src/capabilities/rmf_request.cpp
+  src/capabilities/rmf_request_capability.cpp
 )
 
 target_compile_options(nexus_builtin_capabilities PUBLIC INTERFACE cxx_std_17)

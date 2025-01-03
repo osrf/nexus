@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef NEXUS_CAPABILITIES__CAPABILITIES__PLAN_MOTION_CAPABILITY_HPP
-#define NEXUS_CAPABILITIES__CAPABILITIES__PLAN_MOTION_CAPABILITY_HPP
+#ifndef NEXUS_CAPABILITIES__CAPABILITIES__RMF_REQUEST_CAPABILITY_HPP
+#define NEXUS_CAPABILITIES__CAPABILITIES__RMF_REQUEST_CAPABILITY_HPP
 
 #include <nexus_capabilities/capability.hpp>
 #include <nexus_capabilities/context_manager.hpp>
@@ -33,7 +33,7 @@ namespace nexus::capabilities {
 /**
  * Capability to plan robot arm motions.
  */
-class TransportAmrCapability : public Capability
+class RMFRequestCapability : public Capability
 {
   /**
    * @copydoc Capability::declare_params
@@ -58,9 +58,6 @@ public: void activate() final {}
    * @copydoc Capability::deactivate
    */
 public: void deactivate() final {}
-
-private: rclcpp::Client<endpoints::GetMotionPlanService::ServiceType>::
-  SharedPtr _client;
 };
 
 }

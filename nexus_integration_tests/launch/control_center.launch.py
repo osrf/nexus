@@ -124,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
         executable="nexus_workcell_orchestrator",
         parameters=[
             {
-                "capabilities": ["nexus::capabilities::TransportAmrCapability"],
+                "capabilities": ["nexus::capabilities::RMFRequestCapability"],
                 "bt_path": (FindPackageShare("nexus_integration_tests"), "/config/rmf_bts"),
             }
         ],

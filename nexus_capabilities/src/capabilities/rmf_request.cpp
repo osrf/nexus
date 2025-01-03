@@ -15,14 +15,16 @@
  *
  */
 
-#include "transport_amr.hpp"
+#include "rmf_request.hpp"
 
 #include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 
 namespace nexus::capabilities {
 
-BT::NodeStatus DispatchRmfRequest::onStart()
+namespace rmf {
+
+BT::NodeStatus DispatchRequest::onStart()
 {
   const auto destinations = this->getInput<std::deque<AmrDestination>>("destinations");
   if (!destinations)
@@ -46,7 +48,7 @@ BT::NodeStatus DispatchRmfRequest::onStart()
   return BT::NodeStatus::RUNNING;
 }
 
-void DispatchRmfRequest::submit_itinerary(const std::deque<AmrDestination>& destinations)
+void DispatchRequest::submit_itinerary(const std::deque<AmrDestination>& destinations)
 {
   nlohmann::json j;
   j["type"] = "dispatch_task_request";
@@ -89,7 +91,7 @@ void DispatchRmfRequest::submit_itinerary(const std::deque<AmrDestination>& dest
   this->_api_request_pub->publish(msg);
 }
 
-void DispatchRmfRequest::api_response_cb(const ApiResponse& msg)
+void DispatchRequest::api_response_cb(const ApiResponse& msg)
 {
   // Receive response, populate hashmaps
   if (msg.type != msg.TYPE_RESPONDING)
@@ -119,7 +121,7 @@ void DispatchRmfRequest::api_response_cb(const ApiResponse& msg)
   this->rmf_task_id = j["state"]["booking"]["id"];
 }
 
-BT::NodeStatus DispatchRmfRequest::onRunning()
+BT::NodeStatus DispatchRequest::onRunning()
 {
   if (rmf_task_id.has_value())
   {
@@ -327,4 +329,5 @@ BT::NodeStatus SendSignal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+}
 }

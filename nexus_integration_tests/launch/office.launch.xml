@@ -31,6 +31,7 @@
   <!-- Simulator launch -->
   <include if="$(var use_simulator)" file="$(find-pkg-share rmf_demos_gz)/simulation.launch.xml">
     <arg name="headless" value="$(var headless)" />
+    <arg name="map_package" value="nexus_integration_tests" />
     <arg name="map_name" value="office" />
     <arg name="gazebo_version" value="8" />
     <arg name="sim_update_rate" value="$(var sim_update_rate)"/>
