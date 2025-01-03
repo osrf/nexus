@@ -95,7 +95,6 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
       throw std::runtime_error("param [bt_path] is required");
     }
 
-    const auto resolved_bt = this->_bt_path / this->_bt_filename;
     if (!this->_bt_filename_valid(this->_bt_filename))
     {
       throw std::runtime_error(
