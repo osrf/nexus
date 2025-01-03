@@ -15,22 +15,25 @@
  *
 */
 
-use bevy::render::{
-    render_resource::{AddressMode, SamplerDescriptor},
-    settings::{WgpuFeatures, WgpuSettings},
-    RenderPlugin,
+use bevy::{
+    log::LogPlugin,
+    pbr::DirectionalLightShadowMap,
+    prelude::*,
+    render::{
+        render_resource::{AddressMode, SamplerDescriptor},
+        settings::{WgpuFeatures, WgpuSettings},
+        RenderPlugin,
+    },
 };
-use bevy::{log::LogPlugin, pbr::DirectionalLightShadowMap, prelude::*};
-use bevy_egui::EguiPlugin;
 
 use clap::Parser;
 
-use librmf_site_editor::{
-    aabb::AabbUpdatePlugin, animate::AnimationPlugin, asset_loaders::AssetLoadersPlugin,
-    interaction::InteractionPlugin, issue::IssuePlugin, keyboard::*, log::LogHistoryPlugin,
-    occupancy::OccupancyPlugin, site::SitePlugin, site_asset_io::SiteAssetIoPlugin,
-    view_menu::ViewMenuPlugin, widgets::*, wireframe::SiteWireframePlugin,
-    workcell::WorkcellEditorPlugin, workspace::*, AppState, CommandLineArgs,
+use librmf_workcell_editor::{
+    bevy_egui::EguiPlugin, bevy_impulse, interaction::InteractionPlugin, keyboard::*,
+    site_asset_io::SiteAssetIoPlugin, view_menu::ViewMenuPlugin, widgets::*,
+    workcell::WorkcellEditorPlugin, workspace::*, AabbUpdatePlugin, AnimationPlugin, AppState,
+    AssetLoadersPlugin, CommandLineArgs, DeletionPlugin, FuelPlugin, LogHistoryPlugin,
+    ModelLoadingPlugin, SiteAssets, SiteWireframePlugin,
 };
 
 pub mod main_menu;
@@ -98,25 +101,26 @@ fn main() {
     ));
 
     app.insert_resource(DirectionalLightShadowMap { size: 2048 })
+        .init_resource::<SiteAssets>()
         .add_state::<AppState>()
         .add_plugins((
             AssetLoadersPlugin,
             LogHistoryPlugin,
+            DeletionPlugin,
+            FuelPlugin::default(),
             AabbUpdatePlugin,
             EguiPlugin,
             KeyboardInputPlugin,
             MainMenuPlugin,
             WorkcellEditorPlugin,
-            SitePlugin,
+            ModelLoadingPlugin::default(),
             InteractionPlugin::default(),
             StandardUiPlugin::default(),
             AnimationPlugin,
-            OccupancyPlugin,
             WorkspacePlugin,
             SiteWireframePlugin,
         ))
         .add_plugins((
-            IssuePlugin,
             ViewMenuPlugin,
             RosContextPlugin,
             WorkcellCalibrationPlugin,
