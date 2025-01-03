@@ -37,7 +37,7 @@ namespace nexus::capabilities {
 
 namespace rmf {
 
-struct AmrDestination {
+struct Destination {
   // Either "pickup" or "dropoff"
   std::string action;
   std::string workcell;
@@ -58,7 +58,7 @@ public: using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 
 public: static BT::PortsList providedPorts()
   {
-    return { BT::InputPort<std::deque<AmrDestination>>("destinations", "Destinations to visit"),
+    return { BT::InputPort<std::deque<Destination>>("destinations", "Destinations to visit"),
       BT::OutputPort<std::string>("rmf_task_id", "The resulting RMF task id")
     };
   }
@@ -74,7 +74,7 @@ public: BT::NodeStatus onRunning() override;
 
 public: void onHalted() override {}
 
-private: void submit_itinerary(const std::deque<AmrDestination>& destinations);
+private: void submit_itinerary(const std::deque<Destination>& destinations);
 
 private: void api_response_cb(const ApiResponse& msg);
 
@@ -94,7 +94,7 @@ class ExtractDestinations : public BT::SyncActionNode
 public: static BT::PortsList providedPorts()
   {
     return {
-      BT::OutputPort<std::deque<AmrDestination>>("destinations"),
+      BT::OutputPort<std::deque<Destination>>("destinations"),
     };
   }
 
@@ -115,7 +115,7 @@ class UnpackDestinationData : public BT::SyncActionNode
 public: static BT::PortsList providedPorts()
   {
     return {
-      BT::InputPort<AmrDestination>("destination"),
+      BT::InputPort<Destination>("destination"),
       BT::OutputPort<std::string>("workcell"),
       BT::OutputPort<std::string>("type"),
     };
@@ -165,8 +165,8 @@ class LoopDestinations : public BT::DecoratorNode
 public: static BT::PortsList providedPorts()
   {
     return {
-      BT::InputPort<std::deque<AmrDestination>>("queue"),
-      BT::OutputPort<AmrDestination>("value"),
+      BT::InputPort<std::deque<Destination>>("queue"),
+      BT::OutputPort<Destination>("value"),
     };
   }
 
@@ -183,7 +183,7 @@ public: BT::NodeStatus tick() override;
 
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: bool _initialized = false;
-private: std::deque<AmrDestination> _queue;
+private: std::deque<Destination> _queue;
 };
 
 class WaitForAmr: public BT::StatefulActionNode

@@ -26,7 +26,7 @@ namespace rmf {
 
 BT::NodeStatus DispatchRequest::onStart()
 {
-  const auto destinations = this->getInput<std::deque<AmrDestination>>("destinations");
+  const auto destinations = this->getInput<std::deque<Destination>>("destinations");
   if (!destinations)
   {
     RCLCPP_ERROR(
@@ -48,7 +48,7 @@ BT::NodeStatus DispatchRequest::onStart()
   return BT::NodeStatus::RUNNING;
 }
 
-void DispatchRequest::submit_itinerary(const std::deque<AmrDestination>& destinations)
+void DispatchRequest::submit_itinerary(const std::deque<Destination>& destinations)
 {
   nlohmann::json j;
   j["type"] = "dispatch_task_request";
@@ -135,14 +135,14 @@ BT::NodeStatus ExtractDestinations::tick()
 {
   const auto ctx = this->_ctx_mgr->current_context();
   const auto& task = ctx->task;
-  std::deque<AmrDestination> destinations;
+  std::deque<Destination> destinations;
   for (const auto& node : task.data)
   {
     if (node["type"] && node["destination"])
     {
       auto type = node["type"].as<std::string>();
       auto destination = node["destination"].as<std::string>();
-      destinations.push_back(AmrDestination {type, destination});
+      destinations.push_back(Destination {type, destination});
     }
     else
     {
@@ -158,7 +158,7 @@ BT::NodeStatus ExtractDestinations::tick()
 
 BT::NodeStatus UnpackDestinationData::tick()
 {
-  const auto destination = this->getInput<AmrDestination>("destination");
+  const auto destination = this->getInput<Destination>("destination");
   if (!destination)
   {
     RCLCPP_ERROR(
@@ -203,7 +203,7 @@ BT::NodeStatus LoopDestinations::tick()
 {
   if (!this->_initialized)
   {
-    auto queue = this->getInput<std::deque<AmrDestination>>("queue");
+    auto queue = this->getInput<std::deque<Destination>>("queue");
     if (!queue)
     {
       RCLCPP_ERROR(
