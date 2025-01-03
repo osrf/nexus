@@ -46,7 +46,8 @@ public: using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
 public: static BT::PortsList providedPorts()
   {
     return { BT::InputPort<Task>("task"),
-      BT::InputPort<std::string>("workcell") };
+      BT::InputPort<std::string>("workcell"),
+      BT::InputPort<Task>("transport_task") };
   }
 
 public: ExecuteTask(const std::string& name,

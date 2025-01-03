@@ -65,6 +65,11 @@ BT::NodeStatus ExecuteTask::onStart()
         task_bt_path));
   this->_bt->rootBlackboard()->set("task", *task);
   this->_bt->rootBlackboard()->set("workcell", *workcell);
+  auto transport_task = this->getInput<Task>("transport_task");
+  if (transport_task)
+  {
+    this->_bt->rootBlackboard()->set("transport_task", *transport_task);
+  }
 
   return BT::NodeStatus::RUNNING;
 }

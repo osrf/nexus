@@ -40,7 +40,7 @@ class PickAndPlaceTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_integration_tests", "launch.py"),
+            ("ros2", "launch", "nexus_integration_tests", "office.launch.xml", "sim_update_rate:=10000"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
@@ -51,6 +51,8 @@ class PickAndPlaceTest(NexusTestCase):
         print("all workcells are ready")
         await self.wait_for_transporters("transporter_node")
         print("all transporters are ready")
+        await self.wait_for_robot_state()
+        print("AMRs are ready")
 
         # give some time for discovery to happen
         await self.ros_sleep(5)
@@ -90,8 +92,9 @@ class PickAndPlaceTest(NexusTestCase):
         #   high load so we only check the last feedback as a workaround.
         self.assertGreater(len(feedbacks), 0)
         for msg in feedbacks:
-            self.assertEqual(len(msg.task_states), 1)
-            state: TaskState = msg.task_states[0]  # type: ignore
+            # The first task is transportation
+            self.assertEqual(len(msg.task_states), 2)
+            state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
             self.assertEqual(state.task_id, "1")
 

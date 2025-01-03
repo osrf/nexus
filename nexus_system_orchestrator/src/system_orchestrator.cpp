@@ -19,11 +19,12 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
+#include "dispatch_transporter.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
 #include "job.hpp"
-#include "send_signal.hpp"
+#include "signals.hpp"
 #include "transporter_request.hpp"
 #include "workcell_request.hpp"
 
@@ -157,6 +158,27 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       {
         resp->workcells.emplace_back(wc->description);
       }
+    });
+
+  // create system orchestrator signaling service
+  this->_signal_srv =
+    this->create_service<endpoints::SignalWorkcellService::ServiceType>(
+    endpoints::SignalWorkcellService::service_name("system_orchestrator"),
+    [this](endpoints::SignalWorkcellService::ServiceType::Request::
+    ConstSharedPtr req,
+    endpoints::SignalWorkcellService::ServiceType::Response::SharedPtr resp)
+    {
+      RCLCPP_INFO(this->get_logger(), "Received signal for job %s: %s", req->task_id.c_str(), req->signal.c_str());
+      auto job_it = this->_jobs.find(req->task_id);
+      if (job_it == this->_jobs.end())
+      {
+        resp->success = false;
+        resp->message = "Job is not being executed";
+        RCLCPP_WARN(this->get_logger(), "Job %s is not being executed", req->task_id.c_str());
+        return;
+      }
+      job_it->second.ctx->orchestrator_signals.push_back(req->signal);
+      resp->success = true;
     });
 
   // create action server for work order requests
@@ -469,6 +491,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       });
     });
 
+  bt_factory->registerBuilder<DispatchTransporter>("DispatchTransporter",
+    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<DispatchTransporter>(name, config,
+        this->shared_from_this(), ctx);
+    });
+
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -503,6 +532,12 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SendSignal>(name, config, ctx);
+    });
+
+  bt_factory->registerBuilder<WaitForSignal>("WaitForSignal",
+    [ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<WaitForSignal>(name, config, ctx);
     });
 
   return bt_factory->createTreeFromFile(this->_bt_path / "main.xml");
@@ -820,7 +855,7 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
         std::make_shared<endpoints::RemovePendingTaskService::ServiceType::Request>();
       req->task_id = task_id;
       const auto resp =
-        this->_workcell_sessions.at(task_id)->remove_pending_task_client->
+        this->_workcell_sessions.at(wc_id)->remove_pending_task_client->
         send_request(req);
       if (!resp->success)
       {

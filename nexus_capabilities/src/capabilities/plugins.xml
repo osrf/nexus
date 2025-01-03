@@ -18,4 +18,8 @@
   <class type="nexus::capabilities::PlanMotionCapability" base_class_type="nexus::Capability">
     <description>PlanMotion capability.</description>
   </class>
+
+  <class type="nexus::capabilities::RMFRequestCapability" base_class_type="nexus::Capability">
+    <description>RMFRequest capability.</description>
+  </class>
 </library>

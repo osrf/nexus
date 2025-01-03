@@ -24,6 +24,7 @@ import rclpy.executors
 import rclpy.node
 from lifecycle_msgs.msg import State
 from lifecycle_msgs.srv import GetState
+from rmf_fleet_msgs.msg import RobotState
 
 T = TypeVar("T", bound="RosTestCase")
 
@@ -101,6 +102,14 @@ class RosTestCase(unittest.TestCase):
             print("waiting for", undiscovered)
             time.sleep(0.1)
             undiscovered.difference_update(self.node.get_node_names())
+
+    async def wait_for_robot_state(self):
+        fut = rclpy.Future()
+        sub = self.node.create_subscription(
+            RobotState, "/robot_state", fut.set_result, 10
+        )
+        result = await fut
+        self.assertIsNotNone(result)
 
     async def ros_sleep(self, secs: float):
         """
