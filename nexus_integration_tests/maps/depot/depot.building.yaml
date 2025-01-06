@@ -54,7 +54,7 @@ levels:
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.67400000000001, y: 114.333, yaw: 3.1415999999999999, z: 0}
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.773, y: 133.21299999999999, yaw: 3.1415999999999999, z: 0}
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.874, y: 171.666, yaw: 3.1415999999999999, z: 0}
-      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.941, y: 209.636, yaw: -3.1415999999999999, z: 0.80000000000000004}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.941, y: 209.636, yaw: -3.1415999999999999, z: 0}
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.941, y: 190.61699999999999, yaw: 3.1415999999999999, z: 0}
     vertices:
       - [0.104, 307.17000000000002, 0, ""]
@@ -89,10 +89,10 @@ levels:
       - [448.29300000000001, 167.16200000000001, 0, ""]
       - [448.29300000000001, 197.09399999999999, 0, "", {is_holding_point: [4, true]}]
       - [313.17000000000002, 124.905, 0, ""]
-      - [167.054, 95.147000000000006, 0, workcell_1, {is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
+      - [169.52799999999999, 94.926000000000002, 0, workcell_1, {is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
       - [182.399, 94.969999999999999, 0, ""]
       - [182.173, 151.29400000000001, 0, ""]
       - [182.316, 208.959, 0, ""]
-      - [167.83199999999999, 209.5, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
+      - [169.35300000000001, 209.273, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
 lifts: {}
 name: depot
