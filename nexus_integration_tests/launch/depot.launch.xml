@@ -48,6 +48,7 @@
     <!-- Set as true to make it auto bringup and remove all the extra rviz launches -->
     <arg name="headless" value="true" />
     <arg name="use_sim_time" value="$(var use_simulator)"/>
+    <arg name="main_bt_filename" value="main_rmf.xml"/>
   </include>
 
 </launch>
