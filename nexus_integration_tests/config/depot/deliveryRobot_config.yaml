@@ -31,7 +31,7 @@ rmf_fleet:
   task_capabilities: # Specify the types of RMF Tasks that robots in this fleet are capable of performing
     loop: True
     delivery: True
-  finishing_request: "park" # [park, charge, nothing]
+  finishing_request: "charge" # [park, charge, nothing]
   robots:
     deliveryRobot1:
       charger: "deliveryRobotCharger1"

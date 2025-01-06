@@ -81,9 +81,9 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        tinyRobot/labels/L1: true
-        tinyRobot/lanes/L1: true
-        tinyRobot/waypoints/L1: true
+        deliveryRobot/labels/L1: true
+        deliveryRobot/lanes/L1: true
+        deliveryRobot/waypoints/L1: true
       Topic:
         Depth: 5
         Durability Policy: Transient Local

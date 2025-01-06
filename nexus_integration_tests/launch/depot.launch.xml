@@ -14,10 +14,10 @@
   </include>
 
   <!-- Nexus Common launch -->
-  <!-- <include file="$(find-pkg-share nexus_integration_tests)/launch/common.launch.xml">
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/common.launch.xml">
     <arg name="headless" value="$(var headless)" />
     <arg name="use_sim_time" value="$(var use_simulator)"/>
-  </include> -->
+  </include>
 
   <!-- DeliveryRobot fleet adapter -->
   <group>
@@ -35,6 +35,14 @@
     <arg name="map_name" value="depot" />
     <arg name="gazebo_version" value="8" />
     <arg name="sim_update_rate" value="$(var sim_update_rate)"/>
+  </include>
+
+  <!-- Bringup from integration tests -->
+  <!-- TODO(luca) should we move the integration launch here instead? -->
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/launch.py">
+    <!-- Set as true to make it auto bringup and remove all the extra rviz launches -->
+    <arg name="headless" value="true" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
   </include>
 
 </launch>

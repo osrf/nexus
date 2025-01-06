@@ -53,12 +53,9 @@ levels:
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.75, y: 95.497, yaw: 3.1415999999999999, z: 0}
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.67400000000001, y: 114.333, yaw: 3.1415999999999999, z: 0}
       - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.773, y: 133.21299999999999, yaw: 3.1415999999999999, z: 0}
-      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 173.39400000000001, yaw: 3.1415999999999999, z: 0}
-      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 211.125, yaw: -3.1415999999999999, z: 0.80000000000000004}
-      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.899, y: 192.25899999999999, yaw: 3.1415999999999999, z: 0}
-      - {dispensable: false, model_name: OpenRobotics/TeleportDispenser, name: TeleportDispenser, static: true, x: 152.58099999999999, y: 95.144999999999996, yaw: 1.5708, z: 0.72999999999999998}
-      - {dispensable: false, model_name: OpenRobotics/Coke, name: OpenRobotics/Coke, static: true, x: 152.624, y: 95.186999999999998, yaw: 1.5708, z: 0.72999999999999998}
-      - {dispensable: false, model_name: OpenRobotics/TeleportIngestor, name: TeleportIngestor, static: true, x: 152.69200000000001, y: 211.52099999999999, yaw: 1.5708, z: 0.72999999999999998}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.874, y: 171.666, yaw: 3.1415999999999999, z: 0}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.941, y: 209.636, yaw: -3.1415999999999999, z: 0.80000000000000004}
+      - {dispensable: false, model_name: OpenRobotics/FoodCourtTable1, name: OpenRobotics/FoodCourtTable1, static: true, x: 152.941, y: 190.61699999999999, yaw: 3.1415999999999999, z: 0}
     vertices:
       - [0.104, 307.17000000000002, 0, ""]
       - [604.029, 307.00799999999998, 0, ""]
@@ -92,10 +89,10 @@ levels:
       - [448.29300000000001, 167.16200000000001, 0, ""]
       - [448.29300000000001, 197.09399999999999, 0, "", {is_holding_point: [4, true]}]
       - [313.17000000000002, 124.905, 0, ""]
-      - [162.601, 95.055000000000007, 0, workcell_1, {is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
+      - [167.054, 95.147000000000006, 0, workcell_1, {is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
       - [182.399, 94.969999999999999, 0, ""]
       - [182.173, 151.29400000000001, 0, ""]
-      - [181.989, 211.273, 0, ""]
-      - [164.63399999999999, 211.655, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
+      - [182.316, 208.959, 0, ""]
+      - [167.83199999999999, 209.5, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, true], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
 lifts: {}
 name: depot

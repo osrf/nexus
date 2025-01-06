@@ -7,7 +7,7 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 
 ### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
 > NOTE: Before running any of these commands, you must set the rmw implmentation to cyclonedds with
-`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`. If any of the commands give an error regarding `Failed to find a free participant index`, please also set the cyclonedds config with `export CYCLONEDDS_URI=$HOME/ws_nexus/src/nexus_integration_tests/config/cyclonedds/cyclonedds.xml`, which increases the maximum number of participants.
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
 ```bash
 ros2 launch nexus_integration_tests launch.py headless:=False
