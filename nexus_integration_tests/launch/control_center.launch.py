@@ -118,20 +118,6 @@ def launch_setup(context, *args, **kwargs):
         get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
     )
 
-    rmf_transporter_node = LifecycleNode(
-        name="rmf_nexus_transporter",
-        namespace="",
-        package="nexus_workcell_orchestrator",
-        executable="nexus_workcell_orchestrator",
-        parameters=[
-            {
-                "capabilities": ["nexus::capabilities::RMFRequestCapability"],
-                "bt_path": (FindPackageShare("nexus_integration_tests"), "/config/rmf_bts"),
-            }
-        ],
-        arguments=['--ros-args', '--log-level', 'info'],
-    )
-
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
         namespace="",
@@ -186,7 +172,6 @@ def launch_setup(context, *args, **kwargs):
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
-        rmf_transporter_node,
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
