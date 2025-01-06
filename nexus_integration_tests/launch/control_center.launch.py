@@ -146,6 +146,7 @@ def launch_setup(context, *args, **kwargs):
                 "remap_task_types":
                     """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                        pick_and_place_rmf: [place_on_amr, pick_from_amr],
                     }""",
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
