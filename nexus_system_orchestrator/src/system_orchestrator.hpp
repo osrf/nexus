@@ -85,7 +85,7 @@ private:
   rclcpp::Service<endpoints::GetWorkOrderStateService::ServiceType>::SharedPtr
     _get_wo_state_srv;
   std::filesystem::path _bt_path;
-  std::string _bt_filename;
+  std::string _main_bt_filename;
   rclcpp::SubscriptionBase::SharedPtr _cancel_wo_sub;
   bool _activated = false;
   bool _estop_pressed = false;

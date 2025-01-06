@@ -132,7 +132,7 @@ def launch_setup(context, *args, **kwargs):
                     """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }""",
-                "bt_filename": "main.xml",
+                "main_bt_filename": "main.xml",
                 "max_jobs": 2,
             }
         ],

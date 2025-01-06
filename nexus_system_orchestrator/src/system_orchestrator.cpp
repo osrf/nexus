@@ -90,12 +90,12 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.description =
       "Filename of the main behavior tree to run. Paths will be resolved relative to the \"bt_path\" parameter. Defaults to \"main.xml\".";
-    this->_bt_filename = this->declare_parameter("bt_filename", "main.xml", desc);
+    this->_main_bt_filename = this->declare_parameter("main_bt_filename", "main.xml", desc);
 
-    if (!this->_bt_filename_valid(this->_bt_filename))
+    if (!this->_bt_filename_valid(this->_main_bt_filename))
     {
       throw std::runtime_error(
-              "[bt_path] and [bt_filename] don't point to a file");
+              "[bt_path] and [main_bt_filename] don't point to a file");
     }
   }
 
@@ -158,9 +158,9 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
         result.successful = true;
         for (const auto& parameter: parameters)
         {
-          if (parameter.get_name() == "bt_filename" && !this->_bt_filename_valid(parameter.get_value<std::string>()))
+          if (parameter.get_name() == "main_bt_filename" && !this->_bt_filename_valid(parameter.get_value<std::string>()))
           {
-            result.reason = "bt_filename points to a non existing file";
+            result.reason = "main_bt_filename points to a non existing file";
             result.successful = false;
             break;
           }
@@ -534,7 +534,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       return std::make_unique<SendSignal>(name, config, ctx);
     });
 
-  return bt_factory->createTreeFromFile(this->_bt_path / this->_bt_filename);
+  return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
 }
 
 void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
