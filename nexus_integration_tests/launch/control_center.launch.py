@@ -112,6 +112,7 @@ def launch_setup(context, *args, **kwargs):
     transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
+    main_bt_filename = LaunchConfiguration("main_bt_filename")
 
     nexus_panel_rviz_path = os.path.join(
         get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
@@ -132,6 +133,7 @@ def launch_setup(context, *args, **kwargs):
                     """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }""",
+                "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
             }
         ],
@@ -242,6 +244,11 @@ def generate_launch_description():
                 "headless",
                 default_value="true",
                 description="Launch in headless mode (no gui)",
+            ),
+            DeclareLaunchArgument(
+                "main_bt_filename",
+                default_value="main.xml",
+                description="File name of the main system orchestrator behavior tree",
             ),
             OpaqueFunction(function=launch_setup),
         ]
