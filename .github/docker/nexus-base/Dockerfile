@@ -10,7 +10,7 @@ RUN mkdir -p /ws_nexus_base/src && cd /ws_nexus_base \
   && curl --output rmf.repos https://raw.githubusercontent.com/osrf/nexus/refs/heads/$NEXUS_BRANCH/rmf.repos \
   && vcs import /ws_nexus_base/src < rmf.repos
 
-RUN rosdep update && rosdep install --from-paths /ws_nexus_base/src -yi
+RUN rosdep update && rosdep install --from-paths /ws_nexus_base/src -yir
 
 RUN cd /ws_nexus_base \
   && . /opt/ros/$ROS_DISTRO/setup.sh \
