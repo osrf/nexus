@@ -17,59 +17,61 @@
 
 // #include <behaviortree_cpp/decorators/loop_node.h>
 
-#include "transport_amr.hpp"
-#include "transport_amr_capability.hpp"
+#include "rmf_request.hpp"
+#include "rmf_request_capability.hpp"
 
 namespace nexus::capabilities {
 
-void TransportAmrCapability::configure(
+using namespace rmf;
+
+void RMFRequestCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> ctx_mgr,
   BT::BehaviorTreeFactory& bt_factory)
 {
-  bt_factory.registerBuilder<DispatchRmfRequest>("transport_amr.DispatchRmfRequest",
+  bt_factory.registerBuilder<DispatchRequest>("rmf_request.DispatchRequest",
     [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
-      return std::make_unique<DispatchRmfRequest>(name, config, node);
+      return std::make_unique<DispatchRequest>(name, config, node);
     });
 
-  bt_factory.registerBuilder<ExtractDestinations>("transport_amr.ExtractDestinations",
+  bt_factory.registerBuilder<ExtractDestinations>("rmf_request.ExtractDestinations",
     [this, node, ctx_mgr](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<ExtractDestinations>(name, config, ctx_mgr, node);
     });
 
-  bt_factory.registerBuilder<UnpackDestinationData>("transport_amr.UnpackDestinationData",
+  bt_factory.registerBuilder<UnpackDestinationData>("rmf_request.UnpackDestinationData",
     [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<UnpackDestinationData>(name, config, node);
     });
 
-  bt_factory.registerBuilder<SignalAmr>("transport_amr.SignalAmr",
+  bt_factory.registerBuilder<SignalAmr>("rmf_request.SignalAmr",
     [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<SignalAmr>(name, config, node);
     });
 
-  bt_factory.registerBuilder<LoopDestinations>("transport_amr.LoopDestinations",
+  bt_factory.registerBuilder<LoopDestinations>("rmf_request.LoopDestinations",
     [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<LoopDestinations>(name, config, node);
     });
 
-  bt_factory.registerBuilder<WaitForAmr>("transport_amr.WaitForAmr",
+  bt_factory.registerBuilder<WaitForAmr>("rmf_request.WaitForAmr",
     [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
       return std::make_unique<WaitForAmr>(name, config, node);
     });
 
-  bt_factory.registerBuilder<SendSignal>("transport_amr.SendSignal",
+  bt_factory.registerBuilder<SendSignal>("rmf_request.SendSignal",
     [this, node, ctx_mgr](const std::string& name,
     const BT::NodeConfiguration& config)
     {
@@ -82,6 +84,6 @@ void TransportAmrCapability::configure(
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  nexus::capabilities::TransportAmrCapability,
+  nexus::capabilities::RMFRequestCapability,
   nexus::Capability
 )

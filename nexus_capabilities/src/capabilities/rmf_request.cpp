@@ -15,16 +15,18 @@
  *
  */
 
-#include "transport_amr.hpp"
+#include "rmf_request.hpp"
 
 #include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 
 namespace nexus::capabilities {
 
-BT::NodeStatus DispatchRmfRequest::onStart()
+namespace rmf {
+
+BT::NodeStatus DispatchRequest::onStart()
 {
-  const auto destinations = this->getInput<std::deque<AmrDestination>>("destinations");
+  const auto destinations = this->getInput<std::deque<Destination>>("destinations");
   if (!destinations)
   {
     RCLCPP_ERROR(
@@ -46,7 +48,7 @@ BT::NodeStatus DispatchRmfRequest::onStart()
   return BT::NodeStatus::RUNNING;
 }
 
-void DispatchRmfRequest::submit_itinerary(const std::deque<AmrDestination>& destinations)
+void DispatchRequest::submit_itinerary(const std::deque<Destination>& destinations)
 {
   nlohmann::json j;
   j["type"] = "dispatch_task_request";
@@ -89,7 +91,7 @@ void DispatchRmfRequest::submit_itinerary(const std::deque<AmrDestination>& dest
   this->_api_request_pub->publish(msg);
 }
 
-void DispatchRmfRequest::api_response_cb(const ApiResponse& msg)
+void DispatchRequest::api_response_cb(const ApiResponse& msg)
 {
   // Receive response, populate hashmaps
   if (msg.type != msg.TYPE_RESPONDING)
@@ -119,7 +121,7 @@ void DispatchRmfRequest::api_response_cb(const ApiResponse& msg)
   this->rmf_task_id = j["state"]["booking"]["id"];
 }
 
-BT::NodeStatus DispatchRmfRequest::onRunning()
+BT::NodeStatus DispatchRequest::onRunning()
 {
   if (rmf_task_id.has_value())
   {
@@ -133,14 +135,14 @@ BT::NodeStatus ExtractDestinations::tick()
 {
   const auto ctx = this->_ctx_mgr->current_context();
   const auto& task = ctx->task;
-  std::deque<AmrDestination> destinations;
+  std::deque<Destination> destinations;
   for (const auto& node : task.data)
   {
     if (node["type"] && node["destination"])
     {
       auto type = node["type"].as<std::string>();
       auto destination = node["destination"].as<std::string>();
-      destinations.push_back(AmrDestination {type, destination});
+      destinations.push_back(Destination {type, destination});
     }
     else
     {
@@ -156,7 +158,7 @@ BT::NodeStatus ExtractDestinations::tick()
 
 BT::NodeStatus UnpackDestinationData::tick()
 {
-  const auto destination = this->getInput<AmrDestination>("destination");
+  const auto destination = this->getInput<Destination>("destination");
   if (!destination)
   {
     RCLCPP_ERROR(
@@ -201,7 +203,7 @@ BT::NodeStatus LoopDestinations::tick()
 {
   if (!this->_initialized)
   {
-    auto queue = this->getInput<std::deque<AmrDestination>>("queue");
+    auto queue = this->getInput<std::deque<Destination>>("queue");
     if (!queue)
     {
       RCLCPP_ERROR(
@@ -327,4 +329,5 @@ BT::NodeStatus SendSignal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+}
 }

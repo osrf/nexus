@@ -19,7 +19,7 @@
     <description>PlanMotion capability.</description>
   </class>
 
-  <class type="nexus::capabilities::TransportAmrCapability" base_class_type="nexus::Capability">
-    <description>TransportAmr capability.</description>
+  <class type="nexus::capabilities::RMFRequestCapability" base_class_type="nexus::Capability">
+    <description>RMFRequest capability.</description>
   </class>
 </library>

@@ -3,23 +3,23 @@
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
       <!-- Extract the destination information from the task payload -->
-      <transport_amr.ExtractDestinations destinations="{destinations}" />
+      <rmf_request.ExtractDestinations destinations="{destinations}" />
       <!-- Sends the actual RMF task then returns -->
-      <transport_amr.DispatchRmfRequest destinations="{destinations}" rmf_task_id="{rmf_task_id}" />
-      <transport_amr.LoopDestinations queue="{destinations}" value="{destination}">
+      <rmf_request.DispatchRequest destinations="{destinations}" rmf_task_id="{rmf_task_id}" />
+      <rmf_request.LoopDestinations queue="{destinations}" value="{destination}">
         <Sequence>
           <!-- Utility node that unpacks the struct data into its fields -->
-          <transport_amr.UnpackDestinationData destination="{destination}" workcell="{workcell}" type="{type}" />
+          <rmf_request.UnpackDestinationData destination="{destination}" workcell="{workcell}" type="{type}" />
           <!-- Wait for AMR to reach the workcell -->
-          <transport_amr.WaitForAmr rmf_task_id="{rmf_task_id}" workcell="{workcell}" />
+          <rmf_request.WaitForAmr rmf_task_id="{rmf_task_id}" workcell="{workcell}" />
           <!-- Signal system orchestrator to start the workcell -->
-          <transport_amr.SendSignal signal="{workcell}" />
+          <rmf_request.SendSignal signal="{workcell}" />
           <!-- Wait for workcell to be done with its task -->
           <WaitForSignal signal="{workcell}" />
           <!-- Signal RMF that we can move -->
-          <transport_amr.SignalAmr workcell="{workcell}" rmf_task_id="{rmf_task_id}" />
+          <rmf_request.SignalAmr workcell="{workcell}" rmf_task_id="{rmf_task_id}" />
         </Sequence>
-      </transport_amr.LoopDestinations>
+      </rmf_request.LoopDestinations>
     </Sequence>
   </BehaviorTree>
 </root>
