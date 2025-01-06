@@ -43,6 +43,8 @@ public: rclcpp_lifecycle::LifecycleNode& node;
 public: std::string job_id;
 public: WorkOrder wo;
 public: std::vector<WorkcellTask> tasks;
+public: std::shared_ptr<const std::unordered_map<std::string,
+    std::string>> task_remaps;
   /**
    * Map of task ids and their assigned workcell ids.
    */

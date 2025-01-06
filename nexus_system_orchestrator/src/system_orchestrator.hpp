@@ -96,6 +96,8 @@ private:
   std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{nullptr};
   rclcpp::TimerBase::SharedPtr _pre_configure_timer;
   rclcpp::SubscriptionBase::SharedPtr _estop_sub;
+  // mapping of mapped task type and the original
+  std::shared_ptr<std::unordered_map<std::string, std::string>> _task_remaps;
   std::shared_ptr<OnSetParametersCallbackHandle> _param_cb_handle;
 
   /**

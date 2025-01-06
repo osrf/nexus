@@ -20,6 +20,7 @@
 #include "bid_transporter.hpp"
 #include "context.hpp"
 #include "exceptions.hpp"
+#include "execute_task.hpp"
 #include "for_each_task.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
@@ -70,7 +71,7 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "Path to a directory containing behavior trees. Each file in the directory should be a behavior tree xml.";
+      "Path to a directory containing behavior trees. Each file in the directory should be a behavior tree xml, the file name denotes the task type for that behavior tree.";
     this->_bt_path = this->declare_parameter("bt_path", "", desc);
     if (this->_bt_path.empty())
     {
@@ -90,15 +91,31 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     desc.description =
       "Filename of the main behavior tree to run. Paths will be resolved relative to the \"bt_path\" parameter. Defaults to \"main.xml\".";
     this->_bt_filename = this->declare_parameter("bt_filename", "main.xml", desc);
-    if (this->_bt_path.empty())
-    {
-      throw std::runtime_error("param [bt_path] is required");
-    }
 
     if (!this->_bt_filename_valid(this->_bt_filename))
     {
       throw std::runtime_error(
               "[bt_path] and [bt_filename] don't point to a file");
+    }
+  }
+
+  {
+    _task_remaps =
+      std::make_shared<std::unordered_map<std::string, std::string>>();
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "A yaml containing a dictionary of task types and an array of remaps.";
+    const auto yaml = this->declare_parameter("remap_task_types", "", desc);
+    const auto remaps = YAML::Load(yaml);
+    for (const auto& n : remaps)
+    {
+      const auto task_type = n.first.as<std::string>();
+      const auto& mappings = n.second;
+      for (const auto& m : mappings)
+      {
+        this->_task_remaps->emplace(m.as<std::string>(), task_type);
+      }
     }
   }
 
@@ -150,6 +167,7 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
         }
         return result;
       });
+
 }
 
 auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
@@ -502,6 +520,14 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       this->get_logger(), ctx);
     });
 
+  bt_factory->registerBuilder<ExecuteTask>("ExecuteTask",
+    [this, ctx, bt_factory](const std::string& name,
+    const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<ExecuteTask>(name, config, ctx, this->_bt_path,
+      bt_factory);
+    });
+
   bt_factory->registerBuilder<SendSignal>("SendSignal",
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -519,7 +545,7 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 
   // using `new` because make_shared does not work with aggregate initializer
   std::shared_ptr<Context> ctx{new Context{*this,
-      goal.order.id, wo, tasks,
+      goal.order.id, wo, tasks, this->_task_remaps,
       std::unordered_map<std::string, std::string>{},
       this->_workcell_sessions,
       this->_transporter_sessions, {}, nullptr,
