@@ -72,20 +72,31 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "Path to a directory containing behavior trees. Each file in the directory should be a behavior tree xml, the file name denotes the task type for that behavior tree. In addition, there must be a file named \"main.xml\" which will be used to perform the work order.";
+      "Path to a directory containing behavior trees. Each file in the directory should be a behavior tree xml, the file name denotes the task type for that behavior tree.";
     this->_bt_path = this->declare_parameter("bt_path", "", desc);
     if (this->_bt_path.empty())
     {
       throw std::runtime_error("param [bt_path] is required");
     }
 
-    // check if "main.xml" exists
-    const auto main_bt = this->_bt_path / "main.xml";
-    if (!std::filesystem::exists(main_bt) ||
-      !std::filesystem::is_regular_file(main_bt))
+    if (!std::filesystem::exists(this->_bt_path) ||
+      !std::filesystem::is_directory(this->_bt_path))
     {
       throw std::runtime_error(
-              "path specified in [bt_path] param must contain \"main.xml\"");
+              "path specified in [bt_path] param must be a folder");
+    }
+  }
+
+  {
+    ParameterDescriptor desc;
+    desc.description =
+      "Filename of the main behavior tree to run. Paths will be resolved relative to the \"bt_path\" parameter. Defaults to \"main.xml\".";
+    this->_main_bt_filename = this->declare_parameter("main_bt_filename", "main.xml", desc);
+
+    if (!this->_bt_filename_valid(this->_main_bt_filename))
+    {
+      throw std::runtime_error(
+              "[bt_path] and [main_bt_filename] don't point to a file");
     }
   }
 
@@ -140,6 +151,24 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
         // this->_lifecycle_mgr = std::make_unique<lifecycle_manager::LifecycleManager<>>(
         //   this->get_name(), std::vector<std::string>{});
       });
+
+  this->_param_cb_handle = this->add_on_set_parameters_callback(
+      [this](const std::vector<rclcpp::Parameter>& parameters)
+      {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        for (const auto& parameter: parameters)
+        {
+          if (parameter.get_name() == "main_bt_filename" && !this->_bt_filename_valid(parameter.get_value<std::string>()))
+          {
+            result.reason = "main_bt_filename points to a non existing file";
+            result.successful = false;
+            break;
+          }
+        }
+        return result;
+      });
+
 }
 
 auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
@@ -540,7 +569,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       return std::make_unique<WaitForSignal>(name, config, ctx);
     });
 
-  return bt_factory->createTreeFromFile(this->_bt_path / "main.xml");
+  return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
 }
 
 void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
@@ -987,6 +1016,17 @@ void SystemOrchestrator::_spin_bts_once()
   {
     this->_halt_fail_and_remove_all_jobs();
   }
+}
+
+bool SystemOrchestrator::_bt_filename_valid(const std::string& bt_filename) const
+{
+  const auto resolved_bt = this->_bt_path / bt_filename;
+  if (!std::filesystem::exists(resolved_bt) ||
+    !std::filesystem::is_regular_file(resolved_bt))
+  {
+    return false;
+  }
+  return true;
 }
 
 void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,

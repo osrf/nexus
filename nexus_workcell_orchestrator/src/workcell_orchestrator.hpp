@@ -24,6 +24,7 @@
 #include <nexus_capabilities/context.hpp>
 #include <nexus_capabilities/context_manager.hpp>
 #include <nexus_capabilities/task.hpp>
+#include <nexus_capabilities/task_checker.hpp>
 
 #include <nexus_common/action_client_bt_node.hpp>
 #include <nexus_common/bt_store.hpp>
@@ -123,11 +124,11 @@ private: std::list<std::shared_ptr<Context>> _ctxs;
 private: std::shared_ptr<ContextManager> _ctx_mgr;
 private: std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{
     nullptr};
-private: std::filesystem::path _bt_path;
-  // mapping of mapped task type and the original
+// mapping of mapped task type and the original
 private: std::unordered_map<std::string, std::string> _task_remaps;
 private: TaskParser _task_parser;
-
+private: pluginlib::ClassLoader<TaskChecker> _task_checker_loader;
+private: std::shared_ptr<TaskChecker> _task_checker;
 
 private: CallbackReturn _configure(
     const rclcpp_lifecycle::State& previous_state);
@@ -165,8 +166,6 @@ private: void _handle_command_failed(const std::shared_ptr<Context>& ctx);
 private: void _handle_task_doable(
     endpoints::IsTaskDoableService::ServiceType::Request::ConstSharedPtr req,
     endpoints::IsTaskDoableService::ServiceType::Response::SharedPtr resp);
-
-private: bool _can_perform_task(const Task& task);
 };
 
 }

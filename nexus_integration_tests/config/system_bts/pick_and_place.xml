@@ -1,13 +1,15 @@
 <root main_tree_to_execute="pick_and_place">
   <BehaviorTree ID="pick_and_place">
     <ReactiveSequence>
-      <!--IsPauseTriggered paused="{paused}"/-->
-      <Sequence>
-        <WaitForSignal name="wait_for_amr" signal="{workcell}" clear="true"/>
+      <IsPauseTriggered paused="{paused}"/>
+      <Parallel success_threshold="-1">
+        <Sequence>
+          <BidTransporter name="bid_transporterasdasd" destination="{workcell}" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}"/>
+          <SendSignal task="{task}" signal="transporter_done"/>
+        </Sequence>
         <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
-        <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
-        <SendSignal task="{transport_task}" signal="{workcell}"/>
-      </Sequence>
+      </Parallel>
     </ReactiveSequence>
   </BehaviorTree>
 </root>

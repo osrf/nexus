@@ -1,0 +1,19 @@
+<root main_tree_to_execute="main">
+  <BehaviorTree ID="main">
+    <ReactiveSequence>
+      <!--IsPauseTriggered paused="{paused}"/-->
+      <!--PausableSequence pause="{paused}"-->
+        <!-- Iterates over all task assignments and dispatches an AMR -->
+        <Sequence>
+          <DispatchTransporter name="bid_amr_transporter" result="{amr_transporter}" transport_task="{transport_task}"/>
+          <Parallel success_threshold="-1">
+            <WorkcellRequest name="amr_request" workcell="{amr_transporter}" task="{transport_task}"/>
+            <ForEachTask task="{task}" workcell="{workcell}">
+              <ExecuteTask task="{task}" workcell="{workcell}" transport_task="{transport_task}"/>
+            </ForEachTask>
+          </Parallel>
+        </Sequence>
+      <!--/PausableSequence-->
+    </ReactiveSequence>
+  </BehaviorTree>
+</root>
