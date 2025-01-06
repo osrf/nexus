@@ -34,7 +34,7 @@ jobs:
       run: |
         git clone https://github.com/ros2-rust/ros2_rust.git
         cd ros2_rust
-        git checkout f45a66f47dc727e3ccb13037a6c57923af1446c7
+        git checkout 9a845c17873cbdf49e8017d5f0af6d8f795589cc
         cd ..
         vcs import . < ros2_rust/ros2_rust_jazzy.repos
     - name: rosdep
