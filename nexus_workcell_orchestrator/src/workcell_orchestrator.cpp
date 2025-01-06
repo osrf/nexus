@@ -63,7 +63,8 @@ static constexpr std::chrono::seconds REGISTER_TICK_RATE{1};
 
 WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
 : rclcpp_lifecycle::LifecycleNode("workcell_orchestrator", options),
-  _capability_loader("nexus_capabilities", "nexus::Capability")
+  _capability_loader("nexus_capabilities", "nexus::Capability"),
+  _task_checker_loader("nexus_capabilities", "nexus::TaskChecker")
 {
   common::configure_logging(this);
 
@@ -85,7 +86,6 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     {
       throw std::runtime_error("param [bt_path] is required");
     }
-    this->_bt_path = std::move(param);
   }
   {
     ParameterDescriptor desc;
@@ -142,6 +142,19 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     RCLCPP_WARN(
       this->get_logger(),
       "Workcell can only handle generic tasks because it has no capabilities.");
+  }
+
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "Fully qualified plugin name for the TaskChecker.";
+    auto param = this->declare_parameter<std::string>(
+      "task_checker_plugin", "nexus::task_checkers::FilepathChecker", desc);
+    if (param.empty())
+    {
+      throw std::runtime_error("param [task_checker_plugin] is required.");
+    }
   }
 
   this->_register_workcell_client =
@@ -243,6 +256,7 @@ auto WorkcellOrchestrator::on_cleanup(
   this->_queue_task_srv.reset();
   this->_pause_srv.reset();
   this->_signal_wc_srv.reset();
+  this->_task_checker.reset();
   this->_task_doable_srv.reset();
   this->_cmd_server.reset();
   this->_ctx_mgr.reset();
@@ -264,6 +278,25 @@ auto WorkcellOrchestrator::_configure(
     });
   auto bt_path = this->get_parameter("bt_path").get_value<std::string>();
   this->_bt_store.register_from_path(bt_path);
+
+  try
+  {
+    const std::string plugin_name = this->get_parameter("task_checker_plugin").get_value<std::string>();
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Loading TaskChecker plugin [ %s ].",
+      plugin_name.c_str()
+    );
+    _task_checker = _task_checker_loader.createSharedInstance(plugin_name);
+    _task_checker->initialize(*this);
+  }
+  catch(pluginlib::PluginlibException& ex)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Failed to load TaskChecker plugin. Error: %s\n", ex.what());
+    return CallbackReturn::FAILURE;
+  }
 
   // create workcell request action server
   this->_cmd_server =
@@ -347,7 +380,7 @@ auto WorkcellOrchestrator::_configure(
       try
       {
         ctx->task = this->_task_parser.parse_task(goal->task);
-        if (!this->_can_perform_task(
+        if (!this->_task_checker->is_task_doable(
           ctx->task))
         {
           auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
@@ -998,7 +1031,7 @@ void WorkcellOrchestrator::_handle_task_doable(
   try
   {
     auto task = this->_task_parser.parse_task(req->task);
-    resp->success = this->_can_perform_task(task);
+    resp->success = this->_task_checker->is_task_doable(task);
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");
@@ -1014,19 +1047,6 @@ void WorkcellOrchestrator::_handle_task_doable(
     RCLCPP_ERROR(this->get_logger(), "failed to parse request (%s)", e.what());
     resp->success = false;
     return;
-  }
-}
-
-bool WorkcellOrchestrator::_can_perform_task(const Task& task)
-{
-  try
-  {
-    this->_bt_store.get_bt(task.type);
-    return true;
-  }
-  catch (const std::out_of_range&)
-  {
-    return false;
   }
 }
 

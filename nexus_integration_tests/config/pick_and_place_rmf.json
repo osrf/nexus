@@ -1,0 +1,23 @@
+{
+  "number": "test-1",
+  "workInstructionName": "Pick and Place",
+  "item": {
+    "SkuId": "productA",
+    "description": "productA",
+    "unit": "dummy_unit",
+    "quantity": 1.0,
+    "quantityPerPallet": 1.0
+  },
+  "steps": [
+    {
+      "id": 1.0,
+      "processId": "place_on_amr",
+      "name": "Pick and Place"
+    },
+    {
+      "id": 2.0,
+      "processId": "pick_from_amr",
+      "name": "Pick and Place"
+    }
+  ]
+}

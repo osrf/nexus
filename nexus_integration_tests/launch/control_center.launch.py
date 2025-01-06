@@ -112,23 +112,10 @@ def launch_setup(context, *args, **kwargs):
     transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
+    main_bt_filename = LaunchConfiguration("main_bt_filename")
 
     nexus_panel_rviz_path = os.path.join(
         get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
-    )
-
-    rmf_transporter_node = LifecycleNode(
-        name="rmf_nexus_transporter",
-        namespace="",
-        package="nexus_workcell_orchestrator",
-        executable="nexus_workcell_orchestrator",
-        parameters=[
-            {
-                "capabilities": ["nexus::capabilities::RMFRequestCapability"],
-                "bt_path": (FindPackageShare("nexus_integration_tests"), "/config/rmf_bts"),
-            }
-        ],
-        arguments=['--ros-args', '--log-level', 'info'],
     )
 
     system_orchestrator_node = LifecycleNode(
@@ -145,7 +132,9 @@ def launch_setup(context, *args, **kwargs):
                 "remap_task_types":
                     """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                        pick_and_place_rmf: [place_on_amr, pick_from_amr],
                     }""",
+                "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
             }
         ],
@@ -183,7 +172,6 @@ def launch_setup(context, *args, **kwargs):
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
-        rmf_transporter_node,
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
@@ -257,6 +245,11 @@ def generate_launch_description():
                 "headless",
                 default_value="true",
                 description="Launch in headless mode (no gui)",
+            ),
+            DeclareLaunchArgument(
+                "main_bt_filename",
+                default_value="main.xml",
+                description="File name of the main system orchestrator behavior tree",
             ),
             OpaqueFunction(function=launch_setup),
         ]

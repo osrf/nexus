@@ -75,6 +75,7 @@ def launch_setup(context, *args, **kwargs):
     # Initialize launch configuration
     workcell_id = LaunchConfiguration("workcell_id")
     bt_path = LaunchConfiguration("bt_path")
+    task_checker_plugin = LaunchConfiguration("task_checker_plugin")
     ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
     controller_config_package = LaunchConfiguration("controller_config_package")
@@ -150,6 +151,7 @@ def launch_setup(context, *args, **kwargs):
                 ]
             ),
             Parameter("bt_path", bt_path),
+            Parameter("task_checker_plugin", task_checker_plugin),
             Parameter(
                 "hardware_nodes",
                 [
@@ -284,6 +286,10 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "bt_path",
             description="Path to load the BTs from",
+        ),
+        DeclareLaunchArgument(
+            "task_checker_plugin",
+            description="Fully qualified name of the plugin to load to check if a task is doable.",
         ),
         DeclareLaunchArgument(
             "ros_domain_id",

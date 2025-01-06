@@ -28,6 +28,11 @@
     </include>
   </group>
 
+  <node pkg="nexus_workcell_orchestrator" exec="nexus_workcell_orchestrator" name="rmf_nexus_transporter" output="both">
+    <param name="capabilities" value="[nexus::capabilities::RMFRequestCapability]"/>
+    <param name="bt_path" value="$(find-pkg-share nexus_integration_tests)/config/rmf_bts"/>
+  </node>
+
   <!-- Simulator launch -->
   <include if="$(var use_simulator)" file="$(find-pkg-share rmf_demos_gz)/simulation.launch.xml">
     <arg name="headless" value="$(var headless)" />
