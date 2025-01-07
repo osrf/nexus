@@ -87,7 +87,6 @@ public:
     std::shared_ptr<nexus::common::LifecycleServiceClient<rclcpp::Node>>>
   _node_clients;
 
-  bool _system_active{false};
   std::chrono::seconds _service_request_timeout{10s};
   // Lifecycle state that managed nodes should be in
   uint8_t _target_state = State::PRIMARY_STATE_UNCONFIGURED;
@@ -134,7 +133,7 @@ public:
     const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
-    response->success = this->_system_active;
+    response->success = this->_target_state == State::PRIMARY_STATE_ACTIVE;
   }
 
   void shutdownAllNodes()
@@ -167,14 +166,11 @@ public:
       return false;
     }
     this->message("Managed nodes are active");
-    this->_system_active = true;
     return true;
   }
 
   bool shutdown()
   {
-    this->_system_active = false;
-
     this->message("Shutting down managed nodes...");
     this->shutdownAllNodes();
     this->destroyLifecycleServiceClients();
@@ -184,8 +180,6 @@ public:
 
   bool reset()
   {
-    this->_system_active = false;
-
     this->message("Resetting managed nodes...");
     // Should transition in reverse order
     if (!this->changeStateForAllNodes(Transition::TRANSITION_DEACTIVATE) ||
@@ -202,8 +196,6 @@ public:
   }
   bool pause()
   {
-    this->_system_active = false;
-
     this->message("Pausing managed nodes...");
     if (!this->changeStateForAllNodes(Transition::TRANSITION_DEACTIVATE))
     {
@@ -229,7 +221,6 @@ public:
     }
 
     this->message("Managed nodes are active");
-    this->_system_active = true;
     return true;
   }
 
