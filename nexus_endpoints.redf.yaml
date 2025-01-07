@@ -59,8 +59,13 @@ endpoints:
     description: Register a workcell
     type: service
     service_name: /register_workcell
-  # Robot Arm Controller
     service_type: nexus_orchestrator_msgs/srv/RegisterWorkcell
+  - title: Unregister Workcell Service
+    description: Unregister a workcell
+    type: service
+    service_name: /unregister_workcell
+    service_type: nexus_orchestrator_msgs/srv/UnregisterWorkcell
+  # Robot Arm Controller
   - title: Controller Robot Trajectory Action
     description: Send a controller action goal to a robot arm
     type: action

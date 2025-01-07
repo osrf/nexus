@@ -1,0 +1,19 @@
+# Service to unregister a workcell with the system orchestrator
+
+# Description provided by the workcell for unregistration
+WorkcellDescription description
+
+---
+
+# True if workcell is removed successfully
+bool success
+
+int32 error_code
+int32 ERROR_UNKNOWN=0
+# System orchestrator is not ready
+int32 ERROR_NOT_READY=1
+# The workcell was not registered
+int32 ERROR_NOT_REGISTERED=2
+
+# [OPTIONAL] message for debugging or indicating cause of success/failure
+string message
