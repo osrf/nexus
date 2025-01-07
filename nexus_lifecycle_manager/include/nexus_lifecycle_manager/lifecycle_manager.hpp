@@ -90,7 +90,7 @@ public:
   bool _system_active{false};
   std::chrono::seconds _service_request_timeout{10s};
   // Lifecycle state that managed nodes should be in
-  uint8_t _target_state = 0;
+  uint8_t _target_state = State::PRIMARY_STATE_UNCONFIGURED;
 
   std::shared_ptr<std::thread> spin_thread_;
   // Callback group used by services
@@ -117,13 +117,15 @@ public:
     {
       std::optional<uint8_t> state = client->get_state();
       if (!state.has_value())
+      {
         ok = false;
+        continue;
+      }
 
-      ok = ok && (
-        transitionGraph.atGoalState(state.value(), transition) ||
-        client->change_state(transition));
+      ok &= transitionGraph.atGoalState(state.value(), transition) ||
+        client->change_state(transition);
+      this->_target_state = state.value();
     }
-    this->_target_state = transition;
     return ok;
   }
 
@@ -422,7 +424,7 @@ public:
     // Set the target state to active if autostart is enabled
     if (autostart)
     {
-      _pimpl->_target_state = 3;
+      _pimpl->_target_state = State::PRIMARY_STATE_ACTIVE;
     }
     _pimpl->_service_request_timeout = std::chrono::seconds(
       service_request_timeout);
