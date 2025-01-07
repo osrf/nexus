@@ -89,7 +89,7 @@ public:
 
   std::chrono::seconds _service_request_timeout{10s};
   // Lifecycle state that managed nodes should be in
-  uint8_t _target_state = State::PRIMARY_STATE_UNCONFIGURED;
+  std::optional<uint8_t> _target_state = std::nullopt;
 
   std::shared_ptr<std::thread> spin_thread_;
   // Callback group used by services
@@ -339,16 +339,19 @@ public:
     }
 
     // If the target state is different from the current, transition this node to it
-    std::vector<int> solution = transitionGraph.dijkstra(currentState, this->_target_state);
-    for (unsigned int i = 0; i < solution.size(); i++)
+    if (this->_target_state.has_value())
     {
-      if (!ChangeState(name, solution[i]))
+      std::vector<int> solution = transitionGraph.dijkstra(currentState, this->_target_state.value());
+      for (unsigned int i = 0; i < solution.size(); i++)
       {
-        RCLCPP_ERROR(
-          this->node_->get_logger(),
-          "Not able to transition the node [%s]. This node is not inserted",
-          name.c_str());
-        return false;
+        if (!ChangeState(name, solution[i]))
+        {
+          RCLCPP_ERROR(
+            this->node_->get_logger(),
+            "Not able to transition the node [%s]. This node is not inserted",
+            name.c_str());
+          return false;
+        }
       }
     }
     _node_clients.insert_or_assign(name,
