@@ -41,6 +41,7 @@ def launch_setup(context, *args, **kwargs):
         exit(1)
 
     headless = LaunchConfiguration("headless")
+    remap_task_types = LaunchConfiguration("remap_task_types")
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot1_ip = LaunchConfiguration("robot1_ip")
@@ -99,6 +100,7 @@ def launch_setup(context, *args, **kwargs):
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
                     "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
+                    "remap_task_types": remap_task_types,
                     "headless": headless,
                 }.items(),
             ),
@@ -206,6 +208,13 @@ def generate_launch_description():
                 "headless",
                 default_value="true",
                 description="Launch in headless mode (no gui)",
+            ),
+            DeclareLaunchArgument(
+                "remap_task_types",
+                default_value= """{
+                    pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                }""",
+                description="A yaml containing a dictionary of task types and an array of remaps",
             ),
             DeclareLaunchArgument(
                 "use_zenoh_bridge",

@@ -112,6 +112,8 @@ def launch_setup(context, *args, **kwargs):
     transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
+    remap_task_types = LaunchConfiguration("remap_task_types")
+    main_bt_package = LaunchConfiguration("main_bt_package")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
 
     nexus_panel_rviz_path = os.path.join(
@@ -126,14 +128,10 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "bt_path": (
-                    FindPackageShare("nexus_integration_tests"),
+                    FindPackageShare(main_bt_package),
                     "/config/system_bts",
                 ),
-                "remap_task_types":
-                    """{
-                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
-                        pick_and_place_rmf: [place_on_amr, pick_from_amr],
-                    }""",
+                "remap_task_types": remap_task_types,
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
             }
@@ -245,6 +243,18 @@ def generate_launch_description():
                 "headless",
                 default_value="true",
                 description="Launch in headless mode (no gui)",
+            ),
+            DeclareLaunchArgument(
+                "remap_task_types",
+                default_value= """{
+                    pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                }""",
+                description="A yaml containing a dictionary of task types and an array of remaps",
+            ),
+            DeclareLaunchArgument(
+                "main_bt_package",
+                default_value="nexus_integration_tests",
+                description="Package containing the main system orchestrator behavior tree",
             ),
             DeclareLaunchArgument(
                 "main_bt_filename",

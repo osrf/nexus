@@ -1,0 +1,56 @@
+<?xml version='1.0' ?>
+
+<launch>
+  <arg name="headless" default="true"/>
+  <arg name="use_simulator" default="true"/>
+  <arg name="sim_update_rate" default='100'/>
+
+  <!-- RMF Common launch -->
+  <include file="$(find-pkg-share rmf_demos)/common.launch.xml">
+    <arg name="headless" value="$(var headless)" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
+    <arg name="viz_config_file" value ="$(find-pkg-share nexus_demos)/launch/include/depot/depot.rviz"/>
+    <arg name="config_file" value="$(find-pkg-share nexus_demos)/maps/depot/depot.building.yaml"/>
+  </include>
+
+  <!-- Nexus Common launch -->
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/common.launch.xml">
+    <arg name="headless" value="$(var headless)" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
+  </include>
+
+  <!-- DeliveryRobot fleet adapter -->
+  <group>
+    <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share nexus_demos)/maps/depot/nav_graphs/0.yaml" />
+      <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/depot/deliveryRobot_config.yaml"/>
+    </include>
+  </group>
+
+  <node pkg="nexus_workcell_orchestrator" exec="nexus_workcell_orchestrator" name="rmf_nexus_transporter" output="both">
+    <param name="capabilities" value="[nexus::capabilities::RMFRequestCapability]"/>
+    <param name="bt_path" value="$(find-pkg-share nexus_integration_tests)/config/rmf_bts"/>
+  </node>
+
+  <!-- Simulator launch -->
+  <include if="$(var use_simulator)" file="$(find-pkg-share rmf_demos_gz)/simulation.launch.xml">
+    <arg name="headless" value="$(var headless)" />
+    <arg name="map_package" value="nexus_demos" />
+    <arg name="map_name" value="depot" />
+    <arg name="gazebo_version" value="8" />
+    <arg name="sim_update_rate" value="$(var sim_update_rate)"/>
+  </include>
+
+  <!-- Bringup from integration tests -->
+  <!-- TODO(luca) should we move the integration launch here instead? -->
+  <include file="$(find-pkg-share nexus_integration_tests)/launch/launch.py">
+    <!-- Set as true to make it auto bringup and remove all the extra rviz launches -->
+    <arg name="headless" value="true" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
+    <arg name="main_bt_package" value="nexus_demos"/>
+    <arg name="main_bt_filename" value="main_rmf.xml"/>
+    <arg name="remap_task_types" value="{pick_and_place_rmf: [place_on_amr, pick_from_amr]}"/>
+  </include>
+
+</launch>
