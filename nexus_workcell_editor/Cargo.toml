@@ -11,8 +11,7 @@ name = "nexus_workcell_editor"
 bevy = "0.12"
 clap = { version = "4.0.10", features = ["color", "derive", "help", "usage", "suggestions"] }
 crossbeam-channel = "0.5.8"
-# TODO(luca) back to main when PR is merged
-rmf_workcell_editor = { git = "https://github.com/open-rmf/rmf_workcell", branch = "first_commit" }
-rmf_workcell_format = { git = "https://github.com/open-rmf/rmf_workcell", branch = "first_commit" }
+rmf_workcell_editor = { git = "https://github.com/open-rmf/rmf_workcell", tag = "v0.0.1" }
+rmf_workcell_format = { git = "https://github.com/open-rmf/rmf_workcell", tag = "v0.0.1" }
 rclrs = "0.4.0"
 nexus_calibration_msgs = "*"
