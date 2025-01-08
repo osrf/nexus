@@ -118,6 +118,9 @@ public:
       if (!state.has_value())
       {
         ok = false;
+        RCLCPP_WARN(
+          this->node_->get_logger(), "Failed to get state for node [%s]",
+          name.c_str());
         continue;
       }
 
