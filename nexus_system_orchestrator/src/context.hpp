@@ -20,6 +20,7 @@
 
 #include "session.hpp"
 
+#include <nexus_common/task_remapper.hpp>
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_endpoints.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
@@ -43,8 +44,7 @@ public: rclcpp_lifecycle::LifecycleNode& node;
 public: std::string job_id;
 public: WorkOrder wo;
 public: std::vector<WorkcellTask> tasks;
-public: std::shared_ptr<const std::unordered_map<std::string,
-    std::string>> task_remaps;
+public: std::shared_ptr<const common::TaskRemapper> task_remapper;
   /**
    * Map of task ids and their assigned workcell ids.
    */

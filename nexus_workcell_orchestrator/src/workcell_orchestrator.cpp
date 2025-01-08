@@ -92,18 +92,8 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     desc.read_only = true;
     desc.description =
       "A yaml containing a dictionary of task types and an array of remaps.";
-    const auto yaml = this->declare_parameter("remap_task_types", std::string{},
-        desc);
-    const auto remaps = YAML::Load(yaml);
-    for (const auto& n : remaps)
-    {
-      const auto task_type = n.first.as<std::string>();
-      const auto& mappings = n.second;
-      for (const auto& m : mappings)
-      {
-        this->_task_remaps.emplace(m.as<std::string>(), task_type);
-      }
-    }
+    const auto param = this->declare_parameter("remap_task_types", "", desc);
+    this->_task_remapper = std::make_shared<common::TaskRemapper>(param);
   }
   {
     ParameterDescriptor desc;
@@ -988,8 +978,18 @@ BT::Tree WorkcellOrchestrator::_create_bt(const std::shared_ptr<Context>& ctx)
 {
   // To keep things simple, the task type is used as the key for the behavior tree to use.
   this->_ctx_mgr->set_active_context(ctx);
+  const auto new_task = this->_task_remapper->remap(ctx->task.type);
+  if (new_task != ctx->task.type)
+  {
+    RCLCPP_DEBUG(
+      this->get_logger(),
+      "Loading remapped BT [%s] for original task type [%s]",
+      new_task.c_str(),
+      ctx->task.type.c_str()
+    );
+  }
   return this->_bt_factory->createTreeFromFile(this->_bt_store.get_bt(
-        ctx->task.type));
+        new_task));
 }
 
 void WorkcellOrchestrator::_handle_command_success(
