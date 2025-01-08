@@ -9,6 +9,8 @@ name = "nexus_workcell_editor"
 
 [dependencies]
 bevy = "0.12"
+# TODO(luca) Fix upstream by removing the open_url feature from bevy_egui
+home = "=0.5.9"
 clap = { version = "4.0.10", features = ["color", "derive", "help", "usage", "suggestions"] }
 crossbeam-channel = "0.5.8"
 rmf_workcell_editor = { git = "https://github.com/open-rmf/rmf_workcell", tag = "v0.0.1" }

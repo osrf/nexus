@@ -1,0 +1,5 @@
+<library path="nexus_builtin_task_checkers">
+  <class type="nexus::task_checkers::FilepathChecker" base_class_type="nexus::TaskChecker">
+    <description>A task a doable if a BT with the same name as the task type exists in the local filesystem.</description>
+  </class>
+</library>

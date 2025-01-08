@@ -85,6 +85,7 @@ private:
   rclcpp::Service<endpoints::GetWorkOrderStateService::ServiceType>::SharedPtr
     _get_wo_state_srv;
   std::filesystem::path _bt_path;
+  std::string _main_bt_filename;
   rclcpp::SubscriptionBase::SharedPtr _cancel_wo_sub;
   bool _activated = false;
   bool _estop_pressed = false;
@@ -97,6 +98,7 @@ private:
   rclcpp::SubscriptionBase::SharedPtr _estop_sub;
   // mapping of mapped task type and the original
   std::shared_ptr<std::unordered_map<std::string, std::string>> _task_remaps;
+  std::shared_ptr<OnSetParametersCallbackHandle> _param_cb_handle;
 
   /**
    * Creates a BT from a work order.
@@ -159,6 +161,11 @@ private:
   void _spin_bts_once();
 
   std::string _workcell_namespace(const std::string& workcell_id);
+
+  /**
+   * Checks if the requested filename points to a proper file
+   */
+  bool _bt_filename_valid(const std::string& bt_filename) const;
 
   /**
    * Send bid requests and assign the task to the most suitable workcell.

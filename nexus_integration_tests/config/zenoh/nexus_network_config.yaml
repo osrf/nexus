@@ -2,32 +2,68 @@
 # Use 'client' when there is an available Zenoh router, otherwise
 # use 'peer' for a distributed system.
 mode: peer
-# When true, discovery info is forwarded to the remote plugins/bridges
-forward_discovery: false
 # When true, activates a REST API used to administer Zenoh Bridge configurations
 enable_rest_api: true
-# Additional endpoints to allow, these could be endpoints not defined in REDF but are necessary for lifecycle transitions
-add_allowed_endpoints: ["/list_workcells", "/.*/workcell_state", "/.*/is_task_doable", "/.*/request", "/.*/queue_task", "/.*/remove_pending_task", "/register_workcell", "/register_transporter", ".*/available", ".*/transport", "/estop", "/.*/pause", "/.*/get_state", "/.*/change_state", "/.*/signal"]
 
 system_orchestrators:
-  - ros_namespace: system_orchestrator # ROS Namespace of the endpoints
+  - namespace: system_orchestrator # ROS Namespace of the endpoints
     # ROS Domain ID
-    domain_id: 14
+    domain_id: 0
     # Listening TCP Address of Zenoh bridge
     tcp_listen: ["0.0.0.0:7447"]
     # HTTP Port for the REST API
     rest_api_http_port: 8000
+    allow:
+      publishers: []
+      # TODO(luca) check if we need estop
+      subscribers: ["/estop", "/.*/workcell_state"]
+      service_servers: ["/list_workcells", "/register_workcell", "/register_transporter"]
+      # TODO(luca) check if transporter needs available endpoint
+      service_clients: ["/.*/queue_task", "/.*/remove_pending_task", "/.*/pause", "/.*/signal", "/.*/get_state", "/.*/change_state", "/.*/is_task_doable"]
+      action_servers: []
+      # TODO(luca) check if we really need transporter client
+      action_clients: ["/.*/request", "/.*/transport"]
+    queries_timeout:
+      default: 600.0
+
 
 workcell_orchestrators:
-  - ros_namespace: workcell_1
-    domain_id: 15
+  - namespace: workcell_1
+    domain_id: 1
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8001
-  - ros_namespace: workcell_2
-    domain_id: 16
+    allow:
+      publishers: ["/workcell_1/workcell_state"]
+      subscribers: []
+      service_servers: ["/workcell_1/is_task_doable", "/workcell_1/queue_task", "/workcell_1/remove_pending_task", "/workcell_1/get_state", "/workcell_1/change_state", "/workcell_1/signal", "/workcell_1/pause"]
+      service_clients: ["/register_workcell"]
+      action_servers: ["/workcell_1/request"]
+      action_clients: []
+    queries_timeout:
+      default: 600.0
+  - namespace: workcell_2
+    domain_id: 2
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8002
-  - ros_namespace: workcell_3
-    domain_id: 17
+    allow:
+      publishers: ["/workcell_2/workcell_state"]
+      subscribers: []
+      service_servers: ["/workcell_2/is_task_doable", "/workcell_2/queue_task", "/workcell_2/remove_pending_task", "/workcell_2/get_state", "/workcell_2/change_state", "/workcell_2/signal", "/workcell_2/pause"]
+      service_clients: ["/register_workcell"]
+      action_servers: ["/workcell_2/request"]
+      action_clients: []
+    queries_timeout:
+      default: 600.0
+  - namespace: workcell_3
+    domain_id: 3
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8003
+    allow:
+      publishers: ["workcell_3/workcell_state"]
+      subscribers: []
+      service_servers: ["workcell_3/is_task_doable", "workcell_3/queue_task", "workcell_3/remove_pending_task", "workcell_3/get_state", "workcell_3/change_state"]
+      service_clients: ["/register_workcell"]
+      action_servers: ["workcell_3/request"]
+      action_clients: []
+    queries_timeout:
+      default: 600.0

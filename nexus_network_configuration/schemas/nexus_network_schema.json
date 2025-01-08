@@ -6,9 +6,7 @@
   "type": "object",
   "required": [
     "mode",
-    "forward_discovery",
     "enable_rest_api",
-    "add_allowed_endpoints",
     "system_orchestrators",
     "workcell_orchestrators"
   ],
@@ -18,17 +16,9 @@
       "type": "string",
       "enum": ["peer", "client"]
     },
-    "forward_discovery": {
-      "description": "When true, discovery info is forwarded to the remote plugins/bridges",
-      "type": "boolean"
-    },
     "enable_rest_api":{
       "description": "When true, activates a REST API used to administer Zenoh Bridge configurations",
       "type": "boolean"
-    },
-    "add_allowed_endpoints":{
-      "description": "Additional endpoints to allow, these could be endpoints not defined in REDF but are necessary for lifecycle transitions",
-      "type": "array"
     },
     "system_orchestrators": {
       "type": "array",
@@ -41,12 +31,45 @@
   },
 
   "$defs": {
+    "queries_timeout": {
+      "description": "Timeout parameters for Zenoh queries",
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "number"
+        }
+      }
+    },
+    "allow": {
+      "description": "Additional endpoints to allow, these could be endpoints not defined in REDF but are necessary for lifecycle transitions",
+      "type": "object",
+      "properties": {
+        "subscribers": {
+          "type": "array"
+        },
+        "publishers": {
+          "type": "array"
+        },
+        "service_servers": {
+          "type": "array"
+        },
+        "service_clients": {
+          "type": "array"
+        },
+        "action_servers": {
+          "type": "array"
+        },
+        "action_clients": {
+          "type": "array"
+        }
+      }
+    },
     "system_orchestrator_unit": {
       "type": "object",
-      "required": ["ros_namespace", "domain_id", "tcp_listen"],
+      "required": ["namespace", "domain_id", "tcp_listen"],
       "properties": {
-        "ros_namespace":{
-          "$ref": "#/$defs/ros_namespace"
+        "namespace":{
+          "$ref": "#/$defs/namespace"
         },
         "domain_id":{
           "$ref": "#/$defs/domain_id"
@@ -56,15 +79,21 @@
         },
         "rest_api_http_port":{
           "$ref": "#/$defs/rest_api_http_port"
+        },
+        "allow":{
+          "$ref": "#/$defs/allow"
+        },
+        "queries_timeout":{
+          "$ref": "#/$defs/queries_timeout"
         }
       }
     },
     "workcell_orchestrator_unit": {
       "type": "object",
-      "required": ["ros_namespace", "domain_id", "tcp_connect"],
+      "required": ["namespace", "domain_id", "tcp_connect"],
       "properties": {
-        "ros_namespace":{
-          "$ref": "#/$defs/ros_namespace"
+        "namespace":{
+          "$ref": "#/$defs/namespace"
         },
         "domain_id":{
           "$ref": "#/$defs/domain_id"
@@ -74,10 +103,16 @@
         },
         "rest_api_http_port":{
           "$ref": "#/$defs/rest_api_http_port"
+        },
+        "allow":{
+          "$ref": "#/$defs/allow"
+        },
+        "queries_timeout":{
+          "$ref": "#/$defs/queries_timeout"
         }
       }
     },
-    "ros_namespace":{
+    "namespace":{
       "description": "ROS Namespace of the endpoints",
       "type": "string"
     },
@@ -85,7 +120,7 @@
       "description": "ROS Domain ID",
       "type": "integer",
       "minimum": 0,
-      "maxmimum": 232
+      "maximum": 232
     },
     "tcp_connect":{
       "description": "TCP Address of system orchestrator Zenoh bridge",
@@ -99,7 +134,7 @@
       "description": "HTTP Port for the REST API",
       "type": "integer",
       "minimum": 0,
-      "maxmimum": 65535
+      "maximum": 65535
     }
   }
 }

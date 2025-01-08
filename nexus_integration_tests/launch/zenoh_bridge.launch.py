@@ -40,7 +40,7 @@ def launch_setup(context, *args, **kwargs):
 
     cmd = [
         ExecutableInPackage(
-            executable="zenoh_bridge_dds",
+            executable="zenoh_bridge_ros2dds",
             package="nexus_zenoh_bridge_dds_vendor",
         ),
         "--config",

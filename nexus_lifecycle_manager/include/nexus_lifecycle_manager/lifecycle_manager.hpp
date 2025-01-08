@@ -87,10 +87,9 @@ public:
     std::shared_ptr<nexus::common::LifecycleServiceClient<rclcpp::Node>>>
   _node_clients;
 
-  bool _system_active{false};
   std::chrono::seconds _service_request_timeout{10s};
-  // autostart, if set to true, will transition the first added node to ACTIVE
-  bool _autostart{false};
+  // Lifecycle state that managed nodes should be in
+  std::optional<uint8_t> _target_state = std::nullopt;
 
   std::shared_ptr<std::thread> spin_thread_;
   // Callback group used by services
@@ -117,11 +116,17 @@ public:
     {
       std::optional<uint8_t> state = client->get_state();
       if (!state.has_value())
+      {
         ok = false;
+        RCLCPP_WARN(
+          this->node_->get_logger(), "Failed to get state for node [%s]. Skipping state change...",
+          name.c_str());
+        continue;
+      }
 
-      ok = ok && (
-        transitionGraph.atGoalState(state.value(), transition) ||
-        client->change_state(transition));
+      ok &= transitionGraph.atGoalState(state.value(), transition) ||
+        client->change_state(transition);
+      this->_target_state = state.value();
     }
     return ok;
   }
@@ -131,7 +136,7 @@ public:
     const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
     std::shared_ptr<std_srvs::srv::Trigger::Response> response)
   {
-    response->success = this->_system_active;
+    response->success = this->_target_state == State::PRIMARY_STATE_ACTIVE;
   }
 
   void shutdownAllNodes()
@@ -164,14 +169,11 @@ public:
       return false;
     }
     this->message("Managed nodes are active");
-    this->_system_active = true;
     return true;
   }
 
   bool shutdown()
   {
-    this->_system_active = false;
-
     this->message("Shutting down managed nodes...");
     this->shutdownAllNodes();
     this->destroyLifecycleServiceClients();
@@ -181,8 +183,6 @@ public:
 
   bool reset()
   {
-    this->_system_active = false;
-
     this->message("Resetting managed nodes...");
     // Should transition in reverse order
     if (!this->changeStateForAllNodes(Transition::TRANSITION_DEACTIVATE) ||
@@ -199,8 +199,6 @@ public:
   }
   bool pause()
   {
-    this->_system_active = false;
-
     this->message("Pausing managed nodes...");
     if (!this->changeStateForAllNodes(Transition::TRANSITION_DEACTIVATE))
     {
@@ -226,7 +224,6 @@ public:
     }
 
     this->message("Managed nodes are active");
-    this->_system_active = true;
     return true;
   }
 
@@ -336,78 +333,34 @@ public:
 
   bool add_node(const std::string& name)
   {
-    // If this is the first node, then the node will be transitioned to active
-    if (this->_node_clients.size() == 0)
+    uint8_t currentState;
+    if (!this->GetState(name, currentState))
     {
-      uint8_t currentState;
-      if (!this->GetState(name, currentState))
-      {
-        message("The state of current nodes were not recheable, "
-          "Keep the new node is unconfigure state");
-        return false;
-      }
-
-      if (_autostart)
-      {
-        std::vector<int> solution = transitionGraph.dijkstra(currentState, 3);
-        for (unsigned int i = 0; i < solution.size(); i++)
-        {
-          if (!ChangeState(name, solution[i]))
-          {
-            RCLCPP_ERROR(
-              this->node_->get_logger(),
-              "Not able to transition the node [%s]. This node is not inserted",
-              name.c_str());
-            return false;
-          }
-          currentState = solution[i];
-        }
-      }
-      _node_clients.insert_or_assign(name,
-        std::make_shared<nexus::common::LifecycleServiceClient<rclcpp::Node>>(
-          name));
-      return true;
+      message("The state of new node to add was not reacheable. "
+        "This node is not inserted");
+      return false;
     }
-    else
+
+    // If the target state is different from the current, transition this node to it
+    if (this->_target_state.has_value())
     {
-      if (_node_clients.size() > 0)
+      std::vector<int> solution = transitionGraph.dijkstra(currentState, this->_target_state.value());
+      for (unsigned int i = 0; i < solution.size(); i++)
       {
-        uint8_t targetState;
-        if (!this->GetState(this->_node_clients.begin()->first, targetState))
+        if (!ChangeState(name, solution[i]))
         {
-          message("The state of current nodes were not recheable, "
-            "Keep the new node is unconfigure state");
+          RCLCPP_ERROR(
+            this->node_->get_logger(),
+            "Not able to transition the node [%s]. This node is not inserted",
+            name.c_str());
           return false;
         }
-
-        uint8_t currentState;
-        if (!this->GetState(name, currentState))
-        {
-          message("The state of new node to add was not recheable, "
-            "Keep the new node is unconfigure state");
-          return false;
-        }
-
-        std::vector<int> solution = transitionGraph.dijkstra(currentState,
-            targetState);
-        for (unsigned int i = 0; i < solution.size(); i++)
-        {
-          if (!ChangeState(name, solution[i]))
-          {
-            RCLCPP_ERROR(
-              this->node_->get_logger(),
-              "Not able to transition the node [%s]. This node is not inserted",
-              name.c_str());
-            return false;
-          }
-        }
       }
-      _node_clients.insert_or_assign(name,
-        std::make_shared<nexus::common::LifecycleServiceClient<rclcpp::Node>>(
-          name));
-      return true;
     }
-    return false;
+    _node_clients.insert_or_assign(name,
+      std::make_shared<nexus::common::LifecycleServiceClient<rclcpp::Node>>(
+        name));
+    return true;
   }
 
   bool change_state(const std::string& node_name, const std::uint8_t goal)
@@ -465,7 +418,11 @@ public:
   {
     _pimpl = rmf_utils::make_impl<Implementation<NodeType>>();
     _pimpl->_are_services_active = activate_services;
-    _pimpl->_autostart = autostart;
+    // Set the target state to active if autostart is enabled
+    if (autostart)
+    {
+      _pimpl->_target_state = State::PRIMARY_STATE_ACTIVE;
+    }
     _pimpl->_service_request_timeout = std::chrono::seconds(
       service_request_timeout);
 
@@ -552,7 +509,7 @@ public:
     return _pimpl->add_node(node_name_);
   }
 
-  /// \brief REmove a node from the list
+  /// \brief Remove a node from the list
   /// \param[in] node_name_ Node name to remove
   /// \return True if the node name was remove from the list, false otherwise
   bool removeNodeName(const std::string& node_name_)
