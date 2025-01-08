@@ -16,11 +16,11 @@
 */
 
 use bevy::prelude::*;
-use bevy_egui::EguiContexts;
+use librmf_workcell_editor::bevy_egui::EguiContexts;
 
 use crossbeam_channel::{Receiver, Sender};
 
-use rmf_site_format::{anchor::*, workcell::*};
+use rmf_workcell_format::{workcell::*, Anchor};
 
 use std::{collections::HashMap, sync::Arc};
 
