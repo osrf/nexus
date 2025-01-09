@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import os
+
 from ament_index_python.packages import get_package_share_directory
 
 import launch_ros
 from launch_ros.actions import Node, LifecycleNode
+from launch_ros.descriptions import ParameterValue
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.substitutions import FindPackageShare
 import lifecycle_msgs
@@ -112,9 +114,9 @@ def launch_setup(context, *args, **kwargs):
     transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
-    remap_task_types = LaunchConfiguration("remap_task_types")
     main_bt_package = LaunchConfiguration("main_bt_package")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
+    remap_task_types = LaunchConfiguration("remap_task_types")
 
     nexus_panel_rviz_path = os.path.join(
         get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
@@ -131,10 +133,10 @@ def launch_setup(context, *args, **kwargs):
                     FindPackageShare(main_bt_package),
                     "/config/system_bts",
                 ),
-                "remap_task_types": remap_task_types,
+                "remap_task_types": ParameterValue(remap_task_types, value_type=str),
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
-            }
+            },
         ],
     )
 
@@ -245,13 +247,6 @@ def generate_launch_description():
                 description="Launch in headless mode (no gui)",
             ),
             DeclareLaunchArgument(
-                "remap_task_types",
-                default_value= """{
-                    pick_and_place: [place_on_conveyor, pick_from_conveyor],
-                }""",
-                description="A yaml containing a dictionary of task types and an array of remaps",
-            ),
-            DeclareLaunchArgument(
                 "main_bt_package",
                 default_value="nexus_integration_tests",
                 description="Package containing the main system orchestrator behavior tree",
@@ -260,6 +255,11 @@ def generate_launch_description():
                 "main_bt_filename",
                 default_value="main.xml",
                 description="File name of the main system orchestrator behavior tree",
+            ),
+            DeclareLaunchArgument(
+                "remap_task_types",
+                default_value=str("{pick_and_place: [place_on_conveyor, pick_from_conveyor]}"),
+                description="A string yaml containing a dictionary of task types and an array of remaps",
             ),
             OpaqueFunction(function=launch_setup),
         ]

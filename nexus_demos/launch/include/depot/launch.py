@@ -99,6 +99,11 @@ def launch_setup(context, *args, **kwargs):
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
                     "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
+                    "main_bt_package": "nexus_demos",
+                    "main_bt_filename": "main_rmf.xml",
+                    "remap_task_types": """{
+                        pick_and_place_rmf: [place_on_amr, pick_from_amr]
+                    }""",
                     "headless": headless,
                 }.items(),
             ),
@@ -120,7 +125,7 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "workcell_id": "workcell_1",
                     "bt_path": (
-                        FindPackageShare("nexus_integration_tests"),
+                        FindPackageShare("nexus_demos"),
                         "/config/workcell_1_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
@@ -163,7 +168,7 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "workcell_id": "workcell_2",
                     "bt_path": (
-                        FindPackageShare("nexus_integration_tests"),
+                        FindPackageShare("nexus_demos"),
                         "/config/workcell_2_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
