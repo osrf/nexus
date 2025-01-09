@@ -4,6 +4,7 @@
   <name>nexus_demos</name>
   <version>0.1.1</version>
   <description>Demos for system and workcell orchestrators</description>
+  <maintainer email="lucadv@intrinsic.ai">Luca Della Vedova</maintainer>
   <maintainer email="aaronchong@intrinsic.ai">Aaron Chong</maintainer>
   <license>Apache License 2.0</license>
 

@@ -67,12 +67,17 @@ Further detailed instructions on running the Zenoh bridges with said configurati
 
 ## Demos
 
+### Two workcells
+
 ![](./docs/media/nexus_demo.png)
 
 Follow instructions [here](nexus_integration_tests/README.md) to run pick and place demonstrations with a line comprising of two workcells that perform different types of tasks.
 
-TODO: Add a dedicated demo package.
+### Simulated workcells and Open-RMF
 
+![](./docs/media/nexus_demo_depot.png)
+
+Follow insturctions [here](nexus_demos/README.md).
 
 ## Generating Endpoints
 

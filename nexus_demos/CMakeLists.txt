@@ -4,15 +4,13 @@ project(${PROJECT_NAME})
 
 find_package(ament_cmake REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
-
 install(DIRECTORY launch config maps DESTINATION share/${PROJECT_NAME})
 
 # Refactored from rmf_demos_maps, we just need to download models
 file(GLOB_RECURSE traffic_editor_paths "maps/*.building.yaml")
 foreach(building_map_path ${traffic_editor_paths})
   ##############################################################################
-  # Generate Gz world and download Models
+  # Downloads Models
   ##############################################################################
   if (NOT NO_DOWNLOAD_MODELS)
     message("DOWNLOADING MODELS WITH COMMAND: ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path}")
