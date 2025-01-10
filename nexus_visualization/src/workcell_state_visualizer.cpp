@@ -39,10 +39,10 @@ WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& opti
     "Setting parameter initial_map_name to %s", _current_level.c_str()
   );
 
-  auto map_qos = rclcpp::QoS(10).transient_local();
+  auto transient_qos = rclcpp::QoS(1).transient_local();
   _map_sub = this->create_subscription<BuildingMap>(
     "/map",
-    map_qos,
+    transient_qos,
     [=](BuildingMap::ConstSharedPtr msg)
     {
       RCLCPP_INFO(
@@ -65,11 +65,12 @@ WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& opti
                   this->get_logger(),
                   "Found dispenser [%s]", param.value_string.c_str()
                 );
-                WorkcellState workcell_state;
-                workcell_state.x = vertex.x;
-                workcell_state.y = vertex.y;
-                workcell_state.map_name = level.name;
-                _workcell_states.insert({vertex.name, workcell_state});
+                WorkcellDescription description;
+                description.workcell_id = vertex.name;
+                description.level_name = level.name;
+                description.location.position.x = vertex.x;
+                description.location.position.y = vertex.y;
+                _workcells.insert({vertex.name, Workcell {description, std::nullopt}});
                 _ids.insert({vertex.name, _next_available_id});
                 ++_next_available_id;
               }
@@ -78,7 +79,6 @@ WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& opti
         }
       }
       initialize_state_subscriptions();
-      _publish_timer = this->create_wall_timer(1s, std::bind(&WorkcellStateVisualizer::timer_cb, this));
     });
 
   _param_sub = this->create_subscription<RvizParam>(
@@ -90,10 +90,10 @@ WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& opti
         return;
 
       _current_level = msg->map_name;
-      timer_cb();
+      publish_markers();
     });
 
-  _marker_pub = this->create_publisher<MarkerArray>("/workcell_markers", 10);
+  _marker_pub = this->create_publisher<MarkerArray>("/workcell_markers", transient_qos);
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -104,62 +104,58 @@ WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& opti
 
 void WorkcellStateVisualizer::initialize_state_subscriptions()
 {
-  for (const auto& [name, _] : _workcell_states)
+  for (const auto& [name, _] : _workcells)
   {
     _state_subs.emplace_back(nexus::endpoints::WorkcellStateTopic::create_subscription(this, name,
       [this](nexus::endpoints::WorkcellStateTopic::MessageType::ConstSharedPtr msg)
       {
-        auto it = _workcell_states.find(msg->workcell_id);
-        if (it == _workcell_states.end())
+        auto state_it = _workcells.find(msg->workcell_id);
+        if (state_it == _workcells.end())
         {
           RCLCPP_WARN(this->get_logger(), "Received state for workcell [%s] but it was not found in the map", msg->workcell_id.c_str());
           return;
         }
-        RCLCPP_INFO(this->get_logger(), "Received state for workcell [%s]", msg->workcell_id.c_str());
-        auto& workcell_state = it->second;
-        workcell_state.status = msg->status;
-        workcell_state.message = msg->message.empty() ? "<None>" : msg->message;
-        workcell_state.task_id = msg->task_id.empty() ? "<None>" : msg->task_id;
+        state_it->second.state = *msg;
       }));
   }
 }
 
-void WorkcellStateVisualizer::timer_cb()
+void WorkcellStateVisualizer::publish_markers()
 {
   auto set_body_pose =
-  [](const WorkcellState& state, Marker& marker)
+  [](const Workcell& workcell, Marker& marker)
   {
-    marker.pose.position.x = state.x;
-    marker.pose.position.y = state.y;
+    marker.pose.position.x = workcell.description.location.position.x;
+    marker.pose.position.y = workcell.description.location.position.y;
     marker.pose.position.z = 0.0;
     marker.pose.orientation.w = 1.0;
   };
 
   auto set_text_pose =
-  [](const WorkcellState& state, const double x_offset, Marker& marker)
+  [](const Workcell& workcell, const double x_offset, Marker& marker)
   {
-    marker.pose.position.x = state.x + x_offset;
-    marker.pose.position.y = state.y;
+    marker.pose.position.x = workcell.description.location.position.x + x_offset;
+    marker.pose.position.y = workcell.description.location.position.y;
     marker.pose.position.z = 0.0;
     marker.pose.orientation.w = 1.0;
   };
 
-  auto fill_markers =
+  auto fill_marker =
   [&](
     const std::string& name,
-    const WorkcellState& state,
+    const Workcell& workcell,
     const double radius,
-    const std::size_t id,
     MarkerArray& marker_array)
   {
+    std::size_t id = _ids[name];
     Marker body_marker;
     body_marker.header.frame_id = "map";
     body_marker.header.stamp = this->get_clock()->now();
     body_marker.ns = "body";
     body_marker.id = id;
     body_marker.type = body_marker.CUBE;
-    body_marker.action = body_marker.MODIFY;
-    set_body_pose(state, body_marker);
+    body_marker.action = body_marker.ADD;
+    set_body_pose(workcell, body_marker);
     body_marker.scale.x = radius;
     body_marker.scale.y = radius;
     body_marker.scale.z = radius;
@@ -167,20 +163,20 @@ void WorkcellStateVisualizer::timer_cb()
     Color color;
     std::string status;
     color.a = 1.0;
-    if (state.status == 0)
+    if (!workcell.state.has_value())
     {
       // Indeterminate, grey
       color.r = 0.3;
       color.g = 0.3;
       color.b = 0.3;
       status = "UNKNOWN";
-    } else if (state.status == WorkcellStateMsg::STATUS_IDLE) {
+    } else if (workcell.state.value().status == WorkcellState::STATUS_IDLE) {
       // Idle, green
       color.r = 0.0;
       color.g = 0.8;
       color.b = 0.0;
       status = "IDLE";
-    } else if (state.status == WorkcellStateMsg::STATUS_BUSY) {
+    } else if (workcell.state.value().status == WorkcellState::STATUS_BUSY) {
       // Busy, yellow 
       color.r = 0.5;
       color.g = 0.5;
@@ -188,36 +184,71 @@ void WorkcellStateVisualizer::timer_cb()
       status = "BUSY";
     }
     body_marker.color = color;
-    body_marker.lifetime = rclcpp::Duration(std::chrono::seconds(1));
 
     auto text_marker = body_marker;
     text_marker.ns = "name";
     text_marker.type = text_marker.TEXT_VIEW_FACING;
-    set_text_pose(state, radius * 2.0, text_marker);
-    text_marker.text = name + "\n" + "STATUS:" + status + "\n" + "TASK:" + state.task_id + "\n" + "MESSAGE:" + state.message;
+    set_text_pose(workcell, radius * 2.0, text_marker);
+    std::string task_id = "<NONE>";
+    std::string message = "<NONE>";
+    const auto& state = workcell.state;
+    if (state.has_value())
+    {
+      if (!state.value().message.empty())
+      {
+        message = state.value().message;
+      }
+      if (!state.value().task_id.empty())
+      {
+        task_id = state.value().task_id;
+      }
+    }
+    text_marker.text = name + "\n" + "STATUS:" + status + "\n" + "TASK:" + task_id + "\n" + "MESSAGE:" + message;
     text_marker.scale.z = 0.3;
 
     marker_array.markers.push_back(std::move(body_marker));
     marker_array.markers.push_back(std::move(text_marker));
   };
 
-  auto marker_array = std::make_unique<MarkerArray>();
-  for (const auto& [name, state] : _workcell_states)
+  auto delete_marker =
+  [&](
+    const std::string& name,
+    MarkerArray& marker_array)
   {
-    if (state.map_name != _current_level)
+    std::size_t id = _ids[name];
+    Marker body_marker;
+    body_marker.header.frame_id = "map";
+    body_marker.header.stamp = this->get_clock()->now();
+    body_marker.ns = "body";
+    body_marker.id = id;
+    body_marker.type = body_marker.CUBE;
+    body_marker.action = body_marker.DELETE;
+    auto text_marker = body_marker;
+    text_marker.ns = "name";
+    text_marker.type = text_marker.TEXT_VIEW_FACING;
+    marker_array.markers.push_back(std::move(body_marker));
+    marker_array.markers.push_back(std::move(text_marker));
+  };
+
+  MarkerArray marker_array;
+  for (const auto& [name, workcell] : _workcells)
+  {
+    if (workcell.description.level_name != _current_level)
+    {
+      delete_marker(name, marker_array);
+    }
       continue;
 
     double radius = 1.0;
-    fill_markers(
+    fill_marker(
       name,
-      state,
+      workcell,
       radius,
-      _ids[name],
-      *marker_array
+      marker_array
     );
   }
-  if (!marker_array->markers.empty())
-    _marker_pub->publish(std::move(marker_array));
+  if (!marker_array.markers.empty())
+    _marker_pub->publish(marker_array);
 }
 }
 

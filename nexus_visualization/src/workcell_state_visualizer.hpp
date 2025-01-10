@@ -40,7 +40,8 @@ class WorkcellStateVisualizer : public rclcpp::Node
 public:
   using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
   using RvizParam = rmf_visualization_msgs::msg::RvizParam;
-  using WorkcellStateMsg = nexus_orchestrator_msgs::msg::WorkcellState;
+  using WorkcellDescription = nexus_orchestrator_msgs::msg::WorkcellDescription;
+  using WorkcellState = nexus_orchestrator_msgs::msg::WorkcellState;
   using Marker = visualization_msgs::msg::Marker;
   using MarkerArray = visualization_msgs::msg::MarkerArray;
   using Color = std_msgs::msg::ColorRGBA;
@@ -50,25 +51,17 @@ public:
     const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
 private:
-  struct WorkcellState {
-    double x;
-    double y;
-    std::string map_name;
-
-    // Follows enum in WorkcellState.msg
-    // 0 indefinite, 1 idle, 2 busy
-    uint8_t status = 0;
-    std::string task_id = "<None>";
-    std::string message = "<None>";
+  struct Workcell {
+    WorkcellDescription description;
+    std::optional<WorkcellState> state;
   };
 
   void initialize_state_subscriptions();
 
-  void timer_cb();
+  void publish_markers();
 
   std::string _current_level;
 
-  rclcpp::TimerBase::SharedPtr _publish_timer;
   rclcpp::Subscription<BuildingMap>::SharedPtr _map_sub;
   rclcpp::Subscription<RvizParam>::SharedPtr _param_sub;
   std::vector<rclcpp::Subscription<nexus::endpoints::WorkcellStateTopic::MessageType>::SharedPtr> _state_subs;
@@ -78,7 +71,7 @@ private:
   std::unordered_map<std::string, std::size_t> _ids;
   std::size_t _next_available_id;
 
-  std::unordered_map<std::string, WorkcellState> _workcell_states;
+  std::unordered_map<std::string, Workcell> _workcells;
 };
 
 }
