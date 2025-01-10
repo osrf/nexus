@@ -9,7 +9,6 @@
 
   <build_depend>nexus_endpoints</build_depend>
   <build_depend>nexus_network_configuration</build_depend>
-  <build_depend>rmf_building_map_tools</build_depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -44,9 +43,8 @@
   <exec_depend>nexus_system_orchestrator</exec_depend>
   <exec_depend>nexus_workcell_orchestrator</exec_depend>
   <exec_depend>nexus_zenoh_bridge_dds_vendor</exec_depend>
-  <exec_depend>rmf_demos</exec_depend>
   <exec_depend>rmf_demos_fleet_adapter</exec_depend>
-  <exec_depend>rmf_demos_gz</exec_depend>
+  <exec_depend>rmf_robot_sim_gz_plugins</exec_depend>
 
   <test_depend>ament_cmake_catch2</test_depend>
   <test_depend>ament_index_cpp</test_depend>

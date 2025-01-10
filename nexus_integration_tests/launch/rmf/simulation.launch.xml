@@ -1,0 +1,17 @@
+<?xml version='1.0' ?>
+
+<launch>
+  <arg name="world_path" description="Path of the world to simulate" />
+  <arg name="sim_update_rate" default='100'/>
+
+  <let name="gz_headless" if="$(var headless)" value="-s"/>
+  <let name="gz_headless" unless="$(var headless)" value="" />
+
+  <executable cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both"/>
+
+  <!-- ros_gz bridge for simulation clock -->
+  <node pkg="ros_gz_bridge" exec="parameter_bridge"
+    args="/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"
+    />
+
+</launch>
