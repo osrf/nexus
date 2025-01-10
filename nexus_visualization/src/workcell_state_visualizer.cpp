@@ -17,9 +17,11 @@
 
 #include <chrono>
 
-#include "WorkcellStateVisualizer.hpp"
+#include "workcell_state_visualizer.hpp"
 
 using namespace std::chrono_literals;
+
+namespace nexus::visualization {
 
 //==============================================================================
 WorkcellStateVisualizer::WorkcellStateVisualizer(const rclcpp::NodeOptions& options)
@@ -217,7 +219,8 @@ void WorkcellStateVisualizer::timer_cb()
   if (!marker_array->markers.empty())
     _marker_pub->publish(std::move(marker_array));
 }
+}
 
 #include <rclcpp_components/register_node_macro.hpp>
 
-RCLCPP_COMPONENTS_REGISTER_NODE(WorkcellStateVisualizer)
+RCLCPP_COMPONENTS_REGISTER_NODE(nexus::visualization::WorkcellStateVisualizer)

@@ -22,7 +22,7 @@ foreach(pkg ${dep_pkgs})
 endforeach()
 
 #===============================================================================
-add_library(workcell_state_visualizer SHARED src/WorkcellStateVisualizer.cpp)
+add_library(workcell_state_visualizer SHARED src/workcell_state_visualizer.cpp)
 
 target_link_libraries(workcell_state_visualizer
   PUBLIC
@@ -45,7 +45,7 @@ target_include_directories(workcell_state_visualizer
 target_compile_features(workcell_state_visualizer INTERFACE cxx_std_17)
 
 rclcpp_components_register_node(workcell_state_visualizer
-  PLUGIN "WorkcellStateVisualizer"
+  PLUGIN "workcell_state_visualizer"
   EXECUTABLE workcell_state_visualizer_node)
 
 #===============================================================================

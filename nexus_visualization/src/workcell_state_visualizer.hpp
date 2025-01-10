@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Open Source Robotics Foundation
+ * Copyright (C) 2025 Open Source Robotics Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef SRC__WORKCELLSTATEVISUALIZER_HPP
-#define SRC__WORKCELLSTATEVISUALIZER_HPP
+#ifndef SRC__WORKCELL_STATE_VISUALIZER_HPP
+#define SRC__WORKCELL_STATE_VISUALIZER_HPP
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -31,7 +31,8 @@
 #include <visualization_msgs/msg/marker.hpp>
 
 #include <unordered_map>
-#include <unordered_set>
+
+namespace nexus::visualization {
 
 //==============================================================================
 class WorkcellStateVisualizer : public rclcpp::Node
@@ -80,5 +81,6 @@ private:
   std::unordered_map<std::string, WorkcellState> _workcell_states;
 };
 
+}
 
 #endif // SRC__WORKCELLSTATEVISUALIZER_HPP
