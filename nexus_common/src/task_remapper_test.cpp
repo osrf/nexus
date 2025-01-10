@@ -30,7 +30,7 @@ TEST_CASE("task_remapping") {
   auto remapper = TaskRemapper(param);
   CHECK(remapper.remap("pick") == "pick_and_place");
   CHECK(remapper.remap("place") == "pick_and_place");
-  CHECK(remapper.remap("other") == "other");
+  CHECK(remapper.remap("other") == std::nullopt);
 }
 
 TEST_CASE("task_remapping_with_wildcard") {
@@ -43,6 +43,16 @@ TEST_CASE("task_remapping_with_wildcard") {
   CHECK(remapper.remap("pick") == "main");
   CHECK(remapper.remap("place") == "main");
   CHECK(remapper.remap("other") == "main");
+}
+
+TEST_CASE("task_remapping_with_normal_and_wildcard") {
+  std::string param =
+    R"(
+      pick_and_place: [pick, "*"]
+    )";
+  auto remapper = TaskRemapper(param);
+  CHECK(remapper.remap("pick") == "pick_and_place");
+  CHECK(remapper.remap("place") == "pick_and_place");
 }
 
 }
