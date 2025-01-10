@@ -7,7 +7,9 @@
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />
 
-  <executable cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both"/>
+  <executable cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both">
+    <env name="GZ_SIM_PLUGIN_PATH" value="$(find-pkg-prefix rmf_robot_sim_gz_plugins)/lib/rmf_robot_sim_gz_plugins"/>
+  </executable>
 
   <!-- ros_gz bridge for simulation clock -->
   <node pkg="ros_gz_bridge" exec="parameter_bridge"
