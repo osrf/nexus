@@ -43,7 +43,7 @@ TaskRemapper::TaskRemapper(const std::string& param)
   }
 }
 
-std::string TaskRemapper::remap(const std::string& task) const
+std::optional<std::string> TaskRemapper::remap(const std::string& task) const
 {
   if (this->_wildcard_match.has_value())
   {
@@ -54,7 +54,7 @@ std::string TaskRemapper::remap(const std::string& task) const
   {
     return it->second;
   }
-  return task;
+  return std::nullopt;
 }
 
 

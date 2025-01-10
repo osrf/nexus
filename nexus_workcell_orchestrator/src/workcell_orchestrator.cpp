@@ -979,17 +979,19 @@ BT::Tree WorkcellOrchestrator::_create_bt(const std::shared_ptr<Context>& ctx)
   // To keep things simple, the task type is used as the key for the behavior tree to use.
   this->_ctx_mgr->set_active_context(ctx);
   const auto new_task = this->_task_remapper->remap(ctx->task.type);
-  if (new_task != ctx->task.type)
+  auto bt_name = ctx->task.type;
+  if (new_task.has_value())
   {
     RCLCPP_DEBUG(
       this->get_logger(),
       "Loading remapped BT [%s] for original task type [%s]",
-      new_task.c_str(),
+      new_task.value().c_str(),
       ctx->task.type.c_str()
     );
+    bt_name = new_task.value();
   }
   return this->_bt_factory->createTreeFromFile(this->_bt_store.get_bt(
-        new_task));
+        bt_name));
 }
 
 void WorkcellOrchestrator::_handle_command_success(

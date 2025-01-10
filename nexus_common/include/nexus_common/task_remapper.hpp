@@ -22,6 +22,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <optional>
+#include <string>
+
 namespace nexus::common {
 
 /**
@@ -37,8 +40,9 @@ public:
 
   /*
    * Remaps, if necessary, the input task
+   * Returns a value if the task was remapped, std::nullopt otherwise
    */
-  std::string remap(const std::string& task) const;
+  std::optional<std::string> remap(const std::string& task) const;
 
 private:
   // If present, match every incoming task to the target task
