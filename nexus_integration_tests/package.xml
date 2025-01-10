@@ -38,7 +38,6 @@
   <exec_depend>launch_xml</exec_depend>
   <exec_depend>nexus_capabilities</exec_depend>
   <exec_depend>nexus_motion_planner</exec_depend>
-  <exec_depend>nexus_visualization</exec_depend>
   <exec_depend>nexus_rviz_plugins</exec_depend>
   <exec_depend>nexus_system_orchestrator</exec_depend>
   <exec_depend>nexus_workcell_orchestrator</exec_depend>
