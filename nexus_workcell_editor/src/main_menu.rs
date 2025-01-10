@@ -15,20 +15,19 @@
  *
 */
 
-use bevy::{app::AppExit, prelude::*, tasks::Task, window::PrimaryWindow};
-use bevy_egui::{egui, EguiContexts};
-use librmf_site_editor::{
+use bevy::{app::AppExit, prelude::*, window::PrimaryWindow};
+use librmf_workcell_editor::{
+    bevy_egui::{egui, EguiContexts},
     workspace::{WorkspaceData, WorkspaceLoader},
     AppState,
 };
-use rmf_site_format;
+use rmf_workcell_format;
 use std::path::PathBuf;
 
 #[derive(Resource)]
 pub struct Autoload {
     pub filename: Option<PathBuf>,
     pub import: Option<PathBuf>,
-    pub importing: Option<Task<Option<(Entity, rmf_site_format::Site)>>>,
 }
 
 impl Autoload {
@@ -36,7 +35,6 @@ impl Autoload {
         Autoload {
             filename: Some(filename),
             import,
-            importing: None,
         }
     }
 }
@@ -85,7 +83,7 @@ fn egui_ui(
             ui.horizontal(|ui| {
                 if ui.button("New workcell").clicked() {
                     workspace_loader.load_from_data(WorkspaceData::Workcell(
-                        rmf_site_format::Workcell::default()
+                        rmf_workcell_format::Workcell::default()
                             .to_string()
                             .unwrap()
                             .into(),
