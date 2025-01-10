@@ -1,0 +1,34 @@
+<?xml version='1.0' ?>
+
+<launch>
+  <arg name="headless" default="true"/>
+  <arg name="use_simulator" default="true"/>
+  <arg name="sim_update_rate" default='100'/>
+
+  <!-- RMF Common launch -->
+  <include file="$(find-pkg-share rmf_demos)/common.launch.xml">
+    <arg name="headless" value="$(var headless)" />
+    <arg name="use_sim_time" value="$(var use_simulator)"/>
+    <arg name="viz_config_file" value ="$(find-pkg-share nexus_demos)/launch/include/depot/depot.rviz"/>
+    <arg name="config_file" value="$(find-pkg-share nexus_demos)/maps/depot/depot.building.yaml"/>
+  </include>
+
+  <!-- DeliveryRobot fleet adapter -->
+  <group>
+    <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share nexus_demos)/maps/depot/nav_graphs/0.yaml" />
+      <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/depot/deliveryRobot_config.yaml"/>
+    </include>
+  </group>
+
+  <!-- Simulator launch -->
+  <include if="$(var use_simulator)" file="$(find-pkg-share rmf_demos_gz)/simulation.launch.xml">
+    <arg name="headless" value="$(var headless)" />
+    <arg name="map_package" value="nexus_demos" />
+    <arg name="map_name" value="depot" />
+    <arg name="gazebo_version" value="8" />
+    <arg name="sim_update_rate" value="$(var sim_update_rate)"/>
+  </include>
+
+</launch>
