@@ -29,29 +29,10 @@ Task TaskParser::parse_task(
 {
   return Task{
     workcell_task.id,
-    this->remap_task_type(workcell_task.type),
+    workcell_task.type,
     YAML::Load(workcell_task.payload),
     YAML::Load(workcell_task.previous_results),
   };
-}
-
-//==============================================================================
-void TaskParser::add_remap_task_type(const std::string& remap_from_type,
-  const std::string& remap_to_type)
-{
-  this->_remap_task_types[remap_from_type] = remap_to_type;
-}
-
-//==============================================================================
-std::string TaskParser::remap_task_type(const std::string& task_type)
-{
-  auto remap_it = this->_remap_task_types.find(task_type);
-
-  if (remap_it != this->_remap_task_types.end())
-  {
-    return remap_it->second;
-  }
-  return task_type;
 }
 
 } // namespace nexus::workcell_orchestrator

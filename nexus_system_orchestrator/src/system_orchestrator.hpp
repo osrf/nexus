@@ -24,6 +24,7 @@
 #include <nexus_common/action_client_bt_node.hpp>
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_common/sync_service_client.hpp>
+#include <nexus_common/task_remapper.hpp>
 #include <nexus_endpoints.hpp>
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
@@ -98,8 +99,8 @@ private:
   std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{nullptr};
   rclcpp::TimerBase::SharedPtr _pre_configure_timer;
   rclcpp::SubscriptionBase::SharedPtr _estop_sub;
-  // mapping of mapped task type and the original
-  std::shared_ptr<std::unordered_map<std::string, std::string>> _task_remaps;
+  // Manages task remapping
+  std::shared_ptr<common::TaskRemapper> _task_remapper;
   std::shared_ptr<OnSetParametersCallbackHandle> _param_cb_handle;
 
   /**
