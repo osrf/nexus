@@ -104,9 +104,7 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     desc.read_only = true;
     desc.description =
       "A yaml containing a dictionary of task types and an array of remaps.";
-    const auto yaml = this->declare_parameter("remap_task_types", "", desc);
-    const auto remaps = YAML::Load(yaml);
-    this->_task_remapper = std::make_shared<common::TaskRemapper>(remaps);
+    const auto param = this->declare_parameter("remap_task_types", "", desc);
   }
 
   {
@@ -163,6 +161,21 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
 auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
 -> CallbackReturn
 {
+  // Create map for remapping capabilities.
+  const std::string remap_caps = this->get_parameter("remap_task_types").as_string();
+  try
+  {
+    YAML::Node node = YAML::Load(remap_caps);
+    this->_task_remapper = std::make_shared<common::TaskRemapper>(std::move(node));
+  }
+  catch (YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(), "Failed to parse remap_task_types parameter: (%s)",
+      e.what());
+    return CallbackReturn::FAILURE;
+  }
+
   // create list workcells service
   this->_list_workcells_srv =
     this->create_service<endpoints::ListWorkcellsService::ServiceType>(

@@ -45,7 +45,9 @@ public:
    *    pick_and_place: [pick, place]
    *    a_and_b: [a, b]
    *
-   * Will remap "pick" or "place" to "pick_and_place", "a" and "b" to "a_and_b"
+   * Will remap "pick" or "place" to "pick_and_place", "a" and "b" to "a_and_b".
+   * Note: If the value is specified as an asterisk, "*", any value will be
+   *  remapped to the specified key.
    */
   TaskRemapper(const YAML::Node& remaps);
 
