@@ -22,6 +22,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <optional>
 #include <string>
 
@@ -34,9 +36,18 @@ class NEXUS_COMMON_EXPORT TaskRemapper
 {
 public:
   /*
-   * Initialize the remapper with the value of a ROS parameter containing a YAML
+   * Initialize the remapper with the value of a ROS parameter containing a YAML.
+   *
+   * The YAML should have a sequence of key:value types where the key is the task to
+   * remap to, and the value is a list of tasks to remap to the key.
+   * For example:
+   *
+   *    pick_and_place: [pick, place]
+   *    a_and_b: [a, b]
+   *
+   * Will remap "pick" or "place" to "pick_and_place", "a" and "b" to "a_and_b"
    */
-  TaskRemapper(const std::string& param);
+  TaskRemapper(const YAML::Node& remaps);
 
   /*
    * Remaps, if necessary, the input task

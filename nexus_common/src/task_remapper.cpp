@@ -17,13 +17,10 @@
 
 #include "task_remapper.hpp"
 
-#include <yaml-cpp/yaml.h>
-
 namespace nexus::common {
 
-TaskRemapper::TaskRemapper(const std::string& param)
+TaskRemapper::TaskRemapper(const YAML::Node& remaps)
 {
-  const auto remaps = YAML::Load(param);
   for (const auto& n : remaps)
   {
     const auto task_type = n.first.as<std::string>();

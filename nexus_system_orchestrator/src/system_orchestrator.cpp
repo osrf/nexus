@@ -104,8 +104,9 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     desc.read_only = true;
     desc.description =
       "A yaml containing a dictionary of task types and an array of remaps.";
-    const auto param = this->declare_parameter("remap_task_types", "", desc);
-    this->_task_remapper = std::make_shared<common::TaskRemapper>(param);
+    const auto yaml = this->declare_parameter("remap_task_types", "", desc);
+    const auto remaps = YAML::Load(yaml);
+    this->_task_remapper = std::make_shared<common::TaskRemapper>(remaps);
   }
 
   {

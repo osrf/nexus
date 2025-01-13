@@ -18,6 +18,8 @@
 #define CATCH_CONFIG_MAIN
 #include <rmf_utils/catch.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include "task_remapper.hpp"
 
 namespace nexus::common::test {
@@ -27,7 +29,8 @@ TEST_CASE("task_remapping") {
     R"(
       pick_and_place: [pick, place]
     )";
-  auto remapper = TaskRemapper(param);
+  const auto yaml = YAML::Load(param);
+  const auto remapper = TaskRemapper(yaml);
   CHECK(remapper.remap("pick") == "pick_and_place");
   CHECK(remapper.remap("place") == "pick_and_place");
   CHECK(remapper.remap("other") == std::nullopt);
@@ -39,7 +42,8 @@ TEST_CASE("task_remapping_with_wildcard") {
       pick_and_place: [pick, place]
       main : ["*"]
     )";
-  auto remapper = TaskRemapper(param);
+  const auto yaml = YAML::Load(param);
+  const auto remapper = TaskRemapper(yaml);
   CHECK(remapper.remap("pick") == "main");
   CHECK(remapper.remap("place") == "main");
   CHECK(remapper.remap("other") == "main");
@@ -50,7 +54,8 @@ TEST_CASE("task_remapping_with_normal_and_wildcard") {
     R"(
       pick_and_place: [pick, "*"]
     )";
-  auto remapper = TaskRemapper(param);
+  const auto yaml = YAML::Load(param);
+  const auto remapper = TaskRemapper(yaml);
   CHECK(remapper.remap("pick") == "pick_and_place");
   CHECK(remapper.remap("place") == "pick_and_place");
 }

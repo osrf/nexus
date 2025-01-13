@@ -93,7 +93,6 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     desc.description =
       "A yaml containing a dictionary of task types and an array of remaps.";
     const auto param = this->declare_parameter("remap_task_types", "", desc);
-    this->_task_remapper = std::make_shared<common::TaskRemapper>(param);
   }
   {
     ParameterDescriptor desc;
@@ -685,14 +684,7 @@ auto WorkcellOrchestrator::_configure(
   try
   {
     YAML::Node node = YAML::Load(remap_caps);
-    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-    {
-      for (std::size_t i = 0; i < it->second.size(); ++i)
-      {
-        this->_task_parser.add_remap_task_type(
-          it->second[i].as<std::string>(), it->first.as<std::string>());
-      }
-    }
+    this->_task_remapper = std::make_shared<common::TaskRemapper>(node);
   }
   catch (YAML::ParserException& e)
   {
