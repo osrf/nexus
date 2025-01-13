@@ -24,9 +24,6 @@ jobs:
       with:
         path: ~/.cache/ccache
         key: ccache
-    - name: vcs
-      run: |
-        vcs import . < abb.repos
     - name: rosdep
       run: |
         apt update
