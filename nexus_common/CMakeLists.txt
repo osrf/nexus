@@ -24,6 +24,7 @@ add_library(${PROJECT_NAME} SHARED
   src/node_thread.cpp
   src/node_utils.cpp
   src/pausable_sequence.cpp
+  src/task_remapper.cpp
 )
 GENERATE_EXPORT_HEADER(${PROJECT_NAME}
   EXPORT_FILE_NAME "include/nexus_common_export.hpp"
@@ -130,6 +131,7 @@ if(BUILD_TESTING)
   )
   nexus_add_test(logging_test src/logging_test.cpp)
   nexus_add_test(sync_ros_client_test src/sync_ros_client_test.cpp)
+  nexus_add_test(task_remapper_test src/task_remapper_test.cpp)
 endif()
 
 ament_export_targets(${PROJECT_NAME})

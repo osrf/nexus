@@ -92,18 +92,7 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     desc.read_only = true;
     desc.description =
       "A yaml containing a dictionary of task types and an array of remaps.";
-    const auto yaml = this->declare_parameter("remap_task_types", std::string{},
-        desc);
-    const auto remaps = YAML::Load(yaml);
-    for (const auto& n : remaps)
-    {
-      const auto task_type = n.first.as<std::string>();
-      const auto& mappings = n.second;
-      for (const auto& m : mappings)
-      {
-        this->_task_remaps.emplace(m.as<std::string>(), task_type);
-      }
-    }
+    const auto param = this->declare_parameter("remap_task_types", "", desc);
   }
   {
     ParameterDescriptor desc;
@@ -695,14 +684,7 @@ auto WorkcellOrchestrator::_configure(
   try
   {
     YAML::Node node = YAML::Load(remap_caps);
-    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-    {
-      for (std::size_t i = 0; i < it->second.size(); ++i)
-      {
-        this->_task_parser.add_remap_task_type(
-          it->second[i].as<std::string>(), it->first.as<std::string>());
-      }
-    }
+    this->_task_remapper = std::make_shared<common::TaskRemapper>(node);
   }
   catch (YAML::ParserException& e)
   {
@@ -988,8 +970,20 @@ BT::Tree WorkcellOrchestrator::_create_bt(const std::shared_ptr<Context>& ctx)
 {
   // To keep things simple, the task type is used as the key for the behavior tree to use.
   this->_ctx_mgr->set_active_context(ctx);
+  const auto new_task = this->_task_remapper->remap(ctx->task.type);
+  auto bt_name = ctx->task.type;
+  if (new_task.has_value())
+  {
+    RCLCPP_DEBUG(
+      this->get_logger(),
+      "Loading remapped BT [%s] for original task type [%s]",
+      new_task.value().c_str(),
+      ctx->task.type.c_str()
+    );
+    bt_name = new_task.value();
+  }
   return this->_bt_factory->createTreeFromFile(this->_bt_store.get_bt(
-        ctx->task.type));
+        bt_name));
 }
 
 void WorkcellOrchestrator::_handle_command_success(

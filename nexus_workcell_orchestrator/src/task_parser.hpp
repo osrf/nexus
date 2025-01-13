@@ -39,17 +39,9 @@ public: TaskParser() {}
 public: Task parse_task(const nexus_orchestrator_msgs::msg::WorkcellTask& task);
 
   /**
-   * Add task type to remap to.
-   */
-public: void add_remap_task_type(const std::string& remap_from_type,
-    const std::string& remap_to_type);
-
-  /**
    * Remaps task types if a remap entry is found for the given type.
    */
 public: std::string remap_task_type(const std::string& task_type);
-
-private: std::unordered_map<std::string, std::string> _remap_task_types;
 };
 
 } // namespace nexus::workcell_orchestrator

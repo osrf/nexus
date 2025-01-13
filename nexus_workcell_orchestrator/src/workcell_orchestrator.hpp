@@ -28,6 +28,7 @@
 
 #include <nexus_common/action_client_bt_node.hpp>
 #include <nexus_common/bt_store.hpp>
+#include <nexus_common/task_remapper.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -124,8 +125,8 @@ private: std::list<std::shared_ptr<Context>> _ctxs;
 private: std::shared_ptr<ContextManager> _ctx_mgr;
 private: std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{
     nullptr};
-// mapping of mapped task type and the original
-private: std::unordered_map<std::string, std::string> _task_remaps;
+// Takes care of remapping tasks
+private: std::shared_ptr<common::TaskRemapper> _task_remapper;
 private: TaskParser _task_parser;
 private: pluginlib::ClassLoader<TaskChecker> _task_checker_loader;
 private: std::shared_ptr<TaskChecker> _task_checker;

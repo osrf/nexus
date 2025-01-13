@@ -41,16 +41,16 @@ BT::NodeStatus ExecuteTask::onStart()
 
   // Remap the BT filename to load if one is provided.
   std::string bt_name = task->type;
-  auto it = _ctx->task_remaps->find(task->type);
-  if (it != _ctx->task_remaps->end())
+  const auto new_task = _ctx->task_remapper->remap(task->type);
+  if (new_task.has_value())
   {
     RCLCPP_DEBUG(
       _ctx->node.get_logger(),
       "[ExecuteTask] Loading remapped BT [%s] for original task type [%s]",
-      it->second.c_str(),
+      new_task.value().c_str(),
       task->type.c_str()
     );
-    bt_name = it->second;
+    bt_name = new_task.value();
   }
   std::filesystem::path task_bt_path(this->_bt_path / (bt_name + ".xml"));
   if (!std::filesystem::is_regular_file(task_bt_path))
