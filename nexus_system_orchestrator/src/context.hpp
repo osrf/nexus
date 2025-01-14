@@ -70,11 +70,6 @@ public: std::string task_results;
    */
 public: std::unordered_map<std::string,
     std::vector<std::string>> queued_signals;
-
-  /**
-   * List of signals queued for the system orchestrator itself.
-   */
-public: std::vector<std::string> orchestrator_signals;
 };
 
 }
