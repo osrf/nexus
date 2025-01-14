@@ -40,7 +40,15 @@ class PickAndPlaceTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_integration_tests", "depot.launch.xml", "sim_update_rate:=10000", "main_bt_filename:=main_rmf.xml"),
+                (
+                     "ros2",
+                     "launch",
+                     "nexus_integration_tests",
+                     "depot.launch.xml",
+                     "sim_update_rate:=10000",
+                     "main_bt_filename:=main_rmf.xml",
+                     "remap_task_types:=\"pick_and_place_rmf: [pick_from_conveyor, place_on_conveyor]\""
+                 ),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
@@ -69,7 +77,7 @@ class PickAndPlaceTest(NexusTestCase):
     async def test_pick_and_place_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place_rmf.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
         fb_fut = Future()

@@ -113,6 +113,7 @@ def launch_setup(context, *args, **kwargs):
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
+    remap_task_types = LaunchConfiguration("remap_task_types")
 
     nexus_panel_rviz_path = os.path.join(
         get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
@@ -129,11 +130,7 @@ def launch_setup(context, *args, **kwargs):
                     FindPackageShare("nexus_integration_tests"),
                     "/config/system_bts",
                 ),
-                "remap_task_types":
-                    """{
-                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
-                        pick_and_place_rmf: [place_on_amr, pick_from_amr],
-                    }""",
+                "remap_task_types": remap_task_types,
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
             }
@@ -249,6 +246,11 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "main_bt_filename",
                 default_value="main.xml",
+                description="File name of the main system orchestrator behavior tree",
+            ),
+            DeclareLaunchArgument(
+                "remap_task_types",
+                default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
                 description="File name of the main system orchestrator behavior tree",
             ),
             OpaqueFunction(function=launch_setup),
