@@ -9,11 +9,11 @@
       <rmf_request.LoopDestinations queue="{destinations}" value="{destination}">
         <Sequence>
           <!-- Utility node that unpacks the struct data into its fields -->
-          <rmf_request.UnpackDestinationData destination="{destination}" workcell="{workcell}" type="{type}" />
+          <rmf_request.UnpackDestinationData destination="{destination}" workcell="{workcell}" type="{type}" workcell_task_id="{workcell_task_id}" />
           <!-- Wait for AMR to reach the workcell -->
           <rmf_request.WaitForAmr rmf_task_id="{rmf_task_id}" workcell="{workcell}" />
-          <!-- Signal system orchestrator to start the workcell -->
-          <rmf_request.SendSignal signal="{workcell}" />
+          <!-- Signal workcell that the AMR arrived -->
+          <rmf_request.SendSignal workcell="{workcell}" workcell_task_id="{workcell_task_id}" signal="transporter_done" />
           <!-- Wait for workcell to be done with its task -->
           <WaitForSignal signal="{workcell}" />
           <!-- Signal RMF that we can move -->

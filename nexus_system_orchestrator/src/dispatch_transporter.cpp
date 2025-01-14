@@ -60,6 +60,7 @@ BT::NodeStatus DispatchTransporter::onStart()
     YAML::Node order;
     order["type"] = "pickup";
     order["destination"] = assignment_it->second;
+    order["workcell_task_id"] = task.id;
     orders.push_back(order);
   }
   this->_transport_task.id = this->_ctx->job_id;

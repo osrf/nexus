@@ -40,7 +40,10 @@ namespace rmf {
 struct Destination {
   // Either "pickup" or "dropoff"
   std::string action;
+  // Workcell to deliver to
   std::string workcell;
+  // Task id that the workcell is executing for signaling AMR arrival
+  std::string workcell_task_id;
 };
 
 /**
@@ -118,6 +121,7 @@ public: static BT::PortsList providedPorts()
       BT::InputPort<Destination>("destination"),
       BT::OutputPort<std::string>("workcell"),
       BT::OutputPort<std::string>("type"),
+      BT::OutputPort<std::string>("workcell_task_id"),
     };
   }
 
@@ -232,7 +236,11 @@ class SendSignal : public BT::SyncActionNode
 public: using WorkcellTask = nexus_orchestrator_msgs::msg::WorkcellTask;
 public: static BT::PortsList providedPorts()
   {
-    return {BT::InputPort<std::string>("signal", "Signal to send.") };
+    return {
+      BT::InputPort<std::string>("signal", "Signal to send."),
+      BT::InputPort<std::string>("workcell", "Workcell to signal."),
+      BT::InputPort<std::string>("workcell_task_id", "Task id for the workcell to signal")
+    };
   }
 
 public: SendSignal(const std::string& name, const BT::NodeConfiguration& config,

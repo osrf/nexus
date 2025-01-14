@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef NEXUS_SYSTEM_ORCHESTRATOR__SIGNALS_HPP
-#define NEXUS_SYSTEM_ORCHESTRATOR__SIGNALS_HPP
+#ifndef NEXUS_SYSTEM_ORCHESTRATOR__SEND_SIGNAL_HPP
+#define NEXUS_SYSTEM_ORCHESTRATOR__SEND_SIGNAL_HPP
 
 #include "context.hpp"
 
@@ -35,7 +35,6 @@ namespace nexus::system_orchestrator {
  */
 class SendSignal : public BT::SyncActionNode
 {
-public: using WorkcellTask = nexus_orchestrator_msgs::msg::WorkcellTask;
 public: static BT::PortsList providedPorts()
   {
     return { BT::InputPort<nexus_orchestrator_msgs::msg::WorkcellTask>("task",
@@ -49,37 +48,6 @@ public: SendSignal(const std::string& name, const BT::NodeConfiguration& config,
   : BT::SyncActionNode(name, config), _ctx(std::move(ctx)) {}
 
 public: BT::NodeStatus tick() override;
-
-private: std::shared_ptr<Context> _ctx;
-};
-
-// TODO(luca) this is duplicated with workcell_orchestrator. Remove from there or refactor into a common node?
-/**
- * Returns RUNNING until a signal is received.
- *
- * Input Ports:
- *   signal |std::string| Signal to wait for.
- *   clear |bool| Set this to true to clear the signal when this node is finished.
- */
-class WaitForSignal : public BT::StatefulActionNode
-{
-public: static BT::PortsList providedPorts()
-  {
-    return { BT::InputPort<std::string>("signal", "Signal to wait for."),
-      BT::InputPort<std::string>("clear",
-        "Set this to true to clear the signal when this node is finished.") };
-  }
-
-public: WaitForSignal(const std::string& name,
-    const BT::NodeConfiguration& config,
-    std::shared_ptr<Context> ctx)
-  : BT::StatefulActionNode(name, config), _ctx(std::move(ctx)) {}
-
-public: BT::NodeStatus onStart() override;
-
-public: BT::NodeStatus onRunning() override;
-
-public: void onHalted() override {}
 
 private: std::shared_ptr<Context> _ctx;
 };

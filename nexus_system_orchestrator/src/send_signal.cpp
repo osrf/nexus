@@ -15,7 +15,7 @@
  *
  */
 
-#include "signals.hpp"
+#include "send_signal.hpp"
 
 #include <nexus_endpoints.hpp>
 
@@ -86,70 +86,6 @@ BT::NodeStatus SendSignal::tick()
   }
 
   return BT::NodeStatus::SUCCESS;
-}
-
-BT::NodeStatus WaitForSignal::onStart()
-{
-  const auto signal = this->getInput<std::string>("signal");
-  if (!signal)
-  {
-    RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: [signal] port is required",
-      this->name().c_str());
-    return BT::NodeStatus::FAILURE;
-  }
-  auto& signals = this->_ctx->orchestrator_signals;
-  if (auto signal_it = std::find(signals.begin(), signals.end(), *signal); signal_it != signals.end())
-  {
-    RCLCPP_DEBUG(
-      this->_ctx->node.get_logger(), "%s: signal [%s] already set",
-      this->name().c_str(), signal->c_str());
-    auto clear = this->getInput<bool>("clear");
-    if (clear && *clear)
-    {
-      signals.erase(signal_it);
-      RCLCPP_INFO(
-        this->_ctx->node.get_logger(), "%s: cleared signal [%s]",
-        this->name().c_str(), signal->c_str());
-    }
-    return BT::NodeStatus::SUCCESS;
-  }
-  return BT::NodeStatus::RUNNING;
-}
-
-BT::NodeStatus WaitForSignal::onRunning()
-{
-  const auto signal = this->getInput<std::string>("signal");
-  if (!signal)
-  {
-    RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: [signal] port is required",
-      this->name().c_str());
-    return BT::NodeStatus::FAILURE;
-  }
-  auto& signals = this->_ctx->orchestrator_signals;
-  for (const auto& signal : signals)
-  {
-    RCLCPP_INFO(
-      this->_ctx->node.get_logger(), "%s: Signal available [%s]",
-      this->name().c_str(), signal.c_str());
-  }
-  if (auto signal_it = std::find(signals.begin(), signals.end(), *signal); signal_it != signals.end())
-  {
-    RCLCPP_DEBUG(
-      this->_ctx->node.get_logger(), "%s: signal [%s] already set",
-      this->name().c_str(), signal->c_str());
-    auto clear = this->getInput<bool>("clear");
-    if (clear && *clear)
-    {
-      signals.erase(signal_it);
-      RCLCPP_INFO(
-        this->_ctx->node.get_logger(), "%s: cleared signal [%s]",
-        this->name().c_str(), signal->c_str());
-    }
-    return BT::NodeStatus::SUCCESS;
-  }
-  return BT::NodeStatus::RUNNING;
 }
 
 }

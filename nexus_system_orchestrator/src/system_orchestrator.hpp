@@ -85,8 +85,6 @@ private:
     _wo_states_pub;
   rclcpp::Service<endpoints::GetWorkOrderStateService::ServiceType>::SharedPtr
     _get_wo_state_srv;
-  rclcpp::Service<endpoints::SignalWorkcellService::ServiceType>::SharedPtr
-    _signal_srv;
   std::filesystem::path _bt_path;
   std::string _main_bt_filename;
   rclcpp::SubscriptionBase::SharedPtr _cancel_wo_sub;

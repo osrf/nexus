@@ -138,11 +138,12 @@ BT::NodeStatus ExtractDestinations::tick()
   std::deque<Destination> destinations;
   for (const auto& node : task.data)
   {
-    if (node["type"] && node["destination"])
+    if (node["type"] && node["destination"] && node["workcell_task_id"])
     {
       auto type = node["type"].as<std::string>();
       auto destination = node["destination"].as<std::string>();
-      destinations.push_back(Destination {type, destination});
+      auto workcell_task_id = node["workcell_task_id"].as<std::string>();
+      destinations.push_back(Destination {type, destination, workcell_task_id});
     }
     else
     {
@@ -168,6 +169,7 @@ BT::NodeStatus UnpackDestinationData::tick()
   }
   this->setOutput("workcell", destination->workcell);
   this->setOutput("type", destination->action);
+  this->setOutput("workcell_task_id", destination->workcell_task_id);
   return BT::NodeStatus::SUCCESS;
 }
 
@@ -309,13 +311,31 @@ BT::NodeStatus SendSignal::tick()
     return BT::NodeStatus::FAILURE;
   }
 
+  auto workcell = this->getInput<std::string>("workcell");
+  if (!workcell)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: port [workcell] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  auto workcell_task_id = this->getInput<std::string>("workcell_task_id");
+  if (!workcell_task_id)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: port [workcell_task_id] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
   this->_signal_client = std::make_unique<common::SyncServiceClient<endpoints::
       SignalWorkcellService::ServiceType>>(
-        this->_node, endpoints::SignalWorkcellService::service_name("system_orchestrator"));
+        this->_node, endpoints::SignalWorkcellService::service_name(*workcell));
 
   auto req =
     std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
-  req->task_id = ctx->task.id;
+  req->task_id = *workcell_task_id;
   req->signal = *signal;
   auto resp = this->_signal_client->send_request(req);
   if (!resp->success)
@@ -323,8 +343,8 @@ BT::NodeStatus SendSignal::tick()
     // TODO(luca) implement a queueing mechanism if the request fails?
     RCLCPP_WARN(
       this->_node->get_logger(),
-      "%s: System orchestrator is not able to accept [%s] signal now. Skipping signaling, error: [%s]",
-      this->_node->get_name(), signal->c_str(), resp->message.c_str());
+      "%s: Workcell [%s] is not able to accept [%s] signal now. Skipping signaling, error: [%s]",
+      this->_node->get_name(), workcell->c_str(), signal->c_str(), resp->message.c_str());
   }
   return BT::NodeStatus::SUCCESS;
 }

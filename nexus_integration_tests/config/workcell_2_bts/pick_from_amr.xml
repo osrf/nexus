@@ -2,6 +2,7 @@
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
+      <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
       <StringToVector string="productA," delimiter="," strings="{items}"/>
       <detection.DetectAllItems name="detect_items" detector="workcell_2_mock_product_detector" items="{items}" result="{all_products}" />
       <detection.GetDetection detections="{all_products}" idx="0" result="{current_product_detection}" />
