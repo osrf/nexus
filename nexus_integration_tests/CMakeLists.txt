@@ -233,7 +233,7 @@ add_custom_target(insert_depot_into_${output_world_name} ALL
 set(replace_camera_view_phony ${output_dir}/replace_camera_view_phony)
 add_custom_command(
   DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<camera_pose>.*<\/camera_pose>|<camera_pose>5.2453 -7.8138 3.8271 0 0.5849817 0.2531771<\/camera_pose>|g' ${output_world_path}
+  COMMAND sed -i 's|<camera_pose>.*<\/camera_pose>|<camera_pose>1.6679 -8.2494 4.3953 0 0.4919176 0<\/camera_pose>|g' ${output_world_path}
   OUTPUT ${replace_camera_view_phony}
 )
 add_custom_target(replace_camera_pose_in_${output_world_name} ALL
