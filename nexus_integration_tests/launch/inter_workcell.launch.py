@@ -106,6 +106,8 @@ def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None)
 
 def launch_setup(context, *args, **kwargs):
     ros_domain_id = LaunchConfiguration("ros_domain_id")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
@@ -113,11 +115,21 @@ def launch_setup(context, *args, **kwargs):
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
-    remap_task_types = LaunchConfiguration("remap_task_types")
+
+    remap_task_types = """{
+                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                    }"""
+    rviz_config_filename = "nexus_panel.rviz"
+    if (use_rmf_transporter.perform(context).lower() == "true"):
+        remap_task_types = """{
+                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
+                        }"""
+        rviz_config_filename = "nexus_panel_rmf.rviz"
 
     nexus_panel_rviz_path = os.path.join(
-        get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"
+        get_package_share_directory("nexus_integration_tests"), "rviz", rviz_config_filename
     )
+
 
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
@@ -137,6 +149,27 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    rmf_transporter = GroupAction(
+        actions=[
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_integration_tests"),
+                            "launch",
+                            "rmf_transporter.launch.xml",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "use_simulator": use_fake_hardware,
+                    "headless": headless,
+                }.items(),
+                condition=IfCondition(use_rmf_transporter),
+            )
+        ],
+    )
+
     transporter_node = LifecycleNode(
         namespace="",
         package="nexus_transporter",
@@ -149,6 +182,14 @@ def launch_setup(context, *args, **kwargs):
             {"speed": 1.0},
             {"unloading_station": "unloading"},
         ],
+        condition=UnlessCondition(use_rmf_transporter),
+    )
+
+    activate_transporter_node = GroupAction(
+        [
+            activate_node(transporter_node),
+        ],
+        condition=UnlessCondition(use_rmf_transporter),
     )
 
     mock_emergency_alarm_node = LifecycleNode(
@@ -166,40 +207,45 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(headless),
     )
 
+    zenoh_bridge = GroupAction(
+        [
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_integration_tests"),
+                            "launch",
+                            "zenoh_bridge.launch.py",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "zenoh_config_package": zenoh_config_package,
+                    "zenoh_config_filename": zenoh_config_filename,
+                    "ros_domain_id": ros_domain_id.perform(context),
+                }.items(),
+            )
+        ],
+        condition=IfCondition(use_zenoh_bridge),
+    )
+
+    activate_system_orchestrator = GroupAction(
+        [
+            activate_node(system_orchestrator_node),
+        ],
+        condition=IfCondition(activate_system_orchestrator),
+    )
+
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
+        rmf_transporter,
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
-        GroupAction(
-            [
-                IncludeLaunchDescription(
-                    [
-                        PathJoinSubstitution(
-                            [
-                                FindPackageShare("nexus_integration_tests"),
-                                "launch",
-                                "zenoh_bridge.launch.py",
-                            ]
-                        )
-                    ],
-                    launch_arguments={
-                        "zenoh_config_package": zenoh_config_package,
-                        "zenoh_config_filename": zenoh_config_filename,
-                        "ros_domain_id": ros_domain_id.perform(context),
-                    }.items(),
-                )
-            ],
-            condition=IfCondition(use_zenoh_bridge),
-        ),
-        GroupAction(
-            [
-                activate_node(system_orchestrator_node),
-            ],
-            condition=IfCondition(activate_system_orchestrator),
-        ),
-        activate_node(transporter_node),
+        zenoh_bridge,
+        activate_system_orchestrator,
+        activate_transporter_node,
         activate_node(mock_emergency_alarm_node),
     ]
 
@@ -212,6 +258,17 @@ def generate_launch_description():
                 "ros_domain_id",
                 default_value="0",
                 description="ROS_DOMAIN_ID environment variable",
+            ),
+            DeclareLaunchArgument(
+                "use_fake_hardware",
+                default_value="true",
+                description="Set True if running with real hardware.",
+            ),
+            DeclareLaunchArgument(
+                "use_rmf_transporter",
+                default_value="false",
+                description="Set true to rely on an Open-RMF managed fleet to transport material\
+                between workcells.",
             ),
             DeclareLaunchArgument(
                 "use_zenoh_bridge",
@@ -246,11 +303,6 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "main_bt_filename",
                 default_value="main.xml",
-                description="File name of the main system orchestrator behavior tree",
-            ),
-            DeclareLaunchArgument(
-                "remap_task_types",
-                default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
                 description="File name of the main system orchestrator behavior tree",
             ),
             OpaqueFunction(function=launch_setup),

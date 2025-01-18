@@ -44,10 +44,9 @@ class PickAndPlaceTest(NexusTestCase):
                      "ros2",
                      "launch",
                      "nexus_integration_tests",
-                     "depot.launch.xml",
+                     "launch.py",
                      "sim_update_rate:=10000",
-                     "main_bt_filename:=main_rmf.xml",
-                     "remap_task_types:=\"pick_and_place_rmf: [pick_from_conveyor, place_on_conveyor]\""
+                     "use_rmf_transporter:=true"
                  ),
         )
         self.proc.__enter__()
@@ -57,8 +56,6 @@ class PickAndPlaceTest(NexusTestCase):
 
         await self.wait_for_workcells("workcell_1", "workcell_2", "rmf_nexus_transporter")
         print("all workcells are ready")
-        await self.wait_for_transporters("transporter_node")
-        print("all transporters are ready")
         await self.wait_for_robot_state()
         print("AMRs are ready")
 
