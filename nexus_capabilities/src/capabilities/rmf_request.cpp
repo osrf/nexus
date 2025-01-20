@@ -271,6 +271,15 @@ BT::NodeStatus WaitForAmr::onStart()
 
   this->_workcell = *workcell;
   this->_rmf_task_id = *rmf_task_id;
+  this->_amr_ready = false;
+
+  RCLCPP_INFO(
+    this->_node->get_logger(),
+    "CHECKING: workcell [%s], rmf_task_id [%s], amr_ready: [%s]",
+    this->_workcell.c_str(),
+    this->_rmf_task_id.c_str(),
+    this->_amr_ready ? "amr ready" : "amr not ready"
+  );
 
   this->_dispenser_request_sub = this->_node->create_subscription<DispenserRequest>("/dispenser_requests", 10,
       [&](DispenserRequest::UniquePtr msg)
@@ -285,6 +294,9 @@ void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
   if (msg.request_guid == this->_rmf_task_id &&
       msg.target_guid == this->_workcell)
   {
+    RCLCPP_INFO(
+      this->_node->get_logger(), "workcell %s: got dispenser request with target guid: %s", this->_workcell.c_str(), msg.target_guid.c_str()
+    );
     this->_amr_ready = true;
   }
 }
