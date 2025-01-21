@@ -216,15 +216,28 @@ endif()
 # rmf_traffic_editor#524 has been released, to use custom template files
 ##############################################################################
 
-# Insert Depot model
-set(inserted_depot_phony ${output_dir}/inserted_depot_phony)
+# Insert Depot, enclosure, conveyor_block models
+# TODO(ac): This is a temporary measure to insert models after the world file
+# has been generated. We should add it during generation instead.
+execute_process(
+  COMMAND bash -c "cat ${CMAKE_CURRENT_SOURCE_DIR}/models_from_fuel.txt | sed 's/$/\\n/' | tr -d '\n'"
+  OUTPUT_VARIABLE FUEL_MODELS
+  RESULT_VARIABLE RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(RESULT EQUAL 0)
+    message("Inserted models manually into generated world file.")
+else()
+    message("Failed to insert models manually into generated world file.")
+endif()
+set(inserted_fuel_models_phony ${output_dir}/inserted_fuel_models_phony)
 add_custom_command(
   DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<\/light>|<\/light>\\n<include><uri>https:\/\/fuel.gazebosim.org\/1.0\/OpenRobotics\/models\/Depot<\/uri><pose>15.15 -7.525 0 0 0 0<\/pose><\/include>|g' ${output_world_path}
-  OUTPUT ${inserted_depot_phony}
+  COMMAND sed -i 's|<\/light>|<\/light>\\n${FUEL_MODELS}|g' ${output_world_path}
+  OUTPUT ${inserted_fuel_models_phony}
 )
-add_custom_target(insert_depot_into_${output_world_name} ALL
-  DEPENDS ${inserted_depot_phony}
+add_custom_target(insert_fuel_models_into_${output_world_name} ALL
+  DEPENDS ${inserted_fuel_models_phony}
 )
 
 # Change robot spawns to use fuel URL, we should probably stick to this
