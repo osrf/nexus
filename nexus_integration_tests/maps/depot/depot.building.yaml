@@ -1,0 +1,80 @@
+coordinate_system: reference_image
+crowd_sim:
+  agent_groups:
+    - {agents_name: [deliveryRobot1, deliveryRobot2], agents_number: 2, group_id: 0, profile_selector: external_agent, state_selector: external_static, x: 0, y: 0}
+  agent_profiles:
+    - {ORCA_tau: 1, ORCA_tauObst: 0.40000000000000002, class: 1, max_accel: 0, max_angle_vel: 0, max_neighbors: 10, max_speed: 0, name: external_agent, neighbor_dist: 5, obstacle_set: 1, pref_speed: 0, r: 0.25}
+  enable: 0
+  goal_sets: []
+  model_types: []
+  obstacle_set: {class: 1, file_name: L1_navmesh.nav, type: nav_mesh}
+  states:
+    - {final: 1, goal_set: -1, name: external_static, navmesh_file_name: ""}
+  transitions: []
+  update_time_step: 0.10000000000000001
+graphs:
+  {}
+levels:
+  L1:
+    drawing:
+      filename: depot_scan.png
+    elevation: 0
+    lanes:
+      - [14, 28, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [28, 15, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [29, 30, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [30, 16, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [30, 31, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [31, 17, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [31, 32, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [32, 19, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [32, 20, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [31, 21, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [30, 18, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [29, 22, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [32, 27, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [28, 34, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [34, 33, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [34, 29, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+    layers:
+      {}
+    measurements:
+      - [0, 1, {distance: [3, 30.199999999999999]}]
+    vertices:
+      - [0.104, 307.17000000000002, 0, ""]
+      - [604.029, 307.00799999999998, 0, ""]
+      - [2.0099999999999998, 1.994, 0, ""]
+      - [602.91899999999998, 1.0029999999999999, 0, ""]
+      - [603.96900000000005, 301.74000000000001, 0, ""]
+      - [1.7090000000000001, 304.33499999999998, 0, ""]
+      - [147.125, 72.120000000000005, 0, ""]
+      - [157.90799999999999, 72.030000000000001, 0, ""]
+      - [158.08799999999999, 82.813999999999993, 0, ""]
+      - [146.76499999999999, 82.903999999999996, 0, ""]
+      - [147.178, 222.09899999999999, 0, ""]
+      - [158.00399999999999, 222.04900000000001, 0, ""]
+      - [158.05500000000001, 233.12899999999999, 0, ""]
+      - [147.02600000000001, 233.02699999999999, 0, ""]
+      - [211.29400000000001, 284.73700000000002, 0, deliveryRobotCharger1, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot1], spawn_robot_type: [1, DeliveryRobot]}]
+      - [240.38200000000001, 284.73700000000002, 0, deliveryRobotCharger2, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot2], spawn_robot_type: [1, DeliveryRobot]}]
+      - [160.99799999999999, 175.34399999999999, 0, workcell_1, {dropoff_ingestor: [1, workcell_1], is_holding_point: [4, false], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_1]}]
+      - [116.691, 175.643, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, false], is_parking_spot: [4, false], pickup_dispenser: [1, workcell_2]}]
+      - [161.68700000000001, 130.52600000000001, 0, workcell_4]
+      - [73.066000000000003, 175.72800000000001, 0, workcell_3]
+      - [74.082999999999998, 130.52600000000001, 0, workcell_6]
+      - [116.577, 130.65700000000001, 0, workcell_5]
+      - [228.02099999999999, 128.25200000000001, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [28.983000000000001, 108.464, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [25.177, 123.68899999999999, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [20.492000000000001, 81.236000000000004, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [43.536999999999999, 88.259, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [41.938000000000002, 156.17400000000001, 0, "", {is_holding_point: [4, true], is_parking_spot: [4, true]}]
+      - [225.733, 250.20699999999999, 0, ""]
+      - [226.75800000000001, 155.97900000000001, 0, ""]
+      - [160.90199999999999, 155.761, 0, ""]
+      - [116.577, 155.761, 0, ""]
+      - [73.560000000000002, 156.285, 0, ""]
+      - [191.227, 206.31100000000001, 0, ""]
+      - [226.40000000000001, 204.26900000000001, 0, ""]
+lifts: {}
+name: depot
