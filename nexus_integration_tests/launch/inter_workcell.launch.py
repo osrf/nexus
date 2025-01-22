@@ -157,8 +157,7 @@ def launch_setup(context, *args, **kwargs):
                         [
                             FindPackageShare("nexus_integration_tests"),
                             "launch",
-                            # "rmf_transporter.launch.xml",
-                            "depot.launch.xml",
+                            "rmf_transporter.launch.xml",
                         ]
                     )
                 ],
