@@ -2,9 +2,8 @@
 
 <launch>
   <arg name="bidding_time_window" description="Time window in seconds for task bidding process" default="2.0"/>
-  <arg name="gz_world_path" default="$(find-pkg-share nexus_integration_tests)/config/rmf/depot.world" description="Building description file required by rmf_building_map_tools"/>
+  <arg name="building_map_name" default="depot" description="Name of the map to launch for simulation"/>
   <arg name="initial_map" default="L1" description="Initial map name for the visualizer"/>
-  <arg name="rmf_building_config" default="$(find-pkg-share nexus_integration_tests)/config/rmf/depot.building.yaml" description="Building description file required by rmf_building_map_tools"/>
   <arg name="server_uri" default="" description="The URI of the api server to transmit state and task information."/>
   <arg name="sim_update_rate" default='100'/>
   <arg name="headless" default="true"/>
@@ -23,7 +22,7 @@
 
   <!-- Building Map  -->
   <group>
-    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(var rmf_building_config)">
+    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(find-pkg-share nexus_integration_tests)/maps/$(var building_map_name)/$(var building_map_name).building.yaml">
       <param name="use_sim_time" value="$(var use_simulator)"/>
     </node>
   </group>
@@ -51,7 +50,7 @@
   <group>
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_simulator)"/>
-      <arg name="nav_graph_file" value="$(find-pkg-share nexus_integration_tests)/config/rmf/nav_graphs/0.yaml" />
+      <arg name="nav_graph_file" value="$(find-pkg-share nexus_integration_tests)/maps/$(var building_map_name)/nav_graphs/0.yaml" />
       <arg name="config_file" value="$(find-pkg-share nexus_integration_tests)/config/rmf/deliveryRobot_config.yaml"/>
     </include>
   </group>
@@ -64,8 +63,11 @@
   <!-- Simulator launch -->
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />
+  <let name="world_path" value="$(find-pkg-share nexus_integration_tests)/maps/$(var building_map_name)/$(var building_map_name).world" />
+  <let name="model_path" value="$(find-pkg-share nexus_integration_tests)/maps/$(var building_map_name)/models" />
 
-  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var gz_world_path) -z $(var sim_update_rate)" output="both">
+  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both">
+    <env name="GZ_SIM_RESOURCE_PATH" value="$(var model_path):$(var world_path)" />
     <env name="GZ_SIM_SYSTEM_PLUGIN_PATH" value="$(find-pkg-prefix rmf_robot_sim_gz_plugins)/lib/rmf_robot_sim_gz_plugins"/>
   </executable>
 

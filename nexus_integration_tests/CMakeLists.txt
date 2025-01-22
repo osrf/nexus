@@ -115,7 +115,7 @@ add_custom_target(generate_zenoh_bridge_configs ALL
   COMMAND ros2 run nexus_network_configuration nexus_network_configuration -n ${nexus_network_cfg_path} -o ${zenoh_cfg_output_dir}
 )
 
-install(DIRECTORY launch config rviz scripts DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch config rviz scripts maps DESTINATION share/${PROJECT_NAME})
 # Install the zenoh config directory containing generated configs.
 message("zenoh_cfg_output_dir: " ${zenoh_cfg_output_dir})
 install(DIRECTORY ${zenoh_cfg_output_dir} DESTINATION share/${PROJECT_NAME}/config/)
@@ -175,5 +175,64 @@ if(BUILD_TESTING)
     install(TARGETS test_mocks RUNTIME DESTINATION lib/${PROJECT_NAME})
   endif()
 endif()
+
+# Modified from rmf_demos_maps
+# Get absolute path of the building map
+set(building_map "maps/depot/depot.building.yaml")
+get_filename_component(building_map_path ${building_map} REALPATH)
+
+# Get the output world name
+string(REGEX REPLACE "\\.[^.]*\.[^.]*$" "" no_extension_path ${building_map_path})
+string(REGEX MATCH "[^\/]+$" world_name  ${no_extension_path})
+
+set(output_world_name ${world_name})
+set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/maps/${output_world_name})
+set(output_world_path ${output_dir}/${output_world_name}.world)
+set(output_model_dir ${output_dir}/models)
+
+##############################################################################
+# Generate Gz world, download Models, change robot to use Fuel model
+##############################################################################
+
+message("BUILDING WORLDFILE WITH COMMAND: ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir}")
+message("REPLACING ROBOT MODELS WITH THOSE FROM FUEL")
+if (NO_DOWNLOAD_MODELS)
+  add_custom_command(
+    DEPENDS ${building_map_path}
+    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
+    OUTPUT ${output_world_path}
+  )
+else()
+  message("DOWNLOADING MODELS WITH COMMAND: ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path}")
+  add_custom_command(
+    DEPENDS ${building_map_path}
+    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
+    COMMAND ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path} -e ~/.gazebo/models
+    OUTPUT ${output_world_path}
+  )
+endif()
+
+##############################################################################
+# Generate the nav graphs
+##############################################################################
+
+set(output_nav_graphs_dir ${output_dir}/nav_graphs/)
+set(output_nav_graphs_phony ${output_nav_graphs_dir}/phony)
+add_custom_command(
+  OUTPUT ${output_nav_graphs_phony}
+  COMMAND ros2 run rmf_building_map_tools building_map_generator nav ${building_map_path} ${output_nav_graphs_dir}
+  DEPENDS ${building_map_path} ${output_world_path}
+)
+
+add_custom_target(generate_${output_world_name}_nav_graphs ALL
+  DEPENDS ${output_nav_graphs_phony}
+)
+
+install(
+  DIRECTORY ${output_dir}
+  DESTINATION share/${PROJECT_NAME}/maps
+)
 
 ament_package()
