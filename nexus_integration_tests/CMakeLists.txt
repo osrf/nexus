@@ -200,7 +200,7 @@ if (NO_DOWNLOAD_MODELS)
   add_custom_command(
     DEPENDS ${building_map_path}
     COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
-    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobotWithConveyor<\/uri>|g' ${output_world_path}
     OUTPUT ${output_world_path}
   )
 else()
@@ -208,7 +208,7 @@ else()
   add_custom_command(
     DEPENDS ${building_map_path}
     COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
-    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobotWithConveyor<\/uri>|g' ${output_world_path}
     COMMAND ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path} -e ~/.gazebo/models
     OUTPUT ${output_world_path}
   )
