@@ -15,6 +15,7 @@
 import os
 import sys
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -83,9 +84,20 @@ def launch_setup(context, *args, **kwargs):
         log_msg += f"Workcell 2 has ROS_DOMAIN_ID {workcell_2_domain_id}\n"
 
     main_bt_filename = "main.xml"
+    remap_task_types = """{
+                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                    }"""
+    rviz_config_filename = "nexus_panel.rviz"
     if (use_rmf_transporter.perform(context).lower() == "true"):
+        remap_task_types = """{
+                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
+                        }"""
         main_bt_filename = "main_rmf.xml"
+        rviz_config_filename = "nexus_panel_rmf.rviz"
+
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
+    nexus_rviz_config = os.path.join(
+        get_package_share_directory("nexus_integration_tests"), "rviz", rviz_config_filename)
 
     launch_inter_workcell = GroupAction(
         actions=[
@@ -108,6 +120,8 @@ def launch_setup(context, *args, **kwargs):
                     "activate_system_orchestrator": headless,
                     "headless": headless,
                     "main_bt_filename": main_bt_filename,
+                    "remap_task_types": remap_task_types,
+                    "nexus_rviz_config": nexus_rviz_config,
                 }.items(),
             ),
         ],

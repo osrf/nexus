@@ -17,6 +17,7 @@ from ament_index_python.packages import get_package_share_directory
 
 import launch_ros
 from launch_ros.actions import Node, LifecycleNode
+from launch_ros.descriptions import ParameterValue
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.substitutions import FindPackageShare
 import lifecycle_msgs
@@ -115,21 +116,8 @@ def launch_setup(context, *args, **kwargs):
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
-
-    remap_task_types = """{
-                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
-                    }"""
-    rviz_config_filename = "nexus_panel.rviz"
-    if (use_rmf_transporter.perform(context).lower() == "true"):
-        remap_task_types = """{
-                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
-                        }"""
-        rviz_config_filename = "nexus_panel_rmf.rviz"
-
-    nexus_panel_rviz_path = os.path.join(
-        get_package_share_directory("nexus_integration_tests"), "rviz", rviz_config_filename
-    )
-
+    remap_task_types = LaunchConfiguration("remap_task_types")
+    nexus_rviz_config = LaunchConfiguration("nexus_rviz_config")
 
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
@@ -142,7 +130,7 @@ def launch_setup(context, *args, **kwargs):
                     FindPackageShare("nexus_integration_tests"),
                     "/config/system_bts",
                 ),
-                "remap_task_types": remap_task_types,
+                "remap_task_types": ParameterValue(remap_task_types, value_type=str),
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": 2,
             }
@@ -177,7 +165,7 @@ def launch_setup(context, *args, **kwargs):
         name="transporter_node",
         parameters=[
             {"transporter_plugin": transporter_plugin},
-            {"destinations": ["loading", "unloading", "workcell_1", "workcell_2"]},
+            {"destinations": ["loading", "workcell_1", "workcell_2", "unloading",]},
             {"x_increment": 1.0},
             {"speed": 1.0},
             {"unloading_station": "unloading"},
@@ -203,7 +191,7 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="nexus_panel",
-        arguments=["-d", nexus_panel_rviz_path],
+        arguments=["-d", nexus_rviz_config.perform(context)],
         condition=UnlessCondition(headless),
     )
 
@@ -304,6 +292,16 @@ def generate_launch_description():
                 "main_bt_filename",
                 default_value="main.xml",
                 description="File name of the main system orchestrator behavior tree",
+            ),
+            DeclareLaunchArgument(
+                "remap_task_types",
+                default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
+                description="File name of the main system orchestrator behavior tree",
+            ),
+            DeclareLaunchArgument(
+                "nexus_rviz_config",
+                default_value=os.path.join(get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"),
+                description="Absolute path to an RViZ config file.",
             ),
             OpaqueFunction(function=launch_setup),
         ]
