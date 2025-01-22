@@ -118,6 +118,8 @@ def launch_setup(context, *args, **kwargs):
     main_bt_filename = LaunchConfiguration("main_bt_filename")
     remap_task_types = LaunchConfiguration("remap_task_types")
     nexus_rviz_config = LaunchConfiguration("nexus_rviz_config")
+    system_orchestrator_bt_dir = LaunchConfiguration("system_orchestrator_bt_dir")
+    max_jobs = LaunchConfiguration("max_jobs")
 
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
@@ -126,13 +128,10 @@ def launch_setup(context, *args, **kwargs):
         executable="nexus_system_orchestrator",
         parameters=[
             {
-                "bt_path": (
-                    FindPackageShare("nexus_integration_tests"),
-                    "/config/system_bts",
-                ),
+                "bt_path": system_orchestrator_bt_dir,
                 "remap_task_types": ParameterValue(remap_task_types, value_type=str),
                 "main_bt_filename": main_bt_filename,
-                "max_jobs": 2,
+                "max_jobs": max_jobs,
             }
         ],
     )
@@ -302,6 +301,16 @@ def generate_launch_description():
                 "nexus_rviz_config",
                 default_value=os.path.join(get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"),
                 description="Absolute path to an RViZ config file.",
+            ),
+            DeclareLaunchArgument(
+                "system_orchestrator_bt_dir",
+                default_value=os.path.join(get_package_share_directory("nexus_integration_tests"), "config", "system_bts"),
+                description="Absolute path directory containing BTs for the system orchestrator.",
+            ),
+            DeclareLaunchArgument(
+                "max_jobs",
+                default_value="2",
+                description="Maximum number of jobs the system orchestrator can process in parallel.",
             ),
             OpaqueFunction(function=launch_setup),
         ]
