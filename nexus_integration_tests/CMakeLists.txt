@@ -191,77 +191,28 @@ set(output_world_path ${output_dir}/${output_world_name}.world)
 set(output_model_dir ${output_dir}/models)
 
 ##############################################################################
-# Generate Gz world and download Models
+# Generate Gz world, download Models, change robot to use Fuel model
 ##############################################################################
 
 message("BUILDING WORLDFILE WITH COMMAND: ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir}")
+message("REPLACING ROBOT MODELS WITH THOSE FROM FUEL")
 if (NO_DOWNLOAD_MODELS)
   add_custom_command(
     DEPENDS ${building_map_path}
-    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir}
+    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
     OUTPUT ${output_world_path}
   )
 else()
   message("DOWNLOADING MODELS WITH COMMAND: ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path}")
   add_custom_command(
     DEPENDS ${building_map_path}
-    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir}
+    COMMAND ros2 run rmf_building_map_tools building_map_generator gazebo ${building_map_path} ${output_world_path} ${output_model_dir} --TEMPLATE_WORLD_FILE ${CMAKE_CURRENT_SOURCE_DIR}/maps/depot/depot_template.sdf --SKIP_CAMERA_POSE
+    COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
     COMMAND ros2 run rmf_building_map_tools building_map_model_downloader ${building_map_path} -e ~/.gazebo/models
     OUTPUT ${output_world_path}
   )
 endif()
-
-##############################################################################
-# Make changes to generated world file. To be removed after
-# rmf_traffic_editor#524 has been released, to use custom template files
-##############################################################################
-
-# Insert Depot, enclosure, conveyor_block models
-# TODO(ac): This is a temporary measure to insert models after the world file
-# has been generated. We should add it during generation instead.
-execute_process(
-  COMMAND bash -c "cat ${CMAKE_CURRENT_SOURCE_DIR}/models_from_fuel.txt | sed 's/$/\\n/' | tr -d '\n'"
-  OUTPUT_VARIABLE FUEL_MODELS
-  RESULT_VARIABLE RESULT
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-if(RESULT EQUAL 0)
-    message("Inserted models manually into generated world file.")
-else()
-    message("Failed to insert models manually into generated world file.")
-endif()
-set(inserted_fuel_models_phony ${output_dir}/inserted_fuel_models_phony)
-add_custom_command(
-  DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<\/light>|<\/light>\\n${FUEL_MODELS}|g' ${output_world_path}
-  OUTPUT ${inserted_fuel_models_phony}
-)
-add_custom_target(insert_fuel_models_into_${output_world_name} ALL
-  DEPENDS ${inserted_fuel_models_phony}
-)
-
-# Change robot spawns to use fuel URL, we should probably stick to this
-# step, since it allows us to define the spawning coordinates via traffic-editor
-set(replaced_robot_urls_phony ${output_dir}/replaced_robot_urls_phony)
-add_custom_command(
-  DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<uri>model:\/\/DeliveryRobot<\/uri>|<uri>https:\/\/fuel.gazebosim.org\/1.0\/Open-RMF\/models\/DeliveryRobot<\/uri>|g' ${output_world_path}
-  OUTPUT ${replaced_robot_urls_phony}
-)
-add_custom_target(replace_robot_urls_in_${output_world_name} ALL
-  DEPENDS ${replaced_robot_urls_phony}
-)
-
-# Change camera view
-set(replace_camera_view_phony ${output_dir}/replace_camera_view_phony)
-add_custom_command(
-  DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<camera_pose>.*<\/camera_pose>|<camera_pose>2.232 -2.793 5.163 0 0.4496533 -1.0853471<\/camera_pose>|g' ${output_world_path}
-  OUTPUT ${replace_camera_view_phony}
-)
-add_custom_target(replace_camera_pose_in_${output_world_name} ALL
-  DEPENDS ${replace_camera_view_phony}
-)
 
 ##############################################################################
 # Generate the nav graphs
