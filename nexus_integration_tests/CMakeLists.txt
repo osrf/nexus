@@ -256,7 +256,7 @@ add_custom_target(replace_robot_urls_in_${output_world_name} ALL
 set(replace_camera_view_phony ${output_dir}/replace_camera_view_phony)
 add_custom_command(
   DEPENDS ${output_world_path}
-  COMMAND sed -i 's|<camera_pose>.*<\/camera_pose>|<camera_pose>3.8372 -5.3868 3.7392 0 0.2844 0<\/camera_pose>|g' ${output_world_path}
+  COMMAND sed -i 's|<camera_pose>.*<\/camera_pose>|<camera_pose>2.232 -2.793 5.163 0 0.4496533 -1.0853471<\/camera_pose>|g' ${output_world_path}
   OUTPUT ${replace_camera_view_phony}
 )
 add_custom_target(replace_camera_pose_in_${output_world_name} ALL
