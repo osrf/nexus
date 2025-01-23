@@ -1,5 +1,0 @@
-repositories:
-  rmf/rmf_demos:
-    type: git
-    url: https://github.com/open-rmf/rmf_demos.git
-    version: jazzy

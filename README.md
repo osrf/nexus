@@ -33,7 +33,6 @@ mkdir ~/ws_nexus/src -p
 cd ~/ws_nexus/src/
 git clone git@github.com:osrf/nexus
 vcs import . < nexus/abb.repos
-vcs import . < nexus/rmf.repos
 cd ~/ws_nexus
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -y -r
 ```

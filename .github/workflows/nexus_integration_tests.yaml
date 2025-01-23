@@ -27,7 +27,6 @@ jobs:
     - name: vcs
       run: |
         vcs import . < abb.repos
-        vcs import . < rmf.repos
     - name: rosdep
       run: |
         apt update
