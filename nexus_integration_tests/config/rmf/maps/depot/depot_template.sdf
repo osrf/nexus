@@ -17,14 +17,6 @@
       filename="libgz-sim-scene-broadcaster-system.so"
       name="gz::sim::systems::SceneBroadcaster">
     </plugin>
-    <plugin
-      filename="libdoor.so"
-      name="door">
-    </plugin>
-    <plugin
-      filename="liblift.so"
-      name="lift">
-    </plugin>
 
     <scene>
       <ambient>1 1 1</ambient>
@@ -305,21 +297,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
@@ -329,21 +325,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
@@ -353,21 +353,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
@@ -377,21 +381,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
@@ -401,21 +409,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
@@ -425,21 +437,25 @@
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
         <name>enclosure</name>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_front</name>
         <pose>0 -0.55 0 0 0 0</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_right</name>
         <pose>0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/conveyor_block</uri>
         <name>conveyor_block_left</name>
         <pose>-0.55 0 0 0 0 1.5708</pose>
+        <static>true</static>
       </include>
     </model>
 
