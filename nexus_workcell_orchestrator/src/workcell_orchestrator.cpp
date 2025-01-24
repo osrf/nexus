@@ -57,7 +57,7 @@ using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
 using lifecycle_msgs::msg::Transition;
 
-static constexpr size_t MAX_PARALLEL_TASK = 1;
+static constexpr size_t MAX_PARALLEL_TASK = 10;
 static constexpr std::chrono::milliseconds BT_TICK_RATE{10};
 static constexpr std::chrono::seconds REGISTER_TICK_RATE{1};
 
@@ -144,6 +144,16 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     {
       throw std::runtime_error("param [task_checker_plugin] is required.");
     }
+  }
+
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "Max number of parallel work orders to execute at once, set to 0 to make "
+      "it unlimited.";
+    this->declare_parameter("max_jobs", 0, desc);
+    this->_max_parallel_jobs = this->get_parameter("max_jobs").as_int();
   }
 
   this->_register_workcell_client =
@@ -292,10 +302,22 @@ auto WorkcellOrchestrator::_configure(
     rclcpp_action::create_server<endpoints::WorkcellRequestAction::ActionType>(
     this,
     endpoints::WorkcellRequestAction::action_name(this->get_name()),
+    // handle goal callback
     [this](const rclcpp_action::GoalUUID& /* uuid */,
     endpoints::WorkcellRequestAction::ActionType::Goal::ConstSharedPtr goal)
     {
       RCLCPP_DEBUG(this->get_logger(), "Got workcell task request");
+
+      if (this->_max_parallel_jobs > 0 &&
+      this->_ctxs.size() >= static_cast<size_t>(this->_max_parallel_jobs))
+      {
+        auto result = std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
+        result->message = "Max number of parallel work orders reached";
+        RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
+        RCLCPP_ERROR(this->get_logger(), "%d", static_cast<int>(this->_ctxs.size()));
+        return rclcpp_action::GoalResponse::REJECT;
+      }
+
       const auto it =
       std::find_if(this->_ctxs.cbegin(), this->_ctxs.cend(),
       [&goal](const std::shared_ptr<Context>& ctx)
@@ -310,6 +332,7 @@ auto WorkcellOrchestrator::_configure(
       }
       return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     },
+    // handle cancel callback
     [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
     goal_handle)
     {
@@ -337,6 +360,7 @@ auto WorkcellOrchestrator::_configure(
       }
       return rclcpp_action::CancelResponse::ACCEPT;
     },
+    // handle accepted callback
     [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>
     goal_handle)
     {
