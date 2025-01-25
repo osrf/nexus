@@ -955,6 +955,7 @@ void WorkcellOrchestrator::_process_signal(
         req->signal.c_str(), req->task_id.c_str());
       ctx->signals.emplace(req->signal);
       resp->success = true;
+      return;
     }
   }
 

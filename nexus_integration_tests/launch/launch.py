@@ -15,6 +15,7 @@
 import os
 import sys
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -41,6 +42,7 @@ def launch_setup(context, *args, **kwargs):
         exit(1)
 
     headless = LaunchConfiguration("headless")
+    use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot1_ip = LaunchConfiguration("robot1_ip")
@@ -48,23 +50,23 @@ def launch_setup(context, *args, **kwargs):
     run_workcell_1 = LaunchConfiguration("run_workcell_1")
     run_workcell_2 = LaunchConfiguration("run_workcell_2")
 
-    control_center_domain_id = 0
+    inter_workcell_domain_id = 0
     workcell_1_domain_id = 0
     workcell_2_domain_id = 0
     log_msg = ""
 
     if "ROS_DOMAIN_ID" in os.environ:
-        control_center_domain_id = int(os.environ["ROS_DOMAIN_ID"])
-        if not 0 < control_center_domain_id < 230:
+        inter_workcell_domain_id = int(os.environ["ROS_DOMAIN_ID"])
+        if not 0 < inter_workcell_domain_id < 230:
             log_msg += (
                 "ROS_DOMAIN_ID not within the range of 0 to 230, setting it to 0. \n"
             )
-            control_center_domain_id = 0
+            inter_workcell_domain_id = 0
 
     if use_zenoh_bridge.perform(context).lower() == "true":
         log_msg += "Using the zenoh bridge\n"
-        workcell_1_domain_id = control_center_domain_id + 1
-        workcell_2_domain_id = control_center_domain_id + 2
+        workcell_1_domain_id = inter_workcell_domain_id + 1
+        workcell_2_domain_id = inter_workcell_domain_id + 2
     else:
         log_msg += "Not using zenoh bridge\n"
         if (
@@ -73,15 +75,31 @@ def launch_setup(context, *args, **kwargs):
         ):
             print("To run both workcells, enable the Zenoh Bridge")
             sys.exit(1)
-        workcell_1_domain_id = control_center_domain_id
-        workcell_2_domain_id = control_center_domain_id
-    log_msg += f"Control Center has ROS_DOMAIN_ID {control_center_domain_id}\n"
+        workcell_1_domain_id = inter_workcell_domain_id
+        workcell_2_domain_id = inter_workcell_domain_id
+    log_msg += f"Inter-workcell has ROS_DOMAIN_ID {inter_workcell_domain_id}\n"
     if run_workcell_1.perform(context).lower() == "true":
         log_msg += f"Workcell 1 has ROS_DOMAIN_ID {workcell_1_domain_id}\n"
     if run_workcell_2.perform(context).lower() == "true":
         log_msg += f"Workcell 2 has ROS_DOMAIN_ID {workcell_2_domain_id}\n"
 
-    launch_control_center = GroupAction(
+    main_bt_filename = "main.xml"
+    remap_task_types = """{
+                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                    }"""
+    rviz_config_filename = "nexus_panel.rviz"
+    if (use_rmf_transporter.perform(context).lower() == "true"):
+        remap_task_types = """{
+                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
+                        }"""
+        main_bt_filename = "main_rmf.xml"
+        rviz_config_filename = "nexus_panel_rmf.rviz"
+
+    log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
+    nexus_rviz_config = os.path.join(
+        get_package_share_directory("nexus_integration_tests"), "rviz", rviz_config_filename)
+
+    launch_inter_workcell = GroupAction(
         actions=[
             IncludeLaunchDescription(
                 [
@@ -89,17 +107,21 @@ def launch_setup(context, *args, **kwargs):
                         [
                             FindPackageShare("nexus_integration_tests"),
                             "launch",
-                            "control_center.launch.py",
+                            "inter_workcell.launch.py",
                         ]
                     )
                 ],
                 launch_arguments={
-                    "ros_domain_id": str(control_center_domain_id),
+                    "ros_domain_id": str(inter_workcell_domain_id),
                     "zenoh_config_package": "nexus_integration_tests",
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
+                    "use_rmf_transporter": use_rmf_transporter,
                     "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
                     "headless": headless,
+                    "main_bt_filename": main_bt_filename,
+                    "remap_task_types": remap_task_types,
+                    "nexus_rviz_config": nexus_rviz_config,
                 }.items(),
             ),
         ],
@@ -193,7 +215,7 @@ def launch_setup(context, *args, **kwargs):
 
     return [
         LogInfo(msg=log_msg),
-        launch_control_center,
+        launch_inter_workcell,
         launch_workcell_1,
         launch_workcell_2,
     ]
@@ -206,6 +228,12 @@ def generate_launch_description():
                 "headless",
                 default_value="true",
                 description="Launch in headless mode (no gui)",
+            ),
+            DeclareLaunchArgument(
+                "use_rmf_transporter",
+                default_value="false",
+                description="Set true to rely on an Open-RMF managed fleet to transport material\
+                between workcells.",
             ),
             DeclareLaunchArgument(
                 "use_zenoh_bridge",

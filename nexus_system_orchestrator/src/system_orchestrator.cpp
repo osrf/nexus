@@ -19,6 +19,7 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
+#include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
@@ -501,6 +502,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       });
     });
 
+  bt_factory->registerBuilder<AssignTransporterWorkcell>("AssignTransporterWorkcell",
+    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<AssignTransporterWorkcell>(name, config,
+        this->shared_from_this(), ctx);
+    });
+
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -852,7 +860,7 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
         std::make_shared<endpoints::RemovePendingTaskService::ServiceType::Request>();
       req->task_id = task_id;
       const auto resp =
-        this->_workcell_sessions.at(task_id)->remove_pending_task_client->
+        this->_workcell_sessions.at(wc_id)->remove_pending_task_client->
         send_request(req);
       if (!resp->success)
       {

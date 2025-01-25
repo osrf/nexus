@@ -15,8 +15,12 @@ set(dep_pkgs
   nexus_common
   nexus_endpoints
   nexus_orchestrator_msgs
+  nlohmann_json
   rclcpp
   rclcpp_lifecycle
+  rmf_dispenser_msgs
+  rmf_task_msgs
+  yaml_cpp_vendor
   yaml-cpp
 )
 foreach(pkg ${dep_pkgs})
@@ -80,7 +84,7 @@ target_link_libraries(${PROJECT_NAME}
     BT::behaviortree_cpp_v3
     rclcpp::rclcpp
     rclcpp_lifecycle::rclcpp_lifecycle
-    yaml-cpp
+    yaml-cpp::yaml-cpp
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -126,6 +130,8 @@ add_library(nexus_builtin_capabilities SHARED
   src/capabilities/gripper_control.cpp
   src/capabilities/plan_motion_capability.cpp
   src/capabilities/plan_motion.cpp
+  src/capabilities/rmf_request.cpp
+  src/capabilities/rmf_request_capability.cpp
 )
 
 target_compile_options(nexus_builtin_capabilities PUBLIC INTERFACE cxx_std_17)
@@ -135,9 +141,13 @@ target_link_libraries(nexus_builtin_capabilities
     ${PROJECT_NAME}
     nexus_common::nexus_common
     nexus_endpoints::nexus_endpoints
+    nlohmann_json::nlohmann_json
     pluginlib::pluginlib
     tf2::tf2
     tf2_ros::tf2_ros
+    ${rmf_dispenser_msgs_TARGETS}
+    ${rmf_task_msgs_TARGETS}
+    yaml-cpp
 )
 
 install(

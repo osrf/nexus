@@ -13,13 +13,17 @@
   <depend>nexus_common</depend>
   <depend>nexus_endpoints</depend>
   <depend>nexus_orchestrator_msgs</depend>
+  <depend>nlohmann-json-dev</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
+  <depend>rmf_dispenser_msgs</depend>
+  <depend>rmf_task_msgs</depend>
   <depend>rmf_utils</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
+  <depend>yaml_cpp_vendor</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

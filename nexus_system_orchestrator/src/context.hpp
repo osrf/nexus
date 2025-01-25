@@ -66,7 +66,7 @@ public: std::vector<std::string> errors;
 public: std::string task_results;
 
   /**
-   * Map of task ids and their queued signals.
+   * Map of workcell task ids and their queued signals.
    */
 public: std::unordered_map<std::string,
     std::vector<std::string>> queued_signals;

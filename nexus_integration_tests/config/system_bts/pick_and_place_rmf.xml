@@ -1,0 +1,12 @@
+<root main_tree_to_execute="pick_and_place">
+  <BehaviorTree ID="pick_and_place">
+    <ReactiveSequence>
+      <!--IsPauseTriggered paused="{paused}"/-->
+      <Sequence>
+        <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+        <!-- The transporter will listen and send an appropriate dispenser result for RMF or noop for conveyor belt-->
+        <SendSignal task="{transport_task}" signal="{workcell}"/>
+      </Sequence>
+    </ReactiveSequence>
+  </BehaviorTree>
+</root>
