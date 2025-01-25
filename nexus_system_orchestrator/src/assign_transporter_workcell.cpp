@@ -19,16 +19,19 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "dispatch_transporter.hpp"
+#include "assign_transporter_workcell.hpp"
 
 namespace nexus::system_orchestrator {
 
-BT::PortsList DispatchTransporter::providedPorts()
+BT::PortsList AssignTransporterWorkcell::providedPorts()
 {
-  return {BT::OutputPort<std::string>("result"), BT::OutputPort<WorkcellTask>("transport_task") };
+  return {
+    BT::OutputPort<std::string>("transporter_id"),
+    BT::OutputPort<WorkcellTask>("transport_task")
+  };
 }
 
-BT::NodeStatus DispatchTransporter::onStart()
+BT::NodeStatus AssignTransporterWorkcell::onStart()
 {
   auto node = this->_w_node.lock();
   if (!node)
@@ -86,7 +89,7 @@ BT::NodeStatus DispatchTransporter::onStart()
   return BT::NodeStatus::RUNNING;
 }
 
-BT::NodeStatus DispatchTransporter::onRunning()
+BT::NodeStatus AssignTransporterWorkcell::onRunning()
 {
   auto result = this->_update_ongoing_requests();
   if (result != BT::NodeStatus::RUNNING)
@@ -97,13 +100,13 @@ BT::NodeStatus DispatchTransporter::onRunning()
   return result;
 }
 
-void DispatchTransporter::onHalted()
+void AssignTransporterWorkcell::onHalted()
 {
   // can't cancel a service call, so we just drop the requests.
   this->_cleanup_pending_requests();
 }
 
-void DispatchTransporter::_cleanup_pending_requests()
+void AssignTransporterWorkcell::_cleanup_pending_requests()
 {
   for (auto& [_, ongoing_req] : this->_ongoing_requests)
   {
@@ -111,7 +114,7 @@ void DispatchTransporter::_cleanup_pending_requests()
   }
 }
 
-BT::NodeStatus DispatchTransporter::_update_ongoing_requests()
+BT::NodeStatus AssignTransporterWorkcell::_update_ongoing_requests()
 {
   auto node = this->_w_node.lock();
   if (!node)
@@ -153,7 +156,7 @@ BT::NodeStatus DispatchTransporter::_update_ongoing_requests()
           node->get_logger(), "[%s]: Bid awarded to [%s]",
           this->name().c_str(),
           workcell_id.c_str());
-        this->setOutput("result", workcell_id);
+        this->setOutput("transporter_id", workcell_id);
         this->setOutput("transport_task", this->_transport_task);
         // Update the context
         const auto& task_id = this->_transport_task.id;

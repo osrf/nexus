@@ -39,15 +39,15 @@
 namespace nexus::system_orchestrator {
 
 /**
- * Iterates over all the tasks and sends a request to the transporter to move
- * the item inbetween workcells.
+ * Iterates over all the assigned workcell tasks (from work order steps) and bid + assign a single
+ * transporter workcell to move material to the other workcells workcells.
  *
- * Input Ports:
- *   destination |std::string| Destination to transport to.
  * Output Ports:
- *   result |std::string| Id of the transporter assigned.
+ *   transporter_id |std::string| ID of the transporter workcell assigned to move
+ *   material between all other workcells.
+ *   transport_task |WorkcellTask| The WorkcellTask definition for the transporter workcell to execute.
  */
-class DispatchTransporter : public BT::StatefulActionNode
+class AssignTransporterWorkcell : public BT::StatefulActionNode
 {
 public: using IsTaskDoableService =
     endpoints::IsTaskDoableService;
@@ -57,7 +57,7 @@ public: using WorkcellTask =
 
 public: static BT::PortsList providedPorts();
 
-public: DispatchTransporter(const std::string& name,
+public: AssignTransporterWorkcell(const std::string& name,
     const BT::NodeConfiguration& config,
     rclcpp_lifecycle::LifecycleNode::WeakPtr w_node,
     std::shared_ptr<Context> ctx)
