@@ -15,6 +15,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(msg_files
+  "msg/Destination.msg"
   "msg/TransportationRequest.msg"
   "msg/TransporterState.msg"
 )

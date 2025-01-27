@@ -18,8 +18,11 @@
 #ifndef NEXUS_TRANSPORTER__TRANSPORTER_HPP
 #define NEXUS_TRANSPORTER__TRANSPORTER_HPP
 
+#include <vector>
+
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
+#include <nexus_transporter_msgs/msg/destination.hpp>
 #include <nexus_transporter_msgs/msg/transporter_state.hpp>
 
 #include <nexus_transporter/Itinerary.hpp>
@@ -39,6 +42,7 @@ public:
   using TransportFeedback = std::function<void(const TransporterState& state)>;
   /// A callback to execute once the transportation is completed
   using TransportCompleted = std::function<void(bool success)>;
+  /// Destination.
 
   /// Configure the transporter including getting relevant information from
   /// ROS 2 parameters. (Eg. List of destinations)
@@ -59,13 +63,13 @@ public:
   /// \param[in] job_id
   /// An id for this request.
   ///
-  /// \param[in] destination
-  /// The name of the destination
-  /// \return A nullopt is returned if the destination is not valid.
+  /// \param[in] destinations
+  /// A list of destinations.
+  /// \return A nullopt is returned if the destinations is not valid.
   // TODO(YV): Consider creating a separate class for destination
   virtual std::optional<Itinerary> get_itinerary(
     const std::string& job_id,
-    const std::string& destination) = 0;
+    const std::vector<Destination>& destinations) = 0;
 
   /// Request the transporter to go to a destination. This call should be
   /// non-blocking.

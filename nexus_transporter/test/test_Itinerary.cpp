@@ -17,13 +17,22 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 
+#include <nexus_transporter_msgs/msg/destination.hpp>
+
 #include <rmf_utils/catch.hpp>
 
+using Destination = nexus_transporter::Destination;
 //==============================================================================
 SCENARIO("Test Itinerary")
 {
   const std::string id = "A123";
-  const std::string destination = "workcell_1";
+  std::vector<Destination> destinations;
+  destinations.emplace_back(
+    nexus_transporter_msgs::build<Destination>()
+    .name("workcell_1")
+    .action(Destination::ACTION_PICKUP)
+    .params("")
+  );
   const std::string transporter_name = "pallet_1";
   const auto& now = rclcpp::Clock().now();
   const rclcpp::Time finish_time =
@@ -32,14 +41,18 @@ SCENARIO("Test Itinerary")
     now + rclcpp::Duration::from_seconds(5.0);
   auto itinerary = nexus_transporter::Itinerary(
     id,
-    destination,
+    std::move(destinations),
     transporter_name,
     finish_time,
     expiry_time
   );
 
   CHECK(itinerary.id() == id);
-  CHECK(itinerary.destination() == destination);
+  const auto & destinations_ = itinerary.destinations();
+  CHECK(destinations_.size() == 1);
+  CHECK(destinations_[0].name == "pallet_1");
+  CHECK(destinations_[0].action == Destination::ACTION_PICKUP);
+  CHECK(destinations_[0].params == "");
   CHECK(itinerary.transporter_name() == transporter_name);
   CHECK(itinerary.estimated_finish_time() == finish_time);
   CHECK(itinerary.expiration_time() == expiry_time);
@@ -52,9 +65,19 @@ SCENARIO("Test Itinerary")
   }
   WHEN("Setting new destination")
   {
-    const std::string new_destination = "workcell_2";
-    itinerary.destination(new_destination);
-    CHECK(itinerary.destination() == new_destination);
+    std::vector<Destination> new_destinations;
+    new_destinations.emplace_back(
+      nexus_transporter_msgs::build<Destination>()
+      .name("workcell_2")
+      .action(Destination::ACTION_DROPOFF)
+      .params("")
+    );
+    itinerary.destinations(std::move(new_destinations));
+    const auto & new_destinations_ = itinerary.destinations();
+    CHECK(new_destinations_.size() == 1);
+    CHECK(new_destinations_[0].name == "pallet_1");
+    CHECK(new_destinations_[0].action == Destination::ACTION_PICKUP);
+    CHECK(new_destinations_[0].params == "");
   }
   WHEN("Setting new transporter_name")
   {

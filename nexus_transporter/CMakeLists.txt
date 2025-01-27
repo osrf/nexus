@@ -20,6 +20,8 @@ set(dep_pkgs
   rclcpp_lifecycle
   rmf_utils
   tf2_ros
+  yaml_cpp_vendor
+  yaml-cpp
 )
 foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
@@ -37,6 +39,7 @@ target_link_libraries(nexus_transporter
     ${rclcpp_action_TARGETS}
     ${rclcpp_lifecycle_TARGETS}
     rmf_utils::rmf_utils
+    yaml-cpp::yaml-cpp
 )
 
 target_include_directories(nexus_transporter
@@ -68,6 +71,7 @@ target_link_libraries(nexus_transporter_component
     ${rclcpp_components_TARGETS}
     ${rclcpp_lifecycle_TARGETS}
     ${tf2_ros_TARGETS}
+    yaml-cpp::yaml-cpp
 )
 
 target_include_directories(nexus_transporter_component

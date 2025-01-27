@@ -17,16 +17,16 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 
-//==============================================================================
-namespace nexus_transporter {
+#include <stdexcept>
 
+namespace nexus_transporter {
 //==============================================================================
 class Itinerary::Implementation
 {
 public:
   // Documentation same as constructor input params
   std::string id;
-  std::string destination;
+  std::vector<Destination> destinations;
   std::string transporter_name;
   rclcpp::Time finish_time;
   rclcpp::Time expiration_time;
@@ -46,15 +46,15 @@ Itinerary& Itinerary::id(std::string id)
 }
 
 //==============================================================================
-const std::string& Itinerary::destination() const
+const std::vector<Destination>& Itinerary::destinations() const
 {
-  return _pimpl->destination;
+  return _pimpl->destinations;
 }
 
 //==============================================================================
-Itinerary& Itinerary::destination(std::string destination)
+Itinerary& Itinerary::destinations(std::vector<Destination> destinations_)
 {
-  _pimpl->destination = std::move(destination);
+  _pimpl->destinations = std::move(destinations_);
   return *this;
 }
 
@@ -100,14 +100,14 @@ Itinerary& Itinerary::expiration_time(rclcpp::Time time)
 //==============================================================================
 Itinerary::Itinerary(
   std::string id,
-  std::string destination,
+  std::vector<Destination> destinations,
   std::string transporter_name,
   rclcpp::Time estimated_finish_time,
   rclcpp::Time expiration_time)
 : _pimpl(rmf_utils::make_impl<Implementation>(
       Implementation{
         std::move(id),
-        std::move(destination),
+        std::move(destinations),
         std::move(transporter_name),
         std::move(estimated_finish_time),
         std::move(expiration_time)

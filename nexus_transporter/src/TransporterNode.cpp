@@ -18,12 +18,21 @@
 
 #include "TransporterNode.hpp"
 
-#include <rclcpp_components/register_node_macro.hpp>
-
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
 //==============================================================================
 namespace nexus_transporter {
+
+//==============================================================================
+TransporterNode::Data::Data()
+: transporter_loader("nexus_transporter", "nexus_transporter::Transporter"),
+  transporter(nullptr),
+  availability_srv(nullptr),
+  action_srv(nullptr),
+  tf_broadcaster(nullptr)
+{
+  // Do nothing.
+}
 
 //==============================================================================
 auto TransporterNode::on_configure(const State& /*previous_state*/)
@@ -54,19 +63,16 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
 
       RCLCPP_INFO(
         node->get_logger(),
-        "Received IsTransporterAvailable request from %s with id %s. "
-        "Destination: %s. Payload: [%s]",
+        "Received IsTransporterAvailable request from %s with id %s. ",
         request->request.requester.c_str(),
-        request->request.id.c_str(),
-        request->request.destination.c_str(),
-        request->request.payload.c_str()
+        request->request.id.c_str()
       );
 
-      if (request->request.destination.empty())
+      if (request->request.destinations.empty())
       {
         RCLCPP_WARN(
           node->get_logger(),
-          "Ignoring request as destination is empty."
+          "Ignoring request as destinations is empty."
         );
         return;
       }
@@ -92,14 +98,13 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
 
       auto itinerary = data->transporter->get_itinerary(
         request->request.id,
-        request->request.destination);
+        request->request.destinations);
 
       if (!itinerary.has_value())
       {
         RCLCPP_WARN(
           node->get_logger(),
-          "The transporter is not configured to go to destination [%s]",
-          request->request.destination.c_str()
+          "The transporter is not configured to go to destinations."
         );
 
         return;
@@ -187,12 +192,9 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received transport goal request from [%s] with id [%s] for destination "
-          "%s and payload [%s]",
+          "Received transport goal request from [%s] with id [%s].",
           goal->request.requester.c_str(),
-          goal->request.id.c_str(),
-          goal->request.destination.c_str(),
-          goal->request.payload.c_str()
+          goal->request.id.c_str()
         );
       }
 
@@ -212,16 +214,15 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       auto itinerary =
       data->transporter->get_itinerary(
         goal->request.id,
-        goal->request.destination);
+        goal->request.destinations);
       if (!itinerary.has_value())
       {
         if (node)
         {
           RCLCPP_ERROR(
             node->get_logger(),
-            "Unable to generate an itinerary for destination [%s]. "
-            "Rejecting goal...",
-            goal->request.destination.c_str()
+            "Unable to generate an itinerary for destinations. "
+            "Rejecting goal..."
           );
         }
         return rclcpp_action::GoalResponse::REJECT;
@@ -271,9 +272,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Successfully cancelled transport with id [%s] to destination [%s]",
-            it->second->id().c_str(),
-            it->second->destination().c_str()
+            "Successfully cancelled transport with id [%s].",
+            it->second->id().c_str()
           );
         }
         return rclcpp_action::CancelResponse::ACCEPT;
@@ -284,9 +284,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Unable to cancel transport with id [%s] to destination [%s]",
-            it->second->id().c_str(),
-            it->second->destination().c_str()
+            "Unable to cancel transport with id [%s]",
+            it->second->id().c_str()
           );
         }
         return rclcpp_action::CancelResponse::REJECT;
@@ -499,4 +498,5 @@ bool TransporterNode::registration_callback()
 
 } // namespace nexus_transporter
 
+#include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(nexus_transporter::TransporterNode)

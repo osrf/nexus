@@ -69,6 +69,8 @@ private:
   // Bundling all member variables into a data struct and capturing a shared_ptr
   // of this struct within lambdas of various callbacks will guarantee thread
   // safety over capturing "this" raw ptr by reference.
+  // TODO(Yadunund): Add an internal node and get rid of dependency on
+  // multithreaded executor.
   struct Data
   {
     /// pluginlib clasloader to dynamically load the transporter plugin.
@@ -102,15 +104,7 @@ private:
     // Weakptr to lifecycle node.
     std::weak_ptr<rclcpp_lifecycle::LifecycleNode> w_node;
 
-    Data()
-    : transporter_loader("nexus_transporter", "nexus_transporter::Transporter"),
-      transporter(nullptr),
-      availability_srv(nullptr),
-      action_srv(nullptr),
-      tf_broadcaster(nullptr)
-    {
-      // Do nothing.
-    }
+    Data();
   };
 
   std::shared_ptr<Data> _data;
