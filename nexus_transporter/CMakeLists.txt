@@ -93,7 +93,7 @@ target_compile_features(nexus_transporter_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(nexus_transporter_component
   PLUGIN "nexus_transporter::TransporterNode"
   EXECUTABLE nexus_transporter_node
-  EXECUTOR MultiThreadedExecutor)
+  EXECUTOR SingleThreadedExecutor)
 
 
 #===============================================================================

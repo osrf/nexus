@@ -31,6 +31,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <memory>
+#include <optional>
 
 //==============================================================================
 namespace nexus_transporter {
@@ -53,9 +54,6 @@ public:
   /// Constructor
   TransporterNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
-  /// Register the transporter to the system orchestrator.
-  bool registration_callback();
-
   /// rclcpp_lifecycle::LifecycleNode functions to override
   CallbackReturn on_configure(const State& previous_state) override;
   CallbackReturn on_cleanup(const State& previous_state) override;
@@ -65,7 +63,6 @@ public:
   CallbackReturn on_error(const State& previous_state) override;
 
 private:
-
   // Bundling all member variables into a data struct and capturing a shared_ptr
   // of this struct within lambdas of various callbacks will guarantee thread
   // safety over capturing "this" raw ptr by reference.
@@ -73,6 +70,9 @@ private:
   // multithreaded executor.
   struct Data
   {
+    /// Register the transporter to the system orchestrator.
+    void _register();
+
     /// pluginlib clasloader to dynamically load the transporter plugin.
     pluginlib::ClassLoader<Transporter> transporter_loader;
     /// The loaded transporter plugin.
@@ -90,10 +90,6 @@ private:
     rclcpp_action::Server<ActionType>::SharedPtr
       action_srv;
 
-    /// A separate callback group to prevent deadlock during state transitions
-    /// and other callbacks that need to execute.
-    rclcpp::CallbackGroup::SharedPtr cb_group;
-
     // Map itinerary id to GoalData.
     std::unordered_map<rclcpp_action::GoalUUID, std::unique_ptr<Itinerary>>
     itineraries;
@@ -104,12 +100,22 @@ private:
     // Weakptr to lifecycle node.
     std::weak_ptr<rclcpp_lifecycle::LifecycleNode> w_node;
 
+    // Client for registration.
+    rclcpp::Client<RegisterTransporter>::SharedPtr register_client;
+
+    // Asynchronously monitor whether the transport has registered with the
+    // system orchestrator.
+    std::optional<rclcpp::Client<RegisterTransporter>::
+      SharedFutureAndRequestId> ongoing_register;
+
+    rclcpp::TimerBase::SharedPtr register_timer;
+
+
     Data();
   };
 
   std::shared_ptr<Data> _data;
 
-  rclcpp::TimerBase::SharedPtr _register_timer;
 };
 
 } // namespace nexus_transporter
