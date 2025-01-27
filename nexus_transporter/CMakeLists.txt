@@ -95,6 +95,25 @@ rclcpp_components_register_node(nexus_transporter_component
   EXECUTABLE nexus_transporter_node
   EXECUTOR MultiThreadedExecutor)
 
+
+#===============================================================================
+# Mock transporter plugin.
+add_library(mock_transporter SHARED src/transporters/mock_transporter.cpp)
+target_include_directories(mock_transporter PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${pluginlub_INCLUDE_DIRS}
+)
+target_link_libraries(mock_transporter
+  PUBLIC
+    nexus_transporter
+    pluginlib::pluginlib
+)
+
+pluginlib_export_plugin_description_file(nexus_transporter src/transporters/plugins.xml)
+
+ament_export_libraries(mock_transporter)
+
 #===============================================================================
 find_package(ament_cmake_uncrustify QUIET)
 find_package(ament_cmake_catch2 QUIET)
@@ -134,6 +153,7 @@ install(
 
 install(
   TARGETS
+    mock_transporter
     nexus_transporter
     nexus_transporter_component
   EXPORT nexus_transporter

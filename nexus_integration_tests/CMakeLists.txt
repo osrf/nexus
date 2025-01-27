@@ -63,22 +63,6 @@ rclcpp_components_register_node(mock_emergency_alarm_component
 install(TARGETS mock_emergency_alarm_component RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 ###############################################################################
-
-add_library(mock_transporter SHARED src/mock_transporter.cpp)
-target_include_directories(mock_transporter PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-  ${pluginlub_INCLUDE_DIRS}
-)
-target_link_libraries(mock_transporter
-  PUBLIC
-    nexus_transporter::nexus_transporter
-    pluginlib::pluginlib
-)
-
-pluginlib_export_plugin_description_file(nexus_transporter mock_plugins.xml)
-
-ament_export_libraries(mock_transporter)
 ament_export_targets(export_${PROJECT_NAME})
 
 ###############################################################################
@@ -122,7 +106,6 @@ install(DIRECTORY ${zenoh_cfg_output_dir} DESTINATION share/${PROJECT_NAME}/conf
 
 install(
   TARGETS
-    mock_transporter
     mock_printer
     EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
