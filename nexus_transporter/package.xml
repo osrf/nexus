@@ -20,6 +20,9 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rmf_utils</depend>
   <depend>tf2_ros</depend>
+  <depend>yaml-cpp</depend>
+  <depend>yaml_cpp_vendor</depend>
+
 
   <test_depend>ament_cmake_catch2</test_depend>
   <test_depend>ament_cmake_uncrustify</test_depend>

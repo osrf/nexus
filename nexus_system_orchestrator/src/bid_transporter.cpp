@@ -17,6 +17,8 @@
 
 #include "bid_transporter.hpp"
 
+#include <nexus_transporter_msgs/msg/destination.hpp>
+
 namespace nexus::system_orchestrator {
 
 BT::PortsList BidTransporter::providedPorts()
@@ -50,7 +52,14 @@ BT::NodeStatus BidTransporter::onStart()
     std::make_shared<endpoints::IsTransporterAvailableService::ServiceType::Request>();
   req->request.id = this->_ctx->job_id;
   req->request.requester = node->get_name();
-  req->request.destination = destination;
+  // TODO(Yadunund): Parse work order and assign action type and params.
+  // See https://github.com/osrf/nexus/issues/68.
+  req->request.destinations.emplace_back(
+    nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
+      .name(destination)
+      .action(nexus_transporter_msgs::msg::Destination::ACTION_PICKUP)
+      .params("")
+  );
   // send request to all transporters in parallel
   for (auto& [transporter_id, session] : this->_ctx->transporter_sessions)
   {

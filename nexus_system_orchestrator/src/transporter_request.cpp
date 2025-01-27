@@ -18,6 +18,7 @@
 #include "transporter_request.hpp"
 
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
+#include <nexus_transporter_msgs/msg/destination.hpp>
 
 namespace nexus::system_orchestrator {
 
@@ -67,7 +68,14 @@ make_goal()
   endpoints::TransportAction::ActionType::Goal goal;
   goal.request.id = this->_ctx->job_id;
   goal.request.requester = this->_node->get_name();
-  goal.request.destination = this->_destination;
+  // TODO(Yadunund): Parse work order and assign action type and params.
+  // See https://github.com/osrf/nexus/issues/68.
+  goal.request.destinations.emplace_back(
+    nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
+      .name(this->_destination)
+      .action(nexus_transporter_msgs::msg::Destination::ACTION_PICKUP)
+      .params("")
+  );
   return goal;
 }
 
