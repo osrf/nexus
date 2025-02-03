@@ -23,7 +23,6 @@
 #include <nexus_capabilities/capability.hpp>
 #include <nexus_capabilities/context.hpp>
 #include <nexus_capabilities/context_manager.hpp>
-#include <nexus_capabilities/task.hpp>
 #include <nexus_capabilities/task_checker.hpp>
 
 #include <nexus_common/action_client_bt_node.hpp>

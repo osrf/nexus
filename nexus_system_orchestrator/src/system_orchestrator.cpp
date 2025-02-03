@@ -552,7 +552,7 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 {
   auto wo =
     YAML::Load(goal.order.work_order).as<common::WorkOrder>();
-  auto tasks = this->_parse_wo(wo);
+  auto tasks = this->_parse_wo(goal.order.id, wo);
 
   // using `new` because make_shared does not work with aggregate initializer
   std::shared_ptr<Context> ctx{new Context{*this,
@@ -684,7 +684,7 @@ void SystemOrchestrator::_init_job(
 }
 
 std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> SystemOrchestrator::
-_parse_wo(const common::WorkOrder& work_order)
+_parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
 {
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> tasks;
   const auto steps = work_order.steps();
@@ -692,7 +692,8 @@ _parse_wo(const common::WorkOrder& work_order)
   for (const auto& step : steps)
   {
     nexus_orchestrator_msgs::msg::WorkcellTask task;
-    task.id = std::to_string(step.id());
+    task.work_order_id = work_order_id;
+    task.task_id = std::to_string(step.id());
     task.type = step.process_id();
 
     // FIXME(koonpeng): data from arcstone is missing the work order item,
@@ -764,6 +765,7 @@ void SystemOrchestrator::_handle_register_workcell(
   const auto& workcell_id = req->description.workcell_id;
   WorkcellState state;
   state.workcell_id = workcell_id;
+  state.work_order_id = "";
   state.status = WorkcellState::STATUS_IDLE;
   this->_workcell_sessions.emplace(workcell_id,
     std::make_shared<WorkcellSession>(WorkcellSession{
@@ -1049,14 +1051,14 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
       if (assigned.empty())
       {
         RCLCPP_ERROR(this->get_logger(),
-        "No workcell is able perform task [%s]", task.id.c_str());
+        "No workcell is able perform task [%s]", task.task_id.c_str());
         on_done(std::nullopt);
       }
       else
       {
         RCLCPP_INFO(
           this->get_logger(), "Task [%s] assigned to workcell [%s]",
-          task.id.c_str(), assigned.c_str());
+          task.task_id.c_str(), assigned.c_str());
         on_done(assigned);
       }
     });
@@ -1076,7 +1078,7 @@ void SystemOrchestrator::_assign_all_tasks(
       [on_done, num_tasks, task_assignments, task](
         const std::optional<std::string>& assigned)
       {
-        task_assignments->emplace(task.id, assigned);
+        task_assignments->emplace(task.task_id, assigned);
         if (task_assignments->size() == num_tasks)
         {
           on_done(*task_assignments);

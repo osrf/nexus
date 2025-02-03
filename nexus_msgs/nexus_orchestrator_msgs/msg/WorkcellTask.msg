@@ -1,4 +1,8 @@
-string id
+# Work order of the task
+string work_order_id
+
+# Unique ID of the task
+string task_id
 
 # Type of the task
 string type

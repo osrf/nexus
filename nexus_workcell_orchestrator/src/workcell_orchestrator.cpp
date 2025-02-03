@@ -300,7 +300,7 @@ auto WorkcellOrchestrator::_configure(
       std::find_if(this->_ctxs.cbegin(), this->_ctxs.cend(),
       [&goal](const std::shared_ptr<Context>& ctx)
       {
-        return ctx->task.id == goal->task.id;
+        return ctx->task.task_id == goal->task.task_id;
       });
       if (it != this->_ctxs.cend() && (*it)->goal_handle)
       {
@@ -319,13 +319,13 @@ auto WorkcellOrchestrator::_configure(
       std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
       [&goal](const std::shared_ptr<Context>& ctx)
       {
-        return goal->task.id == ctx->task.id;
+        return goal->task.task_id == ctx->task.task_id;
       });
 
       if (it == this->_ctxs.end())
       {
         RCLCPP_WARN(this->get_logger(),
-        "Fail to cancel task [%s]: task does not exist", goal->task.id.c_str());
+        "Fail to cancel task [%s]: task does not exist", goal->task.task_id.c_str());
       }
       else
       {
@@ -354,7 +354,7 @@ auto WorkcellOrchestrator::_configure(
       std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
       [&goal_handle](const std::shared_ptr<Context>& ctx)
       {
-        return ctx->task.id == goal_handle->get_goal()->task.id;
+        return ctx->task.task_id == goal_handle->get_goal()->task.task_id;
       });
       if (it != this->_ctxs.end())
       {
@@ -381,7 +381,7 @@ auto WorkcellOrchestrator::_configure(
           return;
         }
         ctx->task_state.workcell_id = this->get_name();
-        ctx->task_state.task_id = ctx->task.id;
+        ctx->task_state.task_id = ctx->task.task_id;
         ctx->bt = this->_create_bt(ctx);
         ctx->bt_logging = std::make_unique<common::BtLogging>(ctx->bt,
         this->shared_from_this());
@@ -401,7 +401,7 @@ auto WorkcellOrchestrator::_configure(
       }
 
       RCLCPP_INFO(this->get_logger(), "Queuing task [%s]",
-      goal->task.id.c_str());
+      goal->task.task_id.c_str());
       ctx->task_state.status = TaskState::STATUS_QUEUED;
       auto fb = std::make_shared<WorkcellRequest::Feedback>();
       fb->state = ctx->task_state;
@@ -418,6 +418,7 @@ auto WorkcellOrchestrator::_configure(
         this->get_name()), endpoints::WorkcellStateTopic::qos());
   this->_cur_state = WorkcellState();
   this->_cur_state.workcell_id = this->get_name();
+  this->_cur_state.work_order_id = "";
   this->_cur_state.status = WorkcellState::STATUS_IDLE;
   this->_wc_state_pub->publish(this->_cur_state);
 
@@ -467,7 +468,7 @@ auto WorkcellOrchestrator::_configure(
         std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
         [&req](const std::shared_ptr<Context>& ctx)
         {
-          return ctx->task.id == req->task_id;
+          return ctx->task.task_id == req->task_id;
         });
         if (it != this->_ctxs.end())
         {
@@ -479,12 +480,12 @@ auto WorkcellOrchestrator::_configure(
         }
         const auto& ctx =
         this->_ctxs.emplace_back(std::make_shared<Context>(*this));
-        ctx->task.id = req->task_id;
+        ctx->task.task_id = req->task_id;
         ctx->task_state.task_id = req->task_id;
         ctx->task_state.workcell_id = this->get_name();
         ctx->task_state.status = TaskState::STATUS_ASSIGNED;
         resp->success = true;
-        RCLCPP_INFO(this->get_logger(), "queued task %s", ctx->task.id.c_str());
+        RCLCPP_INFO(this->get_logger(), "queued task %s", ctx->task.task_id.c_str());
       });
 
   this->_remove_pending_task_srv =
@@ -500,7 +501,7 @@ auto WorkcellOrchestrator::_configure(
         std::find_if(this->_ctxs.begin(), this->_ctxs.end(),
         [&req](const std::shared_ptr<Context>& ctx)
         {
-          return ctx->task.id == req->task_id;
+          return ctx->task.task_id == req->task_id;
         });
         if (it == this->_ctxs.end() ||
         (*it)->task_state.status != TaskState::STATUS_ASSIGNED)
@@ -705,7 +706,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
   {
     RCLCPP_WARN(
       this->get_logger(), "Not executing task [%s] that is already finished",
-      ctx->task.id.c_str());
+      ctx->task.task_id.c_str());
     return;
   }
 
@@ -720,7 +721,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
     {
       RCLCPP_INFO(
         this->get_logger(), "Task [%s] is pending, call \"%s\" to start this task",
-        ctx->task.id.c_str(),
+        ctx->task.task_id.c_str(),
         endpoints::WorkcellRequestAction::action_name(this->get_name()).c_str());
     }
     return;
@@ -728,7 +729,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
 
   if (ctx->task_state.status == TaskState::STATUS_QUEUED)
   {
-    RCLCPP_INFO(this->get_logger(), "Starting task [%s]", ctx->task.id.c_str());
+    RCLCPP_INFO(this->get_logger(), "Starting task [%s]", ctx->task.task_id.c_str());
     ctx->task_state.status = TaskState::STATUS_RUNNING;
     auto fb = std::make_shared<WorkcellRequest::Feedback>();
     fb->state = ctx->task_state;
@@ -755,7 +756,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
           RCLCPP_ERROR(
             this->get_logger(),
             "Failed executing task [%s]: unexpected BT status",
-            ctx->task.id.c_str());
+            ctx->task.task_id.c_str());
           this->_handle_command_failed(ctx);
           return;
         }
@@ -773,7 +774,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
 
   RCLCPP_WARN(
     this->get_logger(), "Failed executing task [%s]: unexpected status [%u]",
-    ctx->task.id.c_str(), ctx->task_state.status);
+    ctx->task.task_id.c_str(), ctx->task_state.status);
   ctx->bt.haltTree();
   this->_handle_command_failed(ctx);
   return;
@@ -790,7 +791,7 @@ void WorkcellOrchestrator::_tick_all_bts()
     {
       RCLCPP_WARN(
         this->get_logger(), "Cancelling all tasks because an ongoing task [%s] is being cancelled",
-        ctx->task.id.c_str());
+        ctx->task.task_id.c_str());
       // NOTE: iterators are invalidated, it is important to
       // not access them after this line.
       this->_cancel_all_tasks();
@@ -828,7 +829,7 @@ void WorkcellOrchestrator::_tick_all_bts()
   if (this->_ctxs.size() > 0)
   {
     new_state.status = WorkcellState::STATUS_BUSY;
-    new_state.task_id = this->_ctxs.front()->task.id;
+    new_state.task_id = this->_ctxs.front()->task.task_id;
   }
   else if (this->_ctxs.size() == 0)
   {
@@ -848,7 +849,7 @@ void WorkcellOrchestrator::_cancel_all_tasks()
   for (const auto& ctx: this->_ctxs)
   {
     RCLCPP_INFO(this->get_logger(), "Canceling task [%s]",
-      ctx->task.id.c_str());
+      ctx->task.task_id.c_str());
     this->_ctx_mgr->set_active_context(ctx);
     ctx->bt.haltTree();
     this->_handle_command_failed(ctx);
@@ -947,7 +948,7 @@ void WorkcellOrchestrator::_process_signal(
 {
   for (const auto& ctx : this->_ctxs)
   {
-    if (ctx->task.id == req->task_id)
+    if (ctx->task.task_id == req->task_id)
     {
       RCLCPP_INFO(
         this->get_logger(),

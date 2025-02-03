@@ -51,12 +51,12 @@ BT::NodeStatus ForEachTask::tick()
     try
     {
       this->setOutput("workcell",
-        this->_ctx->workcell_task_assignments.at(current_task.id));
+        this->_ctx->workcell_task_assignments.at(current_task.task_id));
     }
     catch (const std::out_of_range&)
     {
       RCLCPP_ERROR(this->_logger, "task [%s] not assigned to any workcell",
-        current_task.id.c_str());
+        current_task.task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
 

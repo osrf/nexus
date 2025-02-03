@@ -123,6 +123,7 @@ private:
   void _init_job(const std::shared_ptr<WorkOrderGoalHandle> goal_handle);
 
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> _parse_wo(
+    const std::string& work_order_id,
     const common::WorkOrder& work_order);
 
   void _handle_wo_cancel(
