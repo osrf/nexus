@@ -30,7 +30,7 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
   std::string raw{
     R"RAW(
       {
-        "number": "SO/2022/20/1-1",
+        "id": "SO/2022/20/1-1",
         "workInstructionName": "CV-299 (Rev 4)",
         "item": {
           "SkuId": "1001",
@@ -58,7 +58,7 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
 
   auto check_data = [](const WorkOrder& work_order)
     {
-      CHECK(work_order.number() == "SO/2022/20/1-1");
+      CHECK(work_order.id() == "SO/2022/20/1-1");
       CHECK(work_order.work_instruction_name() == "CV-299 (Rev 4)");
       const auto item = work_order.item();
       CHECK(item.sku_id() == "1001");

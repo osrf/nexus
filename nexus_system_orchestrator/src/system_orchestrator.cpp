@@ -552,11 +552,11 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 {
   auto wo =
     YAML::Load(goal.order.work_order).as<common::WorkOrder>();
-  auto tasks = this->_parse_wo(goal.order.id, wo);
+  auto tasks = this->_parse_wo(wo);
 
   // using `new` because make_shared does not work with aggregate initializer
   std::shared_ptr<Context> ctx{new Context{*this,
-      goal.order.id, wo, tasks, this->_task_remapper,
+      wo.id(), wo, tasks, this->_task_remapper,
       std::unordered_map<std::string, std::string>{},
       this->_workcell_sessions,
       this->_transporter_sessions, {}, nullptr,
@@ -564,7 +564,7 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
   auto bt = this->_create_bt(goal, ctx);
 
   const auto& [it,
-    inserted] = this->_jobs.emplace(goal.order.id, Job{std::move(bt), ctx});
+    inserted] = this->_jobs.emplace(wo.id(), Job{std::move(bt), ctx});
   if (!inserted)
   {
     auto result = std::make_shared<WorkOrderActionType::Result>();
@@ -587,7 +587,8 @@ void SystemOrchestrator::_init_job(
     return;
   }
 
-  const auto& work_order_id = goal_handle->get_goal()->order.id;
+  const std::string& work_order_id =
+    YAML::Load(goal_handle->get_goal()->order.work_order).as<common::WorkOrder>().id();
   if (!this->_jobs.count(work_order_id))
   {
     auto result = std::make_shared<WorkOrderActionType::Result>();
@@ -621,7 +622,7 @@ void SystemOrchestrator::_init_job(
             goal_handle->abort(result);
             job.state = WorkOrderState::STATE_FAILED;
             this->_publish_wo_states(job);
-            this->_jobs.erase(goal_handle->get_goal()->order.id);
+            this->_jobs.erase(work_order_id);
             return;
           }
           job.ctx->workcell_task_assignments.emplace(task_id,
@@ -692,7 +693,7 @@ std::string SystemOrchestrator::_generate_task_id(
 }
 
 std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> SystemOrchestrator::
-_parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
+_parse_wo(const common::WorkOrder& work_order)
 {
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> tasks;
   const auto steps = work_order.steps();
@@ -700,8 +701,8 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
   for (const auto& step : steps)
   {
     nexus_orchestrator_msgs::msg::WorkcellTask task;
-    task.work_order_id = work_order_id;
-    task.task_id = this->_generate_task_id(work_order_id, step.process_id());
+    task.work_order_id = work_order.id();
+    task.task_id = this->_generate_task_id(work_order.id(), step.process_id());
     task.type = step.process_id();
 
     // FIXME(koonpeng): data from arcstone is missing the work order item,
@@ -724,7 +725,7 @@ void SystemOrchestrator::_handle_wo_cancel(
     this->get_logger(), "Cancelling all work orders");
   for (auto& [job_id, job] : this->_jobs)
   {
-    RCLCPP_INFO(this->get_logger(), "Cancelling work orde [%s]",
+    RCLCPP_INFO(this->get_logger(), "Cancelling work order [%s]",
       job_id.c_str());
     this->_halt_job(job_id);
     this->_handle_wo_failed(job);
@@ -732,7 +733,7 @@ void SystemOrchestrator::_handle_wo_cancel(
     this->_publish_wo_states(job);
     RCLCPP_INFO(
       this->get_logger(), "Work order [%s] cancelled successfully",
-      goal.order.id.c_str());
+      job_id.c_str());
   }
   this->_jobs.clear();
 }
@@ -939,7 +940,7 @@ void SystemOrchestrator::_spin_bts_once()
         case BT::NodeStatus::SUCCESS: {
           RCLCPP_INFO(
             this->get_logger(), "Finished work order [%s]",
-            job.ctx->wo.number().c_str());
+            job.ctx->wo.id().c_str());
           auto result_msg = std::make_shared<WorkOrderActionType::Result>();
           auto report = job.bt_logging->generate_report();
           result_msg->message = common::ReportConverter::to_string(report);

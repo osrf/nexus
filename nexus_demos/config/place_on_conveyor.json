@@ -1,5 +1,5 @@
 {
-  "number": "test-2",
+  "id": "test-2",
   "workInstructionName": "Pick and Place",
   "item": {
     "SkuId": "productA",
