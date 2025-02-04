@@ -829,14 +829,17 @@ void WorkcellOrchestrator::_tick_all_bts()
   if (this->_ctxs.size() > 0)
   {
     new_state.status = WorkcellState::STATUS_BUSY;
+    new_state.work_order_id = this->_ctxs.front()->task.work_order_id;
     new_state.task_id = this->_ctxs.front()->task.task_id;
   }
   else if (this->_ctxs.size() == 0)
   {
     new_state.status = WorkcellState::STATUS_IDLE;
+    new_state.work_order_id = "";
     new_state.task_id = "";
   }
-  if (new_state.task_id != this->_cur_state.task_id ||
+  if (new_state.work_order_id != this->_cur_state.work_order_id ||
+    new_state.task_id != this->_cur_state.task_id ||
     new_state.status != this->_cur_state.status)
   {
     this->_cur_state = new_state;
