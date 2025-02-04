@@ -695,7 +695,7 @@ std::string SystemOrchestrator::_generate_task_id(
 }
 
 std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> SystemOrchestrator::
-_parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
+_parse_wo(const common::WorkOrder& work_order)
 {
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> tasks;
   const auto steps = work_order.steps();
