@@ -74,6 +74,7 @@ class PickAndPlaceTest(NexusTestCase):
     async def test_pick_and_place_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
+        goal_msg.order.id = 'test_pick_and_place_rmf'
         with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
@@ -101,10 +102,10 @@ class PickAndPlaceTest(NexusTestCase):
             self.assertEqual(len(msg.task_states), 3)
             state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "1")
+            self.assertEqual(state.task_id, "test_pick_and_place_rmf/place_on_conveyor")
             state: TaskState = msg.task_states[2]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "2")
+            self.assertEqual(state.task_id, "test_pick_and_place_rmf/pick_from_conveyor")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)
