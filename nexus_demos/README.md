@@ -54,12 +54,12 @@ ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_2 ros_domain_id
 
 `place_on_conveyor` work order:
 ```bash
-ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {id: '23', work_order: '$(cat config/place_on_conveyor.json)'}}"
+ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {work_order: '$(cat config/place_on_conveyor.json)'}}"
 ```
 
 `pick_from_conveyor` work order:
 ```bash
-ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {id: '24', work_order: '$(cat config/pick_from_conveyor.json)'}}"
+ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {work_order: '$(cat config/pick_from_conveyor.json)'}}"
 ```
 
 ## Debugging

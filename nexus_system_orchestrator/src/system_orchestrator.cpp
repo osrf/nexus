@@ -588,7 +588,7 @@ void SystemOrchestrator::_init_job(
     return;
   }
 
-  const auto& work_order_id = goal_handle->get_goal()->order.id;
+  const std::string& work_order_id =goal_handle->get_goal()->order.id;
   if (!this->_jobs.count(work_order_id))
   {
     auto result = std::make_shared<WorkOrderActionType::Result>();
