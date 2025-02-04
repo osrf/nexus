@@ -68,11 +68,6 @@ public: struct Step
 
     Step() {}
 
-    int64_t id() const
-    {
-      return this->yaml["id"].as<double>();
-    }
-
     std::string process_id() const
     {
       return this->yaml["processId"].as<std::string>();

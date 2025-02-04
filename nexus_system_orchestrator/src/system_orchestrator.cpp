@@ -683,6 +683,14 @@ void SystemOrchestrator::_init_job(
   }
 }
 
+std::string SystemOrchestrator::_generate_task_id(
+  const std::string& work_order_id, const std::string& process_id) const
+{
+  std::stringstream ss;
+  ss << work_order_id << "/" << process_id;
+  return ss.str();
+}
+
 std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> SystemOrchestrator::
 _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
 {
@@ -693,7 +701,7 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
   {
     nexus_orchestrator_msgs::msg::WorkcellTask task;
     task.work_order_id = work_order_id;
-    task.task_id = std::to_string(step.id());
+    task.task_id = this->_generate_task_id(work_order_id, step.process_id());
     task.type = step.process_id();
 
     // FIXME(koonpeng): data from arcstone is missing the work order item,
