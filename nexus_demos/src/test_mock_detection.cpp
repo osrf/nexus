@@ -28,7 +28,7 @@ SCENARIO("Test Detection Mock")
   try
   {
     package_prefix =
-      ament_index_cpp::get_package_prefix("nexus_integration_tests");
+      ament_index_cpp::get_package_prefix("nexus_demos");
   }
   catch (ament_index_cpp::PackageNotFoundError& e)
   {
@@ -36,7 +36,7 @@ SCENARIO("Test Detection Mock")
   }
 
   auto path = rcpputils::fs::path(package_prefix) / "share" /
-    "nexus_integration_tests" / "config" / "detection.yaml";
+    "nexus_demos" / "config" / "detection.yaml";
 
   auto node = std::make_shared<DetectorNode>(
     rclcpp::NodeOptions(), path.string());

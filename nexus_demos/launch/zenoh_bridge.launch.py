@@ -94,7 +94,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             name="zenoh_config_package",
-            default_value="nexus_integration_tests",
+            default_value="nexus_demos",
             description="Package containing Zenoh DDS bridge configurations",
         )
     )
