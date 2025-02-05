@@ -1,5 +1,7 @@
 # nexus_demos
 
+![](../docs/media/nexus_demo.png)
+
 ## Launch system and workcell orchestrators and all mock nodes
 The [launch.py script](launch/launch.py) will launch the system orchestrator and 2 workcells orchestrators (each with a IRB910SC and IRB1300 robot), along with a Zenoh bridge to link selected ROS endpoints between them. These 3 orchestrators and their accompany components will be in different ROS_DOMAIN_IDs. To launch these components individually, use the following examples given.
 

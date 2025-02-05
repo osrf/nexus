@@ -71,9 +71,6 @@ Further detailed instructions on running the Zenoh bridges with said configurati
 
 Follow instructions [here](nexus_demos/README.md) to run pick and place demonstrations with a line comprising of two workcells that perform different types of tasks.
 
-TODO: Add a dedicated demo package.
-
-
 ## Generating Endpoints
 
 The `nexus_endpoints` package contains ROS topics, services and actions used by NEXUS. The package is generated from [nexus_endpoints.redf.yaml](./nexus_endpoints.redf.yaml) using `redf`. rust is required to generated the package, the easiest way to install rust is via [rustup](https://rustup.rs/).
