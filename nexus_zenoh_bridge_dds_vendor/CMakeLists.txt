@@ -8,26 +8,19 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_vendor_package REQUIRED)
 
-set(ZENOH_VERSION "1.0.3")
-set(BINARY_URL "https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds/releases/download/${ZENOH_VERSION}/zenoh-plugin-ros2dds-${ZENOH_VERSION}-x86_64-unknown-linux-gnu-standalone.zip")
-set(BINARY_DIR "${CMAKE_BINARY_DIR}/download")
-file(DOWNLOAD ${BINARY_URL} ${BINARY_DIR}/zenoh-plugin-ros2dds.zip)
-
-find_program(UNZIP_EXECUTABLE unzip)
-if(NOT UNZIP_EXECUTABLE)
-  message(FATAL_ERROR "unzip command not found. Please install it.")
-endif()
-
-execute_process(
-  COMMAND ${UNZIP_EXECUTABLE} ${BINARY_DIR}/zenoh-plugin-ros2dds.zip
-  WORKING_DIRECTORY ${BINARY_DIR}
+ament_vendor(zeno_bridge_dds_vendor
+  VCS_URL https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds.git
+  VCS_VERSION 1.0.3
 )
 
+# TODO(sloretz) make a nice way to get this path from ament_vendor
+set(INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/zeno_bridge_dds_vendor-prefix/install")
 install(
-  FILES ${BINARY_DIR}/zenoh-bridge-ros2dds
+  DIRECTORY "${INSTALL_DIR}/lib/zenoh_bridge_ros2dds/"
   DESTINATION "lib/${PROJECT_NAME}"
-  PERMISSIONS OWNER_EXECUTE
+  USE_SOURCE_PERMISSIONS
 )
 
 ament_package()

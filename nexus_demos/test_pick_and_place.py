@@ -38,7 +38,7 @@ class PickAndPlaceTest(NexusTestCase):
         # processes from previous test cases. As a result, workcell registration
         # fails for this testcase due to multiple bridges remaining active.
         # Hence we explicitly kill any zenoh processes before launching the test.
-        # subprocess.Popen('pkill -9 -f zenoh', shell=True)
+        subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
             ("ros2", "launch", "nexus_demos", "launch.py"),
