@@ -214,7 +214,13 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
           return rclcpp_action::GoalResponse::REJECT;
         }
 
-        this->_create_job(*goal);
+        const std::string work_order_id = rclcpp_action::to_string(uuid);
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Accepting new work order with id [%s]",
+          work_order_id.c_str());
+
+        this->_create_job(work_order_id, *goal);
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       }
       catch (const std::exception& e)
@@ -548,7 +554,8 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
 }
 
-void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
+void SystemOrchestrator::_create_job(
+  const std::string& work_order_id, const WorkOrderActionType::Goal& goal)
 {
   const std::string& work_order_id = goal.order.work_order_id;
   auto wo =
@@ -695,7 +702,7 @@ std::string SystemOrchestrator::_generate_task_id(
 }
 
 std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> SystemOrchestrator::
-_parse_wo(const common::WorkOrder& work_order)
+_parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
 {
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> tasks;
   const auto steps = work_order.steps();
