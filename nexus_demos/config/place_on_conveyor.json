@@ -1,6 +1,6 @@
 {
   "id": "test-2",
-  "workInstructionName": "Pick and Place",
+  "workInstructionName": "Place on conveyor",
   "item": {
     "SkuId": "productA",
     "description": "productA",

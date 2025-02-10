@@ -113,7 +113,8 @@ private:
    * required contexts and start the job.
    * @throws std::exception
    */
-  void _create_job(const WorkOrderActionType::Goal& goal);
+  void _create_job(
+    const std::string& work_order_id, const WorkOrderActionType::Goal& goal);
 
   /**
    * Assigns all tasks and start the job associated with the goal handle.
@@ -123,10 +124,12 @@ private:
   void _init_job(const std::shared_ptr<WorkOrderGoalHandle> goal_handle);
 
   std::string _generate_task_id(
-    const std::string& work_order_id, const std::string& process_id) const;
+    const std::string& work_order_id,
+    const std::string& process_id,
+    uint64_t step_index) const;
 
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> _parse_wo(
-    const common::WorkOrder& work_order);
+    const std::string& work_order_id, const common::WorkOrder& work_order);
 
   void _handle_wo_cancel(
     const WorkOrderActionType::Goal& goal);

@@ -101,10 +101,10 @@ class PickAndPlaceTest(NexusTestCase):
             self.assertEqual(len(msg.task_states), 3)
             state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "test-1/place_on_conveyor")
+            self.assertEqual(state.task_id, f"{str(goal_handle.goal_id)}/place_on_conveyor/0")
             state: TaskState = msg.task_states[2]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "test-1/pick_from_conveyor")
+            self.assertEqual(state.task_id, f"{str(goal_handle.goal_id)}/pick_from_conveyor/1")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)

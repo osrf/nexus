@@ -86,11 +86,6 @@ public: WorkOrder(YAML::Node yaml)
 
 public: WorkOrder() {}
 
-public: std::string id() const
-  {
-    return this->yaml["id"].as<std::string>();
-  }
-
 public: std::string work_instruction_name() const
   {
     return this->yaml["workInstructionName"].as<std::string>();
