@@ -15,6 +15,7 @@
 import os
 import sys
 from typing import cast
+import uuid
 
 from action_msgs.msg import GoalStatus
 from managed_process import managed_process
@@ -37,7 +38,7 @@ class PickAndPlaceTest(NexusTestCase):
         # processes from previous test cases. As a result, workcell registration
         # fails for this testcase due to multiple bridges remaining active.
         # Hence we explicitly kill any zenoh processes before launching the test.
-        subprocess.Popen('pkill -9 -f zenoh', shell=True)
+        # subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
                 (
@@ -96,15 +97,16 @@ class PickAndPlaceTest(NexusTestCase):
         # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
         #   high load so we only check the last feedback as a workaround.
         self.assertGreater(len(feedbacks), 0)
+        work_order_id = uuid.UUID(bytes=bytes(goal_handle.goal_id.uuid))
         for msg in feedbacks:
             # The first task is transportation
             self.assertEqual(len(msg.task_states), 3)
             state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, f"{str(goal_handle.goal_id)}/place_on_conveyor/0")
+            self.assertEqual(state.task_id, f"{str(work_order_id)}/place_on_conveyor/0")
             state: TaskState = msg.task_states[2]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, f"{str(goal_handle.goal_id)}/pick_from_conveyor/1")
+            self.assertEqual(state.task_id, f"{str(work_order_id)}/pick_from_conveyor/1")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)
