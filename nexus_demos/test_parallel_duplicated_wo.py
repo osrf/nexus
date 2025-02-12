@@ -38,7 +38,7 @@ class ParallelWoTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_integration_tests", "launch.py"),
+            ("ros2", "launch", "nexus_demos", "launch.py"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
@@ -65,6 +65,7 @@ class ParallelWoTest(NexusTestCase):
         New jobs should be rejected when the max number of jobs is already executing.
         """
         goal_msg = ExecuteWorkOrder.Goal()
+        goal_msg.order.id = "1"
         with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
         goal_handle = cast(
@@ -73,6 +74,7 @@ class ParallelWoTest(NexusTestCase):
         self.assertTrue(goal_handle.accepted)
 
         goal_msg_2 = ExecuteWorkOrder.Goal()
+        goal_msg_2.order.id = "2"
         with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg_2.order.work_order = f.read()
         goal_handle_2 = cast(
@@ -81,6 +83,7 @@ class ParallelWoTest(NexusTestCase):
         self.assertTrue(goal_handle_2.accepted)
 
         goal_msg_3 = goal_msg
+        goal_msg_3.order.id = "3"
         goal_handle_3 = cast(
             ClientGoalHandle, await self.action_client.send_goal_async(goal_msg_3)
         )

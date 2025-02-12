@@ -15,7 +15,6 @@
 import os
 import sys
 from typing import cast
-import uuid
 
 from action_msgs.msg import GoalStatus
 from managed_process import managed_process
@@ -68,6 +67,7 @@ class PickAndPlaceTest(NexusTestCase):
     async def test_pick_and_place_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
+        goal_msg.order.id = "1"
         with open(f"{os.path.dirname(__file__)}/config/pick_from_conveyor.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
@@ -90,12 +90,11 @@ class PickAndPlaceTest(NexusTestCase):
         # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
         #   high load so we only check the last feedback as a workaround.
         self.assertGreater(len(feedbacks), 0)
-        work_order_id = uuid.UUID(bytes=bytes(goal_handle.goal_id.uuid))
         for msg in feedbacks:
             self.assertEqual(len(msg.task_states), 1)
             state: TaskState = msg.task_states[0]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id,f"{str(work_order_id)}/pick_from_conveyor/0")
+            self.assertEqual(state.task_id,"1/pick_from_conveyor/0")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)

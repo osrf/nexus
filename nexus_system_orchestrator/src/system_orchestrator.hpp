@@ -113,8 +113,7 @@ private:
    * required contexts and start the job.
    * @throws std::exception
    */
-  void _create_job(
-    const std::string& work_order_id, const WorkOrderActionType::Goal& goal);
+  void _create_job(const WorkOrderActionType::Goal& goal);
 
   /**
    * Assigns all tasks and start the job associated with the goal handle.
