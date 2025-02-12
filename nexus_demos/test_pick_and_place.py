@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Open Source Robotics Foundation
+# Copyright (C) 2022 Johnson & Johnson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,24 +40,17 @@ class PickAndPlaceTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-                (
-                     "ros2",
-                     "launch",
-                     "nexus_integration_tests",
-                     "launch.py",
-                     "sim_update_rate:=10000",
-                     "use_rmf_transporter:=true"
-                 ),
+            ("ros2", "launch", "nexus_demos", "launch.py"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
         self.wait_for_nodes("system_orchestrator")
         await self.wait_for_lifecycle_active("system_orchestrator")
 
-        await self.wait_for_workcells("workcell_1", "workcell_2", "rmf_nexus_transporter")
+        await self.wait_for_workcells("workcell_1", "workcell_2")
         print("all workcells are ready")
-        await self.wait_for_robot_state()
-        print("AMRs are ready")
+        await self.wait_for_transporters("transporter_node")
+        print("all transporters are ready")
 
         # give some time for discovery to happen
         await self.ros_sleep(5)
@@ -74,7 +67,7 @@ class PickAndPlaceTest(NexusTestCase):
     async def test_pick_and_place_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_from_conveyor.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
         fb_fut = Future()
@@ -97,18 +90,10 @@ class PickAndPlaceTest(NexusTestCase):
         #   high load so we only check the last feedback as a workaround.
         self.assertGreater(len(feedbacks), 0)
         for msg in feedbacks:
-            # The first task is transportation
-            self.assertEqual(len(msg.task_states), 3)
-            state: TaskState = msg.task_states[1]  # type: ignore
-            self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "1")
-            state: TaskState = msg.task_states[2]  # type: ignore
+            self.assertEqual(len(msg.task_states), 1)
+            state: TaskState = msg.task_states[0]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "2")
+            self.assertEqual(state.task_id, "1")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
-        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
-        state: TaskState = feedbacks[-1].task_states[1]  # type: ignore
-        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
-        state: TaskState = feedbacks[-1].task_states[2]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)

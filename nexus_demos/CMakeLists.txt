@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-set(PROJECT_NAME nexus_integration_tests)
+set(PROJECT_NAME nexus_demos)
 project(${PROJECT_NAME} VERSION 0.0.1)
 
 find_package(ament_cmake REQUIRED)
@@ -152,7 +152,7 @@ if(BUILD_TESTING)
     find_package(rcpputils REQUIRED)
 
     # To run the test use:
-    # ros2 run nexus_integration_tests test_mocks
+    # ros2 run nexus_demos test_mocks
     add_executable(test_mocks
       test/main.cpp
       src/test_mock_detection.cpp

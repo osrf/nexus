@@ -142,7 +142,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             "launch",
                             "rmf_transporter.launch.xml",
                         ]
@@ -182,7 +182,7 @@ def launch_setup(context, *args, **kwargs):
     mock_emergency_alarm_node = LifecycleNode(
         name="mock_emergency_alarm",
         namespace="",
-        package="nexus_integration_tests",
+        package="nexus_demos",
         executable="mock_emergency_alarm",
     )
 
@@ -200,7 +200,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             "launch",
                             "zenoh_bridge.launch.py",
                         ]
@@ -264,7 +264,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 name="zenoh_config_package",
-                default_value="nexus_integration_tests",
+                default_value="nexus_demos",
                 description="Package containing Zenoh DDS bridge configurations",
             ),
             DeclareLaunchArgument(
@@ -299,12 +299,12 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "nexus_rviz_config",
-                default_value=os.path.join(get_package_share_directory("nexus_integration_tests"), "rviz", "nexus_panel.rviz"),
+                default_value=os.path.join(get_package_share_directory("nexus_demos"), "rviz", "nexus_panel.rviz"),
                 description="Absolute path to an RViZ config file.",
             ),
             DeclareLaunchArgument(
                 "system_orchestrator_bt_dir",
-                default_value=os.path.join(get_package_share_directory("nexus_integration_tests"), "config", "system_bts"),
+                default_value=os.path.join(get_package_share_directory("nexus_demos"), "config", "system_bts"),
                 description="Absolute path directory containing BTs for the system orchestrator.",
             ),
             DeclareLaunchArgument(

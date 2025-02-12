@@ -97,7 +97,7 @@ def launch_setup(context, *args, **kwargs):
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(
-        get_package_share_directory("nexus_integration_tests"), "rviz", rviz_config_filename)
+        get_package_share_directory("nexus_demos"), "rviz", rviz_config_filename)
 
     launch_inter_workcell = GroupAction(
         actions=[
@@ -105,7 +105,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             "launch",
                             "inter_workcell.launch.py",
                         ]
@@ -113,7 +113,7 @@ def launch_setup(context, *args, **kwargs):
                 ],
                 launch_arguments={
                     "ros_domain_id": str(inter_workcell_domain_id),
-                    "zenoh_config_package": "nexus_integration_tests",
+                    "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
                     "use_rmf_transporter": use_rmf_transporter,
                     "transporter_plugin": "nexus_transporter::MockTransporter",
@@ -133,7 +133,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             "launch",
                             "workcell.launch.py",
                         ]
@@ -142,15 +142,15 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "workcell_id": "workcell_1",
                     "bt_path": (
-                        FindPackageShare("nexus_integration_tests"),
+                        FindPackageShare("nexus_demos"),
                         "/config/workcell_1_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "ros_domain_id": str(workcell_1_domain_id),
                     "headless": headless,
                     "use_zenoh_bridge": use_zenoh_bridge,
-                    "controller_config_package": "nexus_integration_tests",
-                    "planner_config_package": "nexus_integration_tests",
+                    "controller_config_package": "nexus_demos",
+                    "planner_config_package": "nexus_demos",
                     "planner_config_file": "abb_irb910sc_planner_params.yaml",
                     "support_package": "abb_irb910sc_support",
                     "robot_xacro_file": "irb910sc_3_45.xacro",
@@ -162,7 +162,7 @@ def launch_setup(context, *args, **kwargs):
                     "dispenser_properties": "productA",
                     "use_fake_hardware": use_fake_hardware,
                     "robot_ip": robot1_ip,
-                    "zenoh_config_package": "nexus_integration_tests",
+                    "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_1.json5",
                 }.items(),
                 condition=IfCondition(run_workcell_1),
@@ -176,7 +176,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             "launch",
                             "workcell.launch.py",
                         ]
@@ -185,15 +185,15 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "workcell_id": "workcell_2",
                     "bt_path": (
-                        FindPackageShare("nexus_integration_tests"),
+                        FindPackageShare("nexus_demos"),
                         "/config/workcell_2_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "ros_domain_id": str(workcell_2_domain_id),
                     "headless": headless,
                     "use_zenoh_bridge": use_zenoh_bridge,
-                    "controller_config_package": "nexus_integration_tests",
-                    "planner_config_package": "nexus_integration_tests",
+                    "controller_config_package": "nexus_demos",
+                    "planner_config_package": "nexus_demos",
                     "planner_config_file": "abb_irb1300_planner_params.yaml",
                     "support_package": "abb_irb1300_support",
                     "robot_xacro_file": "irb1300_10_115.xacro",
@@ -205,7 +205,7 @@ def launch_setup(context, *args, **kwargs):
                     "dispenser_properties": "productB",
                     "use_fake_hardware": use_fake_hardware,
                     "robot_ip": robot2_ip,
-                    "zenoh_config_package": "nexus_integration_tests",
+                    "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_2.json5",
                 }.items(),
                 condition=IfCondition(run_workcell_2),

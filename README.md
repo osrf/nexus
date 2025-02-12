@@ -46,7 +46,7 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ## Configuration
 
 The workcell and system orchestrators rely on behavior trees for orchestration. `NEXUS` provides several BT skills that may be reused for a variety of applications.
-See sample BTs for [system_orchestrator](nexus_integration_tests/config/system_orchestrator_bt.xml) and [workcell_orchestrator](nexus_integration_tests/config/workcell_1_bts/place_on_conveyor.xml) for a pick & place application.
+See sample BTs for [system_orchestrator](nexus_demos/config/system_orchestrator_bt.xml) and [workcell_orchestrator](nexus_demos/config/workcell_1_bts/place_on_conveyor.xml) for a pick & place application.
 
 At present, capabilities are registered as plugins with the `orchestrator` at runtime.
 We support [these capabilities](./nexus_capabilities/src/capabilities/plugins.xml) out of the bo
@@ -61,7 +61,7 @@ A current limitation of this approach is the need to manually update the palette
 
 ### Generating Zenoh bridge configurations
 
-The script in `nexus_network_configuration` helps to simplify configuration of Zenoh bridges for multiple machines. The Zenoh bridge files are generated from [NEXUS Network Configuration](nexus_integration_tests/config/zenoh/nexus_network_config.yaml) and [nexus_endpoints.redf.yaml](./nexus_endpoints.redf.yaml). After configuring the [NEXUS Network Configuration](nexus_integration_tests/config/zenoh/nexus_network_config.yaml), you can run `ros2 run nexus_network_configuration nexus_network_configuration -n <PATH_TO_NEXUS_NETWORK_CONFIG> -r <PATH_TO_REDF_CONFIGS> -o <ZENOH_CONFIGS_OUTPUT_DIRECTORY>` to generate the Zenoh bridges.
+The script in `nexus_network_configuration` helps to simplify configuration of Zenoh bridges for multiple machines. The Zenoh bridge files are generated from [NEXUS Network Configuration](nexus_demos/config/zenoh/nexus_network_config.yaml) and [nexus_endpoints.redf.yaml](./nexus_endpoints.redf.yaml). After configuring the [NEXUS Network Configuration](nexus_demos/config/zenoh/nexus_network_config.yaml), you can run `ros2 run nexus_network_configuration nexus_network_configuration -n <PATH_TO_NEXUS_NETWORK_CONFIG> -r <PATH_TO_REDF_CONFIGS> -o <ZENOH_CONFIGS_OUTPUT_DIRECTORY>` to generate the Zenoh bridges.
 
 Further detailed instructions on running the Zenoh bridges with said configurations are in the [package README](nexus_network_configuration/README.md)
 
@@ -69,10 +69,7 @@ Further detailed instructions on running the Zenoh bridges with said configurati
 
 ![](./docs/media/nexus_demo.png)
 
-Follow instructions [here](nexus_integration_tests/README.md) to run pick and place demonstrations with a line comprising of two workcells that perform different types of tasks.
-
-TODO: Add a dedicated demo package.
-
+Follow instructions [here](nexus_demos/README.md) to run pick and place demonstrations with a line comprising of two workcells that perform different types of tasks.
 
 ## Generating Endpoints
 

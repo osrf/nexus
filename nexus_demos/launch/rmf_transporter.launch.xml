@@ -22,7 +22,7 @@
 
   <!-- Building Map  -->
   <group>
-    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(find-pkg-share nexus_integration_tests)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).building.yaml">
+    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).building.yaml">
       <param name="use_sim_time" value="$(var use_simulator)"/>
     </node>
   </group>
@@ -50,21 +50,21 @@
   <group>
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_simulator)"/>
-      <arg name="nav_graph_file" value="$(find-pkg-share nexus_integration_tests)/config/rmf/maps/$(var building_map_name)/nav_graphs/0.yaml" />
-      <arg name="config_file" value="$(find-pkg-share nexus_integration_tests)/config/rmf/deliveryRobot_config.yaml"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/nav_graphs/0.yaml" />
+      <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/rmf/deliveryRobot_config.yaml"/>
     </include>
   </group>
 
   <node pkg="nexus_workcell_orchestrator" exec="nexus_workcell_orchestrator" name="rmf_nexus_transporter" output="both">
     <param name="capabilities" value="[nexus::capabilities::RMFRequestCapability]"/>
-    <param name="bt_path" value="$(find-pkg-share nexus_integration_tests)/config/rmf"/>
+    <param name="bt_path" value="$(find-pkg-share nexus_demos)/config/rmf"/>
   </node>
 
   <!-- Simulator launch -->
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />
-  <let name="world_path" value="$(find-pkg-share nexus_integration_tests)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).world" />
-  <let name="model_path" value="$(find-pkg-share nexus_integration_tests)/config/rmf/maps/$(var building_map_name)/models" />
+  <let name="world_path" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).world" />
+  <let name="model_path" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/models" />
 
   <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both">
     <env name="GZ_SIM_RESOURCE_PATH" value="$(var model_path):$(var world_path)" />
