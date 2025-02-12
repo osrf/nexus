@@ -1,4 +1,4 @@
-# id of the work order
+# reference ID to this work order for tracking purposes
 string id
 
 # yaml representation of the work order

@@ -81,7 +81,7 @@ WorkcellRequest::make_goal()
   goal.task = this->_task;
   try
   {
-    auto& signals = this->_ctx->queued_signals.at(this->_task.id);
+    auto& signals = this->_ctx->queued_signals.at(this->_task.task_id);
     goal.start_signals = signals;
     signals.clear();
   }
@@ -89,7 +89,7 @@ WorkcellRequest::make_goal()
   {
     RCLCPP_DEBUG(
       this->_ctx->node.get_logger(), "%s: No queued signals for task [%s]",
-      this->name().c_str(), this->_task.id.c_str());
+      this->name().c_str(), this->_task.task_id.c_str());
     // ignore
   }
   goal.task.previous_results = this->_ctx->task_results;
@@ -102,7 +102,7 @@ WorkcellRequest::make_goal()
 void WorkcellRequest::on_feedback(
   endpoints::WorkcellRequestAction::ActionType::Feedback::ConstSharedPtr msg)
 {
-  this->_ctx->task_states.at(this->_task.id) = msg->state;
+  this->_ctx->task_states.at(this->_task.task_id) = msg->state;
   this->_on_task_progress(this->_ctx->task_states);
 }
 
@@ -125,7 +125,7 @@ bool WorkcellRequest::on_result(
   }
 
   this->_ctx->task_results = result.result->result; // -.-
-  this->_ctx->task_states.at(this->_task.id).status =
+  this->_ctx->task_states.at(this->_task.task_id).status =
     TaskState::STATUS_FINISHED;
   this->_on_task_progress(this->_ctx->task_states);
   return true;

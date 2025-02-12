@@ -30,7 +30,8 @@ using TaskData = YAML::Node;
 
 struct Task
 {
-public: std::string id;
+public: std::string work_order_id;
+public: std::string task_id;
 public: std::string type;
 public: TaskData data;
 public: YAML::Node previous_results;
