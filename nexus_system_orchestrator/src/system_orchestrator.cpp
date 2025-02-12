@@ -214,13 +214,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
           return rclcpp_action::GoalResponse::REJECT;
         }
 
-        const std::string work_order_id = rclcpp_action::to_string(uuid);
-        RCLCPP_INFO(
-          this->get_logger(),
-          "Accepting new work order with id [%s]",
-          work_order_id.c_str());
-
-        this->_create_job(work_order_id, *goal);
+        this->_create_job(*goal);
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       }
       catch (const std::exception& e)
@@ -554,8 +548,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
 }
 
-void SystemOrchestrator::_create_job(
-  const std::string& work_order_id, const WorkOrderActionType::Goal& goal)
+void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 {
   const std::string& work_order_id = goal.order.work_order_id;
   auto wo =

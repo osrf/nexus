@@ -15,7 +15,6 @@
 import os
 import sys
 from typing import cast
-import uuid
 
 from action_msgs.msg import GoalStatus
 from managed_process import managed_process
@@ -98,7 +97,6 @@ class PickAndPlaceTest(NexusTestCase):
         # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
         #   high load so we only check the last feedback as a workaround.
         self.assertGreater(len(feedbacks), 0)
-        work_order_id = uuid.UUID(bytes=bytes(goal_handle.goal_id.uuid))
         for msg in feedbacks:
             # The first task is transportation
             self.assertEqual(len(msg.task_states), 3)
