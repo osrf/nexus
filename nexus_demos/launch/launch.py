@@ -88,12 +88,14 @@ def launch_setup(context, *args, **kwargs):
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }"""
     rviz_config_filename = "nexus_panel.rviz"
+    max_workcell_jobs = "1"
     if (use_rmf_transporter.perform(context).lower() == "true"):
         remap_task_types = """{
                             pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
                         }"""
         main_bt_filename = "main_rmf.xml"
         rviz_config_filename = "nexus_panel_rmf.rviz"
+        max_workcell_jobs = "10"
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(
@@ -146,6 +148,7 @@ def launch_setup(context, *args, **kwargs):
                         "/config/workcell_1_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
+                    "max_jobs": max_workcell_jobs,
                     "ros_domain_id": str(workcell_1_domain_id),
                     "headless": headless,
                     "use_zenoh_bridge": use_zenoh_bridge,
@@ -189,6 +192,7 @@ def launch_setup(context, *args, **kwargs):
                         "/config/workcell_2_bts",
                     ),
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
+                    "max_jobs": max_workcell_jobs,
                     "ros_domain_id": str(workcell_2_domain_id),
                     "headless": headless,
                     "use_zenoh_bridge": use_zenoh_bridge,
