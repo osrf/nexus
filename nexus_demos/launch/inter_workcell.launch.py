@@ -309,7 +309,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "max_jobs",
-                default_value="2",
+                default_value="10",
                 description="Maximum number of jobs the system orchestrator can process in parallel.",
             ),
             OpaqueFunction(function=launch_setup),

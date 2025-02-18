@@ -807,21 +807,17 @@ void WorkcellOrchestrator::_tick_all_bts()
     }
   }
 
-  int count = 0;
   auto it = this->_ctxs.begin();
-  for (; count < this->_max_parallel_jobs && it != this->_ctxs.end();
-    ++count, ++it)
+  for (int i = 0; i < this->_max_parallel_jobs; ++i)
   {
+    if (it == this->_ctxs.end())
+    {
+      break;
+    }
+
     this->_tick_bt(*it);
     const auto task_status = (*it)->task_state.status;
-    // `_tick_bt` returns true if the task is finished
-    if (task_status == TaskState::STATUS_FINISHED ||
-      task_status == TaskState::STATUS_FAILED)
-    {
-      // NOTE: iterator is invalidated, it is important to
-      // not access it after this line.
-      this->_ctxs.erase(it);
-    }
+
     // cancel all other tasks when any task fails. note that the failing task is
     // removed from the list first because we don't want to cancel an already
     // failed task.
@@ -829,6 +825,18 @@ void WorkcellOrchestrator::_tick_all_bts()
     {
       this->_cancel_all_tasks();
       break;
+    }
+
+    // `_tick_bt` returns true if the task is finished
+    if (task_status == TaskState::STATUS_FINISHED)
+    {
+      // NOTE: iterator is invalidated, it is important to
+      // not access it after this line.
+      it = this->_ctxs.erase(it);
+    }
+    else
+    {
+      ++it;
     }
   }
 

@@ -295,6 +295,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "max_jobs",
+            default_value="1",
             description="Maximum number of parallel jobs that this workcell is allowed to handle.",
         ),
         DeclareLaunchArgument(
