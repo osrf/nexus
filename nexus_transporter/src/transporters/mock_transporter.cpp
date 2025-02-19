@@ -23,6 +23,7 @@
 
 namespace nexus_transporter {
 
+//==============================================================================
 struct Location
 {
   double pose;
@@ -36,6 +37,7 @@ struct Location
   {}
 };
 
+//==============================================================================
 struct MockTransporter3000
 {
   std::string name;
@@ -52,6 +54,7 @@ struct MockTransporter3000
   {}
 };
 
+//==============================================================================
 // MockTransporter that can only process once request at a time.
 class MockTransporter : public Transporter
 {
@@ -135,9 +138,15 @@ public:
 
   std::optional<Itinerary> get_itinerary(
     const std::string& id,
-    const std::string& destination)
+    const std::vector<Destination>& destinations)
   {
-    if (_destinations.find(destination) == _destinations.end())
+    if (destinations.empty())
+    {
+      return std::nullopt;
+    }
+    // This transporter can only go to one destination at a time.
+    const auto & destination = destinations[0];
+    if (_destinations.find(destination.name) == _destinations.end())
       return std::nullopt;
 
     auto n = _node.lock();
@@ -156,11 +165,11 @@ public:
     }
 
     const auto& transporter_location = it.first->second->current_location;
-    const auto& dest_pose = _destinations.find(destination)->second;
+    const auto& dest_pose = _destinations.find(destination.name)->second;
 
     double travel_duration;
     if (transporter_location.name.has_value() &&
-      destination == transporter_location.name)
+      destination.name == transporter_location.name)
     {
       travel_duration = 0.0;
     }
@@ -171,7 +180,7 @@ public:
 
     return Itinerary{
       id,
-      destination,
+      destinations,
       transporter_name,
       now + rclcpp::Duration::from_seconds(travel_duration),
       now + rclcpp::Duration::from_seconds(60.0)
@@ -203,8 +212,15 @@ public:
       }
     }
 
+    const auto & destinations = itinerary.destinations();
+    if (destinations.empty())
+    {
+      completed_cb(true);
+      return;
+    }
+    const auto & destination = destinations[0];
     if (current_location.name.has_value() &&
-      itinerary.destination() == current_location.name)
+      destination.name == current_location.name)
     {
       completed_cb(true);
       return;
@@ -215,7 +231,7 @@ public:
 
     RCLCPP_INFO(n->get_logger(),
       "Received request for transporter [%s] to %s",
-      current_transporter.c_str(), itinerary.destination().c_str());
+      current_transporter.c_str(), destination.name.c_str());
 
     // TODO(YV): Capture a data_ptr to avoid reference captures
     _thread = std::thread(
@@ -228,9 +244,9 @@ public:
 
           _transporters.at(current_transporter)->itinerary = itinerary;
         }
-
+        const auto & destination = itinerary.destinations()[0];
         const auto& dest_pose =
-        _destinations.find(itinerary.destination())->second;
+        _destinations.find(destination.name)->second;
         const auto& current_pose = _transporters.at(
           current_transporter)->current_location.pose;
         const auto& dist = abs(dest_pose - current_pose);
@@ -278,7 +294,7 @@ public:
         std::lock_guard<std::mutex> lock(_mutex);
 
         // Check if the transporter is at the unloading station
-        if (itinerary.destination() == _unloading_station)
+        if (destination.name == _unloading_station)
         {
           // Work order completed, ok to remove transporter from list
           _transporters.erase(

@@ -6,9 +6,5 @@ string requester
 # from the previous request needs to move to the new destination.
 string id
 
-# The name of the destination
-string destination
-
-# The items that need to be transported to the destination.
-# A json schema may be defined in the future for the contents of this field.
-string payload
+# The destinations for this itinerary.
+Destination[] destinations
