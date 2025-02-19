@@ -455,7 +455,7 @@ TransporterNode::TransporterNode(const rclcpp::NodeOptions& options)
 
 void TransporterNode::Data::_register()
 {
-  auto node = w_node.lock();
+  auto node = this->w_node.lock();
   if (node == nullptr)
   {
     return;
@@ -476,8 +476,13 @@ void TransporterNode::Data::_register()
 
   RCLCPP_INFO(node->get_logger(), "Registering with system orchestrator...");
   auto register_cb =
-    [this, node](rclcpp::Client<RegisterTransporter>::SharedFuture future)
+    [this](rclcpp::Client<RegisterTransporter>::SharedFuture future)
     {
+      auto node = this->w_node.lock();
+      if (node == nullptr)
+      {
+        return;
+      }
       this->ongoing_register = std::nullopt;
       auto resp = future.get();
       if (!resp->success)

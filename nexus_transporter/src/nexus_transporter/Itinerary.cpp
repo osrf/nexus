@@ -17,8 +17,6 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 
-#include <stdexcept>
-
 namespace nexus_transporter {
 //==============================================================================
 class Itinerary::Implementation

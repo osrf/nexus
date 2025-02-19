@@ -110,7 +110,6 @@ private:
 
     rclcpp::TimerBase::SharedPtr register_timer;
 
-
     Data();
   };
 
