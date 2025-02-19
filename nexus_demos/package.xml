@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>nexus_integration_tests</name>
+  <name>nexus_demos</name>
   <version>0.1.1</version>
-  <description>Integration test for system and workcell orchestrators</description>
+  <description>Demo package containing system and workcell orchestrators</description>
   <maintainer email="koonpeng@openrobotics.org">Teo Koon Peng</maintainer>
   <license>Apache License 2.0</license>
 

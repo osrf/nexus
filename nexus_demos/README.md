@@ -1,4 +1,6 @@
-# nexus_integration_tests
+# nexus_demos
+
+![](../docs/media/nexus_demo.png)
 
 ## Launch system and workcell orchestrators and all mock nodes
 The [launch.py script](launch/launch.py) will launch the system orchestrator and 2 workcells orchestrators (each with a IRB910SC and IRB1300 robot), along with a Zenoh bridge to link selected ROS endpoints between them. These 3 orchestrators and their accompany components will be in different ROS_DOMAIN_IDs. To launch these components individually, use the following examples given.
@@ -10,40 +12,40 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 `export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
 ```bash
-ros2 launch nexus_integration_tests launch.py headless:=False
+ros2 launch nexus_demos launch.py headless:=False
 ```
 
 ### Method 2: Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
 Launch with Workcell 1
 ```bash
-ros2 launch nexus_integration_tests launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
+ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
 ```
 
 Launch with Workcell 2
 ```bash
-ros2 launch nexus_integration_tests launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=false run_workcell_2:=true
+ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=false run_workcell_2:=true
 ```
 
 Testing with real hardware
 ```bash
-ros2 launch nexus_integration_tests launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
+ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
 ```
 
 ## Launch Orchestrators individually
 
 ### System Orchestrator
 ```bash
-ros2 launch nexus_integration_tests control_center.launch.py ros_domain_id:=0 headless:=False
+ros2 launch nexus_demos control_center.launch.py ros_domain_id:=0 headless:=False
 ```
 
 ### IRB910SC Workcell
 ```bash
-ros2 launch nexus_integration_tests workcell.launch.py workcell_id:=workcell_1 ros_domain_id:=1 support_package:=abb_irb910sc_support robot_xacro_file:=irb910sc_3_45.xacro moveit_config_package:=abb_irb910sc_3_45_moveit_config controllers_file:=abb_irb910sc_controllers.yaml moveit_config_file:=abb_irb910sc_3_45.srdf.xacro tf_publisher_launch_file:=irb910sc_tf.launch.py planner_config_package:=nexus_integration_tests planner_config_file:=irb910sc_planner_params.yaml sku_detection_params_file:=irb910sc_detection.yaml zenoh_config_file:=workcell_1.json5 headless:=False
+ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_1 ros_domain_id:=1 support_package:=abb_irb910sc_support robot_xacro_file:=irb910sc_3_45.xacro moveit_config_package:=abb_irb910sc_3_45_moveit_config controllers_file:=abb_irb910sc_controllers.yaml moveit_config_file:=abb_irb910sc_3_45.srdf.xacro tf_publisher_launch_file:=irb910sc_tf.launch.py planner_config_package:=nexus_demos planner_config_file:=irb910sc_planner_params.yaml sku_detection_params_file:=irb910sc_detection.yaml zenoh_config_file:=workcell_1.json5 headless:=False
 ```
 
 ### IRB1300 Workcell
 ```bash
-ros2 launch nexus_integration_tests workcell.launch.py workcell_id:=workcell_2 ros_domain_id:=2 support_package:=abb_irb1300_support robot_xacro_file:=irb1300_10_115.xacro moveit_config_package:=abb_irb1300_10_115_moveit_config controllers_file:=abb_irb1300_controllers.yaml moveit_config_file:=abb_irb1300_10_115.srdf.xacro tf_publisher_launch_file:=irb1300_tf.launch.py sku_detection_params_file:=irb1300_detection.yaml zenoh_config_file:=workcell_2.json5 headless:=False
+ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_2 ros_domain_id:=2 support_package:=abb_irb1300_support robot_xacro_file:=irb1300_10_115.xacro moveit_config_package:=abb_irb1300_10_115_moveit_config controllers_file:=abb_irb1300_controllers.yaml moveit_config_file:=abb_irb1300_10_115.srdf.xacro tf_publisher_launch_file:=irb1300_tf.launch.py sku_detection_params_file:=irb1300_detection.yaml zenoh_config_file:=workcell_2.json5 headless:=False
 ```
 
 ## Submit a job
@@ -75,7 +77,7 @@ ros2 action send_goal /test_workcell/request nexus_orchestrator_msgs/action/Work
 Gripper position from 0 to `gripper_max_value`:
 
 ```bash
-ros2 run nexus_integration_tests mock_gripper --ros-args -p gripper_max_value:=0.5
+ros2 run nexus_demos mock_gripper --ros-args -p gripper_max_value:=0.5
 ```
 
 To transition lifecycle states
@@ -112,7 +114,7 @@ sku_id2:
 Save this file and launch the vision mock node:
 
 ```bash
-ros2 run nexus_integration_tests mock_detection --ros-args -p config_file:=<path config file>
+ros2 run nexus_demos mock_detection --ros-args -p config_file:=<path config file>
 ```
 
 To transition lifecycle states
@@ -138,7 +140,7 @@ ros2 run nexus_transporter nexus_transporter_node --ros-args -p transporter_plug
 ## mock_printer
 To launch the mock printer:
 ```bash
-ros2 run nexus_integration_tests mock_printer_node
+ros2 run nexus_demos mock_printer_node
 ```
 
 To transition lifecycle states
@@ -155,7 +157,7 @@ ros2 service call /mock_printer/dispense nexus_dispenser_msgs/srv/Dispense '{}'
 ## mock_robot_arm_controller
 To launch the mock_robot_arm_controller
 ```bash
-ros2 run nexus_integration_tests mock_robot_arm_controller
+ros2 run nexus_demos mock_robot_arm_controller
 ```
 
 To launch the mock_robot_arm_controller
@@ -175,17 +177,17 @@ ros2 action send_goal /joint_trajectory_position_controller/follow_joint_traject
 
 First launch `abb_control`
 ```bash
-ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_integration_tests description_package:=abb_irb910sc_support description_file:=irb910sc_3_45.xacro launch_rviz:=false moveit_config_package:=abb_irb910sc_3_45_moveit_config use_fake_hardware:=true controllers_file:=abb_irb910sc_controllers.yaml
+ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_demos description_package:=abb_irb910sc_support description_file:=irb910sc_3_45.xacro launch_rviz:=false moveit_config_package:=abb_irb910sc_3_45_moveit_config use_fake_hardware:=true controllers_file:=abb_irb910sc_controllers.yaml
 ```
 
 If running with real robot
 ```bash
-ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_integration_tests description_package:=abb_irb910sc_support description_file:=irb910sc_3_45.xacro launch_rviz:=false moveit_config_package:=abb_irb910sc_3_45_moveit_config use_fake_hardware:=true controllers_file:=abb_irb910sc_controllers.yaml use_fake_hardware:=false rws_ip:=<ROBOTSTUDIO_IP>
+ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_demos description_package:=abb_irb910sc_support description_file:=irb910sc_3_45.xacro launch_rviz:=false moveit_config_package:=abb_irb910sc_3_45_moveit_config use_fake_hardware:=true controllers_file:=abb_irb910sc_controllers.yaml use_fake_hardware:=false rws_ip:=<ROBOTSTUDIO_IP>
 ```
 
 Then launch moveit
 ```bash
-ros2 launch nexus_integration_tests abb_irb910sc_moveit.launch.py
+ros2 launch nexus_demos abb_irb910sc_moveit.launch.py
 ```
 
 ### IRB1300
@@ -193,15 +195,15 @@ ros2 launch nexus_integration_tests abb_irb910sc_moveit.launch.py
 For more information see README in `abb_ros2` repo.
 First launch `abb_control`
 ```bash
-ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_integration_tests description_package:=abb_irb1300_support description_file:=irb1300_10_115.xacro launch_rviz:=false moveit_config_package:=abb_irb1300_10_115_moveit_config use_fake_hardware:=true controllers_file:=abb_irb1300_controllers.yaml
+ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_demos description_package:=abb_irb1300_support description_file:=irb1300_10_115.xacro launch_rviz:=false moveit_config_package:=abb_irb1300_10_115_moveit_config use_fake_hardware:=true controllers_file:=abb_irb1300_controllers.yaml
 ```
 
 If running with real robot
 ```bash
-ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_integration_tests description_package:=abb_irb1300_support description_file:=irb1300_10_115.xacro launch_rviz:=false moveit_config_package:=abb_irb1300_10_114_moveit_config use_fake_hardware:=true controllers_file:=abb_irb1300_controllers.yaml use_fake_hardware:=false rws_ip:=<ROBOTSTUDIO_IP>
+ros2 launch abb_bringup abb_control.launch.py runtime_config_package:=nexus_demos description_package:=abb_irb1300_support description_file:=irb1300_10_115.xacro launch_rviz:=false moveit_config_package:=abb_irb1300_10_114_moveit_config use_fake_hardware:=true controllers_file:=abb_irb1300_controllers.yaml use_fake_hardware:=false rws_ip:=<ROBOTSTUDIO_IP>
 ```
 
 Then launch moveit
 ```bash
-ros2 launch nexus_integration_tests abb_irb1300_moveit.launch.py
+ros2 launch nexus_demos abb_irb1300_moveit.launch.py
 ```

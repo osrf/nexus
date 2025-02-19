@@ -41,7 +41,7 @@ def activate_node_service(node_name, ros_domain_id):
     activate_node_proc = ExecuteProcess(
         cmd=[
             'python3',
-            [FindPackageShare('nexus_integration_tests'), "/scripts/activate_node.py"],
+            [FindPackageShare('nexus_demos'), "/scripts/activate_node.py"],
             node_name,
         ],
         additional_env={'ROS_DOMAIN_ID': ros_domain_id},
@@ -70,7 +70,7 @@ def activate_node_service(node_name, ros_domain_id):
 
 
 def launch_setup(context, *args, **kwargs):
-    config_path = get_package_share_directory("nexus_integration_tests")
+    config_path = get_package_share_directory("nexus_demos")
 
     # Initialize launch configuration
     workcell_id = LaunchConfiguration("workcell_id")
@@ -100,7 +100,7 @@ def launch_setup(context, *args, **kwargs):
     mock_dispenser_node = LifecycleNode(
         name=workcell_id.perform(context) + "_mock_dispenser",
         namespace="",
-        package="nexus_integration_tests",
+        package="nexus_demos",
         executable="mock_printer_node",
         parameters=[
             {
@@ -112,13 +112,13 @@ def launch_setup(context, *args, **kwargs):
     mock_product_detector_node = LifecycleNode(
         name=workcell_id.perform(context) + "_mock_product_detector",
         namespace="",
-        package="nexus_integration_tests",
+        package="nexus_demos",
         executable="mock_detection",
         parameters=[
             {"autostart": True},
             {"config_file":
                 PathJoinSubstitution([
-                    FindPackageShare("nexus_integration_tests"),
+                    FindPackageShare("nexus_demos"),
                     "config",
                     sku_detection_params_file
                 ])
@@ -129,7 +129,7 @@ def launch_setup(context, *args, **kwargs):
     mock_gripper_node = LifecycleNode(
         name=workcell_id.perform(context) + "_mock_gripper",
         namespace="",
-        package="nexus_integration_tests",
+        package="nexus_demos",
         executable="mock_gripper",
         parameters=[{"autostart": True}],
     )
@@ -244,7 +244,7 @@ def launch_setup(context, *args, **kwargs):
                 IncludeLaunchDescription(
                     [
                         PathJoinSubstitution([
-                            FindPackageShare("nexus_integration_tests"),
+                            FindPackageShare("nexus_demos"),
                             'launch',
                             tf_publisher_launch_file,
                         ])
@@ -257,7 +257,7 @@ def launch_setup(context, *args, **kwargs):
                 IncludeLaunchDescription(
                     [
                         PathJoinSubstitution([
-                            FindPackageShare('nexus_integration_tests'),
+                            FindPackageShare('nexus_demos'),
                             'launch',
                             'zenoh_bridge.launch.py'
                         ])
@@ -303,7 +303,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "controller_config_package",
-            default_value="nexus_integration_tests",
+            default_value="nexus_demos",
             description="Package with the controller\'s configuration in 'config' folder",
         ),
         DeclareLaunchArgument(
@@ -373,7 +373,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name="zenoh_config_package",
-            default_value="nexus_integration_tests",
+            default_value="nexus_demos",
             description="Package containing Zenoh DDS bridge configurations",
         ),
         DeclareLaunchArgument(

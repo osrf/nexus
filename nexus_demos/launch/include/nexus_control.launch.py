@@ -21,7 +21,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "runtime_config_package",
-            default_value="nexus_integration_tests",
+            default_value="nexus_demos",
             description='Package with the controller\'s configuration in "config" folder. \
         Usually the argument is not set, it enables use of a custom setup.',
         )
