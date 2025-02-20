@@ -67,7 +67,7 @@ class PickAndPlaceTest(NexusTestCase):
     async def test_pick_and_place_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
-        goal_msg.order.id = "1"
+        goal_msg.order.work_order_id = "1"
         with open(f"{os.path.dirname(__file__)}/config/pick_from_conveyor.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
