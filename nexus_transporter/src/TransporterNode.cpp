@@ -18,12 +18,24 @@
 
 #include "TransporterNode.hpp"
 
-#include <rclcpp_components/register_node_macro.hpp>
+#include <stdexcept>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
 //==============================================================================
 namespace nexus_transporter {
+
+//==============================================================================
+TransporterNode::Data::Data()
+: transporter_loader("nexus_transporter", "nexus_transporter::Transporter"),
+  transporter(nullptr),
+  availability_srv(nullptr),
+  action_srv(nullptr),
+  tf_broadcaster(nullptr),
+  ongoing_register(std::nullopt)
+{
+  // Do nothing.
+}
 
 //==============================================================================
 auto TransporterNode::on_configure(const State& /*previous_state*/)
@@ -54,19 +66,16 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
 
       RCLCPP_INFO(
         node->get_logger(),
-        "Received IsTransporterAvailable request from %s with id %s. "
-        "Destination: %s. Payload: [%s]",
+        "Received IsTransporterAvailable request from %s with id %s. ",
         request->request.requester.c_str(),
-        request->request.id.c_str(),
-        request->request.destination.c_str(),
-        request->request.payload.c_str()
+        request->request.id.c_str()
       );
 
-      if (request->request.destination.empty())
+      if (request->request.destinations.empty())
       {
         RCLCPP_WARN(
           node->get_logger(),
-          "Ignoring request as destination is empty."
+          "Ignoring request as destinations is empty."
         );
         return;
       }
@@ -92,14 +101,13 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
 
       auto itinerary = data->transporter->get_itinerary(
         request->request.id,
-        request->request.destination);
+        request->request.destinations);
 
       if (!itinerary.has_value())
       {
         RCLCPP_WARN(
           node->get_logger(),
-          "The transporter is not configured to go to destination [%s]",
-          request->request.destination.c_str()
+          "The transporter is not configured to go to destinations."
         );
 
         return;
@@ -109,10 +117,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       response->available = true;
       response->transporter = itinerary->transporter_name();
       response->estimated_finish_time = itinerary->estimated_finish_time();
-    },
-    rclcpp::ServicesQoS(),
-    _data->cb_group
-    );
+    });
 
   // Load transporter plugin
   if (_data->transporter_plugin_name.empty())
@@ -158,14 +163,15 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
     return CallbackReturn::FAILURE;
   }
 
+  // Create the client for registration.
+  this->_data->register_client = this->create_client<RegisterTransporter>(
+    RegisterTransporterService::service_name());
+
   //Timer for registering with the system orchestrator
-  this->_register_timer = this->create_wall_timer(std::chrono::seconds{1},
+  this->_data->register_timer = this->create_wall_timer(std::chrono::seconds{1},
       [this]()
       {
-        if (this->registration_callback())
-        {
-          this->_register_timer.reset();
-        }
+        this->_data->_register();
       });
 
   // Setup Transport action server
@@ -187,12 +193,9 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received transport goal request from [%s] with id [%s] for destination "
-          "%s and payload [%s]",
+          "Received transport goal request from [%s] with id [%s].",
           goal->request.requester.c_str(),
-          goal->request.id.c_str(),
-          goal->request.destination.c_str(),
-          goal->request.payload.c_str()
+          goal->request.id.c_str()
         );
       }
 
@@ -212,16 +215,15 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       auto itinerary =
       data->transporter->get_itinerary(
         goal->request.id,
-        goal->request.destination);
+        goal->request.destinations);
       if (!itinerary.has_value())
       {
         if (node)
         {
           RCLCPP_ERROR(
             node->get_logger(),
-            "Unable to generate an itinerary for destination [%s]. "
-            "Rejecting goal...",
-            goal->request.destination.c_str()
+            "Unable to generate an itinerary for destinations. "
+            "Rejecting goal..."
           );
         }
         return rclcpp_action::GoalResponse::REJECT;
@@ -271,9 +273,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Successfully cancelled transport with id [%s] to destination [%s]",
-            it->second->id().c_str(),
-            it->second->destination().c_str()
+            "Successfully cancelled transport with id [%s].",
+            it->second->id().c_str()
           );
         }
         return rclcpp_action::CancelResponse::ACCEPT;
@@ -284,9 +285,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Unable to cancel transport with id [%s] to destination [%s]",
-            it->second->id().c_str(),
-            it->second->destination().c_str()
+            "Unable to cancel transport with id [%s]",
+            it->second->id().c_str()
           );
         }
         return rclcpp_action::CancelResponse::REJECT;
@@ -366,10 +366,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           }
         });
 
-    },
-    rcl_action_server_get_default_options(),
-    _data->cb_group
-    );
+    });
 
   RCLCPP_INFO(this->get_logger(), "Successfully configured.");
   return CallbackReturn::SUCCESS;
@@ -380,7 +377,7 @@ auto TransporterNode::on_cleanup(const State& /*previous_state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Cleaning up...");
-  this->_register_timer.reset();
+  _data->register_timer.reset();
   _data->transporter.reset();
   _data->availability_srv.reset();
   _data->action_srv.reset();
@@ -437,9 +434,6 @@ TransporterNode::TransporterNode(const rclcpp::NodeOptions& options)
 
   _data = std::make_shared<Data>();
 
-  _data->cb_group = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
-
   _data->transporter_plugin_name = this->declare_parameter(
     "transporter_plugin",
     std::string(""));
@@ -459,44 +453,77 @@ TransporterNode::TransporterNode(const rclcpp::NodeOptions& options)
   );
 }
 
-bool TransporterNode::registration_callback()
+void TransporterNode::Data::_register()
 {
-  RCLCPP_INFO(this->get_logger(), "Registering with system orchestrator...");
-  auto client = this->create_client<RegisterTransporter>(
-    RegisterTransporterService::service_name(),
-    rclcpp::ServicesQoS(),
-    _data->cb_group
-  );
-
-  if (!client->wait_for_service(_data->connection_timeout))
+  auto node = this->w_node.lock();
+  if (node == nullptr)
   {
-    RCLCPP_ERROR(this->get_logger(), "Could not find system orchestrator!");
-    return false;
+    return;
+  }
+
+  if (this->ongoing_register)
+  {
+    RCLCPP_ERROR(
+      node->get_logger(),
+      "Failed to register: No response from system orchestrator.");
+    if (!this->register_client->remove_pending_request(*this->
+      ongoing_register))
+    {
+      RCLCPP_WARN(node->get_logger(),
+        "Unable to remove pending request during transporter registration.");
+    }
+  }
+
+  RCLCPP_INFO(node->get_logger(), "Registering with system orchestrator...");
+  auto register_cb =
+    [this](rclcpp::Client<RegisterTransporter>::SharedFuture future)
+    {
+      auto node = this->w_node.lock();
+      if (node == nullptr)
+      {
+        return;
+      }
+      this->ongoing_register = std::nullopt;
+      auto resp = future.get();
+      if (!resp->success)
+      {
+        switch (resp->error_code)
+        {
+          case RegisterTransporter::Response::ERROR_NOT_READY:
+            RCLCPP_ERROR(
+              node->get_logger(),
+              "Error while registering with system orchestrator, retrying again... [%s]",
+              resp->message.c_str());
+            break;
+          default:
+            RCLCPP_FATAL(node->get_logger(),
+              "Failed to register with system orchestrator! [%s]",
+              resp->message.c_str());
+            throw std::runtime_error(resp->message);
+        }
+        return;
+      }
+      RCLCPP_INFO(node->get_logger(),
+        "Successfully registered with system orchestrator");
+      this->register_timer->cancel();
+      // TODO(luca) reintroduce once https://github.com/ros2/rclcpp/issues/2652 is fixed and released
+      // this->register_timer.reset();
+    };
+
+  if (!this->register_client->wait_for_service(connection_timeout))
+  {
+    RCLCPP_ERROR(node->get_logger(), "Could not find system orchestrator!");
+    // timer is not cancelled so it will run again.
+    return;
   }
 
   auto req = std::make_shared<RegisterTransporter::Request>();
-  req->description.workcell_id = this->get_name();
-  auto fut = client->async_send_request(req);
-
-  if (fut.wait_for(_data->connection_timeout) != std::future_status::ready)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(), "Could not register with system orchestrator");
-    return false;
-  }
-  auto resp = fut.get();
-  if (!resp->success)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(), "Failed to register with system orchestrator (%s)",
-      resp->message.c_str());
-    return false;
-  }
-  RCLCPP_INFO(this->get_logger(),
-    "Successfully registered with system orchestrator");
-  return true;
+  req->description.workcell_id = node->get_name();
+  this->ongoing_register =
+    this->register_client->async_send_request(req, register_cb);
 }
 
 } // namespace nexus_transporter
 
+#include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(nexus_transporter::TransporterNode)

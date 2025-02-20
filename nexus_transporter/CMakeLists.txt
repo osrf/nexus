@@ -20,6 +20,8 @@ set(dep_pkgs
   rclcpp_lifecycle
   rmf_utils
   tf2_ros
+  yaml_cpp_vendor
+  yaml-cpp
 )
 foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
@@ -37,6 +39,7 @@ target_link_libraries(nexus_transporter
     ${rclcpp_action_TARGETS}
     ${rclcpp_lifecycle_TARGETS}
     rmf_utils::rmf_utils
+    yaml-cpp::yaml-cpp
 )
 
 target_include_directories(nexus_transporter
@@ -68,6 +71,7 @@ target_link_libraries(nexus_transporter_component
     ${rclcpp_components_TARGETS}
     ${rclcpp_lifecycle_TARGETS}
     ${tf2_ros_TARGETS}
+    yaml-cpp::yaml-cpp
 )
 
 target_include_directories(nexus_transporter_component
@@ -89,7 +93,26 @@ target_compile_features(nexus_transporter_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(nexus_transporter_component
   PLUGIN "nexus_transporter::TransporterNode"
   EXECUTABLE nexus_transporter_node
-  EXECUTOR MultiThreadedExecutor)
+  EXECUTOR SingleThreadedExecutor)
+
+
+#===============================================================================
+# Mock transporter plugin.
+add_library(mock_transporter SHARED src/transporters/mock_transporter.cpp)
+target_include_directories(mock_transporter PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${pluginlub_INCLUDE_DIRS}
+)
+target_link_libraries(mock_transporter
+  PUBLIC
+    nexus_transporter
+    pluginlib::pluginlib
+)
+
+pluginlib_export_plugin_description_file(nexus_transporter src/transporters/plugins.xml)
+
+ament_export_libraries(mock_transporter)
 
 #===============================================================================
 find_package(ament_cmake_uncrustify QUIET)
@@ -130,6 +153,7 @@ install(
 
 install(
   TARGETS
+    mock_transporter
     nexus_transporter
     nexus_transporter_component
   EXPORT nexus_transporter
