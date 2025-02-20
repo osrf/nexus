@@ -2,6 +2,8 @@
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
+      <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
+
       <dispense_item.DispenseItem name="dispense_item" item="productA" />
 
       <ApplyTransform base_pose="pickup_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
@@ -17,13 +19,11 @@
       <plan_motion.PlanMotion name="plan_to_dropoff" robot_name="abb_irb910sc" goal="dropoff_pose" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{dropoff_traj}" />
       <GetJointConstraints trajectory="{dropoff_traj}" joint_constraints="{joint_constraints}" />
 
-      <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
       <execute_trajectory.ExecuteTrajectory name="execute_dropoff" trajectory="{dropoff_traj}" />
       <gripper.GripperControl name="dropoff_product" gripper="workcell_1_mock_gripper" position="1.0" max_effort="0.0" />
 
       <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb910sc" goal="home" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{home_traj}" />
       <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
-
 
     </Sequence>
   </BehaviorTree>
