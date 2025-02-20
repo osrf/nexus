@@ -1,5 +1,5 @@
-# reference ID to this work order for tracking purposes
-string id
+# A unique ID for this work order
+string work_order_id
 
 # yaml representation of the work order
 string work_order

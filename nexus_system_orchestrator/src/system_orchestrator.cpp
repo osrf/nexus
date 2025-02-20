@@ -550,7 +550,7 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
 
 void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
 {
-  const std::string work_order_id = goal.order.id;
+  const std::string& work_order_id = goal.order.work_order_id;
   auto wo =
     YAML::Load(goal.order.work_order).as<common::WorkOrder>();
   auto tasks = this->_parse_wo(work_order_id, wo);
@@ -588,7 +588,7 @@ void SystemOrchestrator::_init_job(
     return;
   }
 
-  const auto& work_order_id = goal_handle->get_goal()->order.id;
+  const auto& work_order_id = goal_handle->get_goal()->order.work_order_id;
   if (!this->_jobs.count(work_order_id))
   {
     auto result = std::make_shared<WorkOrderActionType::Result>();
@@ -687,7 +687,7 @@ void SystemOrchestrator::_init_job(
 std::string SystemOrchestrator::_generate_task_id(
   const std::string& work_order_id,
   const std::string& process_id,
-  uint64_t step_index) const
+  std::size_t step_index) const
 {
   std::stringstream ss;
   ss << work_order_id << "/" << process_id << "/" << step_index;

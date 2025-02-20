@@ -125,7 +125,7 @@ private:
   std::string _generate_task_id(
     const std::string& work_order_id,
     const std::string& process_id,
-    uint64_t step_index) const;
+    std::size_t) const;
 
   std::vector<nexus_orchestrator_msgs::msg::WorkcellTask> _parse_wo(
     const std::string& work_order_id, const common::WorkOrder& work_order);
