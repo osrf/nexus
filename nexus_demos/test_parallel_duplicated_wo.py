@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Johnson & Johnson
+# Copyright (C) 2025 Open Source Robotics Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ class ParallelWoTest(NexusTestCase):
         """
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/place_on_conveyor.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
         goal_handle = cast(
             ClientGoalHandle, await self.action_client.send_goal_async(goal_msg)
@@ -75,7 +75,7 @@ class ParallelWoTest(NexusTestCase):
 
         goal_msg_2 = ExecuteWorkOrder.Goal()
         goal_msg_2.order.work_order_id = "2"
-        with open(f"{os.path.dirname(__file__)}/config/pick_from_conveyor.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg_2.order.work_order = f.read()
         goal_handle_2 = cast(
             ClientGoalHandle, await self.action_client.send_goal_async(goal_msg_2)

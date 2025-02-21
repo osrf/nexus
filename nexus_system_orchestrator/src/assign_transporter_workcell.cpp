@@ -49,12 +49,12 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
 
   for (const auto& task : this->_ctx->tasks)
   {
-    auto assignment_it = task_assignments.find(task.id);
+    auto assignment_it = task_assignments.find(task.task_id);
     if (assignment_it == task_assignments.end())
     {
       RCLCPP_ERROR(
         node->get_logger(), "%s: Unable to transport, task [%s] was not assigned to a workcell",
-        this->name().c_str(), task.id.c_str());
+        this->name().c_str(), task.task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
     // Multipickup task
@@ -63,10 +63,11 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
     YAML::Node order;
     order["type"] = "pickup";
     order["destination"] = assignment_it->second;
-    order["workcell_task_id"] = task.id;
+    order["workcell_task_id"] = task.task_id;
     orders.push_back(order);
   }
-  this->_transport_task.id = this->_ctx->job_id;
+  this->_transport_task.work_order_id = this->_ctx->job_id;
+  this->_transport_task.task_id = this->_ctx->job_id;
   this->_transport_task.type = "transportation";
   YAML::Emitter out;
   out << orders;
@@ -159,7 +160,7 @@ BT::NodeStatus AssignTransporterWorkcell::_update_ongoing_requests()
         this->setOutput("transporter_id", workcell_id);
         this->setOutput("transport_task", this->_transport_task);
         // Update the context
-        const auto& task_id = this->_transport_task.id;
+        const auto& task_id = this->_transport_task.task_id;
         this->_ctx->workcell_task_assignments.emplace(task_id, workcell_id);
         auto p = this->_ctx->task_states.emplace(task_id, nexus_orchestrator_msgs::msg::TaskState());
         auto& task_state = p.first->second;

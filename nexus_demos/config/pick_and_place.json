@@ -1,5 +1,4 @@
 {
-  "number": "test-1",
   "workInstructionName": "Pick and Place",
   "item": {
     "SkuId": "productA",
@@ -10,12 +9,10 @@
   },
   "steps": [
     {
-      "id": 1.0,
       "processId": "place_on_conveyor",
       "name": "Pick and Place"
     },
     {
-      "id": 2.0,
       "processId": "pick_from_conveyor",
       "name": "Pick and Place"
     }

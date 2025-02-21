@@ -30,7 +30,6 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
   std::string raw{
     R"RAW(
       {
-        "number": "SO/2022/20/1-1",
         "workInstructionName": "CV-299 (Rev 4)",
         "item": {
           "SkuId": "1001",
@@ -41,17 +40,14 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
         },
         "steps": [
           {
-            "id": 31.0,
             "processId": "pickup",
             "name": "pickup item"
           },
           {
-            "id": 32.0,
             "processId": "place",
             "name": "place item"
           },
           {
-            "id": 33.0,
             "processId": "inspect",
             "name": "inspect item"
           }
@@ -61,7 +57,6 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
 
   auto check_data = [](const WorkOrder& work_order)
     {
-      CHECK(work_order.number() == "SO/2022/20/1-1");
       CHECK(work_order.work_instruction_name() == "CV-299 (Rev 4)");
       const auto item = work_order.item();
       CHECK(item.sku_id() == "1001");
@@ -74,18 +69,15 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
       const auto steps = work_order.steps();
 
       const auto step1 = steps[0];
-      CHECK(step1.id() == 31);
       CHECK(step1.process_id() == "pickup");
       CHECK(step1.name() ==
         "pickup item");
 
       const auto& step2 = steps[1];
-      CHECK(step2.id() == 32);
       CHECK(step2.process_id() == "place");
       CHECK(step2.name() == "place item");
 
       const auto& step3 = steps[2];
-      CHECK(step3.id() == 33);
       CHECK(step3.process_id() == "inspect");
       CHECK(step3.name() == "inspect item");
     };

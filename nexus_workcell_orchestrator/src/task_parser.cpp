@@ -28,7 +28,8 @@ Task TaskParser::parse_task(
   const nexus_orchestrator_msgs::msg::WorkcellTask& workcell_task)
 {
   return Task{
-    workcell_task.id,
+    workcell_task.work_order_id,
+    workcell_task.task_id,
     workcell_task.type,
     YAML::Load(workcell_task.payload),
     YAML::Load(workcell_task.previous_results),

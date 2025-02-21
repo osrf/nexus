@@ -1,6 +1,5 @@
 {
-  "number": "test-1",
-  "workInstructionName": "Pick and Place",
+  "workInstructionName": "Pick from conveyor",
   "item": {
     "SkuId": "productA",
     "description": "productA",
@@ -10,7 +9,6 @@
   },
   "steps": [
     {
-      "id": 1.0,
       "processId": "pick_from_conveyor",
       "name": "Pick and Place"
     }

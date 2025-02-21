@@ -3,7 +3,6 @@ task:
   type: "place_on_conveyor"
   payload: |
     {
-      "id": 2.0,
       "processId": "place_on_conveyor",
       "name": "Pick and Place",
       "item": {

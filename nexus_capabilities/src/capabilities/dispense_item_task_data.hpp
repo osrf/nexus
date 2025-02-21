@@ -18,8 +18,6 @@
 #ifndef NEXUS_CAPABILITIES__CAPABILITIES__DISPENSE_ITEM_TASK_DATA_HPP
 #define NEXUS_CAPABILITIES__CAPABILITIES__DISPENSE_ITEM_TASK_DATA_HPP
 
-#include <nexus_capabilities/task.hpp>
-
 #include <yaml-cpp/yaml.h>
 
 namespace nexus::capabilities {
