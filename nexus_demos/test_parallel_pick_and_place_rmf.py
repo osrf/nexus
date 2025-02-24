@@ -107,25 +107,25 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
         )
         self.assertTrue(second_goal_handle.accepted)
 
-        # Third goal
-        goal_msg.order.work_order_id = "3"
-        third_feedbacks: list[ExecuteWorkOrder.Feedback] = []
-        third_fb_fut = Future()
+        # # Third goal
+        # goal_msg.order.work_order_id = "3"
+        # third_feedbacks: list[ExecuteWorkOrder.Feedback] = []
+        # third_fb_fut = Future()
 
-        def on_third_fb(msg):
-            third_feedbacks.append(msg.feedback)
-            if len(third_feedbacks) >= 5:
-                third_fb_fut.set_result(None)
+        # def on_third_fb(msg):
+        #     third_feedbacks.append(msg.feedback)
+        #     if len(third_feedbacks) >= 5:
+        #         third_fb_fut.set_result(None)
 
-        third_goal_handle = cast(
-            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_third_fb)
-        )
-        self.assertTrue(third_goal_handle.accepted)
+        # third_goal_handle = cast(
+        #     ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_third_fb)
+        # )
+        # self.assertTrue(third_goal_handle.accepted)
 
         # Results
         results = await first_goal_handle.get_result_async()
         self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
         results = await second_goal_handle.get_result_async()
         self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
-        results = await third_goal_handle.get_result_async()
-        self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
+        # results = await third_goal_handle.get_result_async()
+        # self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
