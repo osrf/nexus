@@ -59,6 +59,9 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
 
     @RosTestCase.timeout(600)  # 5min
     async def test_parallel_pick_and_place_wo(self):
+        # The waiting for nodes and workcells have been shifted to this test
+        # function to avoid a race condition that somehow occurs in this test
+        # suite.
         print("waiting for nodes to be ready...", file=sys.stderr)
         self.wait_for_nodes("system_orchestrator")
         await self.wait_for_lifecycle_active("system_orchestrator")
