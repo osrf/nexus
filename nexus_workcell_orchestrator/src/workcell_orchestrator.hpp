@@ -166,6 +166,8 @@ private: void _handle_command_failed(const std::shared_ptr<Context>& ctx);
 private: void _handle_task_doable(
     endpoints::IsTaskDoableService::ServiceType::Request::ConstSharedPtr req,
     endpoints::IsTaskDoableService::ServiceType::Response::SharedPtr resp);
+
+private: int _max_parallel_jobs = 1;
 };
 
 }

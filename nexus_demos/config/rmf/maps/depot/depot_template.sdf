@@ -292,7 +292,7 @@
     </include>
 
     <model name="enclosure_1">
-      <pose>8 -10.3 0 0 0 3.14159</pose>
+      <pose>9 -11.8 0 0 0 3.14159</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
@@ -320,7 +320,7 @@
     </model>
 
     <model name="enclosure_2">
-      <pose>5 -10.3 0 0 0 3.14159</pose>
+      <pose>6 -11.8 0 0 0 3.14159</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
@@ -348,7 +348,7 @@
     </model>
 
     <model name="enclosure_3">
-      <pose>2 -10.3 0 0 0 3.14159</pose>
+      <pose>3 -11.8 0 0 0 3.14159</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
@@ -376,7 +376,7 @@
     </model>
 
     <model name="enclosure_4">
-      <pose>8 -5 0 0 0 0</pose>
+      <pose>9 -3.5 0 0 0 0</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
@@ -404,7 +404,7 @@
     </model>
 
     <model name="enclosure_5">
-      <pose>5 -5 0 0 0 0</pose>
+      <pose>6 -3.5 0 0 0 0</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>
@@ -432,7 +432,7 @@
     </model>
 
     <model name="enclosure_6">
-      <pose>2 -5 0 0 0 0</pose>
+      <pose>3 -3.5 0 0 0 0</pose>
       <static>true</static>
       <include>
         <uri>https://fuel.gazebosim.org/1.0/Open-RMF/models/enclosure</uri>

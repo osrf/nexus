@@ -57,7 +57,6 @@ using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
 using lifecycle_msgs::msg::Transition;
 
-static constexpr size_t MAX_PARALLEL_TASK = 1;
 static constexpr std::chrono::milliseconds BT_TICK_RATE{10};
 static constexpr std::chrono::seconds REGISTER_TICK_RATE{1};
 
@@ -144,6 +143,15 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     {
       throw std::runtime_error("param [task_checker_plugin] is required.");
     }
+  }
+
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "Max number of parallel work orders to execute at once.";
+    this->declare_parameter("max_jobs", 1, desc);
+    this->_max_parallel_jobs = this->get_parameter("max_jobs").as_int();
   }
 
   this->_register_workcell_client =
@@ -474,7 +482,7 @@ auto WorkcellOrchestrator::_configure(
         {
           resp->success = false;
           resp->message = "A task with the same id already exists";
-          RCLCPP_INFO(this->get_logger(), "Failed to queue task [%s]: %s",
+          RCLCPP_ERROR(this->get_logger(), "Failed to queue task [%s]: %s",
           req->task_id.c_str(), resp->message.c_str());
           return;
         }
@@ -799,21 +807,17 @@ void WorkcellOrchestrator::_tick_all_bts()
     }
   }
 
-  size_t count = 0;
   auto it = this->_ctxs.begin();
-  for (; count < MAX_PARALLEL_TASK && it != this->_ctxs.end();
-    ++count, ++it)
+  for (int i = 0; i < this->_max_parallel_jobs; ++i)
   {
+    if (it == this->_ctxs.end())
+    {
+      break;
+    }
+
     this->_tick_bt(*it);
     const auto task_status = (*it)->task_state.status;
-    // `_tick_bt` returns true if the task is finished
-    if (task_status == TaskState::STATUS_FINISHED ||
-      task_status == TaskState::STATUS_FAILED)
-    {
-      // NOTE: iterator is invalidated, it is important to
-      // not access it after this line.
-      this->_ctxs.erase(it);
-    }
+
     // cancel all other tasks when any task fails. note that the failing task is
     // removed from the list first because we don't want to cancel an already
     // failed task.
@@ -821,6 +825,18 @@ void WorkcellOrchestrator::_tick_all_bts()
     {
       this->_cancel_all_tasks();
       break;
+    }
+
+    // `_tick_bt` returns true if the task is finished
+    if (task_status == TaskState::STATUS_FINISHED)
+    {
+      // NOTE: iterator is invalidated, it is important to
+      // not access it after this line.
+      it = this->_ctxs.erase(it);
+    }
+    else
+    {
+      ++it;
     }
   }
 
