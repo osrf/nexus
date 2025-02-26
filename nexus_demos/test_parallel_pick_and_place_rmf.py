@@ -40,16 +40,25 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-                (
-                     "ros2",
-                     "launch",
-                     "nexus_demos",
-                     "launch.py",
-                     "sim_update_rate:=10000",
-                     "use_rmf_transporter:=true"
-                 ),
+            (
+                "ros2",
+                "launch",
+                "nexus_demos",
+                "launch.py",
+                "sim_update_rate:=10000",
+                "use_rmf_transporter:=true"
+            ),
         )
         self.proc.__enter__()
+
+        # give some time for discovery to happen
+        await self.ros_sleep(5)
+
+    def tearDown(self):
+        self.proc.__exit__(None, None, None)
+
+    @RosTestCase.timeout(3000)  # 5min
+    async def test_parallel_pick_and_place_wo(self):
         print("waiting for nodes to be ready...", file=sys.stderr)
         self.wait_for_nodes("system_orchestrator")
         await self.wait_for_lifecycle_active("system_orchestrator")
@@ -59,20 +68,12 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
         await self.wait_for_robot_state()
         print("AMRs are ready")
 
-        # give some time for discovery to happen
-        await self.ros_sleep(5)
-
         # create action client to send work order
         self.action_client = ActionClient(
             self.node, ExecuteWorkOrder, "/system_orchestrator/execute_order"
         )
         self.action_client.wait_for_server()
 
-    def tearDown(self):
-        self.proc.__exit__(None, None, None)
-
-    @RosTestCase.timeout(3000)  # 5min
-    async def test_parallel_pick_and_place_wo(self):
         goal_msg = ExecuteWorkOrder.Goal()
         with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
