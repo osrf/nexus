@@ -27,7 +27,7 @@ from rclpy.action.client import ClientGoalHandle, GoalStatus
 from ros_testcase import RosTestCase
 import subprocess
 
-class ParallelPickAndPlaceRmfTest(NexusTestCase):
+class PickAndPlaceTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
@@ -40,25 +40,16 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            (
-                "ros2",
-                "launch",
-                "nexus_demos",
-                "launch.py",
-                "sim_update_rate:=10000",
-                "use_rmf_transporter:=true"
-            ),
+                (
+                     "ros2",
+                     "launch",
+                     "nexus_demos",
+                     "launch.py",
+                     "sim_update_rate:=10000",
+                     "use_rmf_transporter:=true"
+                 ),
         )
         self.proc.__enter__()
-
-        # give some time for discovery to happen
-        await self.ros_sleep(5)
-
-    def tearDown(self):
-        self.proc.__exit__(None, None, None)
-
-    @RosTestCase.timeout(600)  # 5min
-    async def test_parallel_pick_and_place_wo(self):
         print("waiting for nodes to be ready...", file=sys.stderr)
         self.wait_for_nodes("system_orchestrator")
         await self.wait_for_lifecycle_active("system_orchestrator")
@@ -68,65 +59,57 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
         await self.wait_for_robot_state()
         print("AMRs are ready")
 
+        # give some time for discovery to happen
+        await self.ros_sleep(5)
+
         # create action client to send work order
         self.action_client = ActionClient(
             self.node, ExecuteWorkOrder, "/system_orchestrator/execute_order"
         )
-        self.action_client.wait_for_server()
 
+    def tearDown(self):
+        self.proc.__exit__(None, None, None)
+
+    @RosTestCase.timeout(600)  # 10min
+    async def test_pick_and_place_wo(self):
+        self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
+        goal_msg.order.work_order_id = "1"
         with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
+        feedbacks: list[ExecuteWorkOrder.Feedback] = []
+        fb_fut = Future()
 
-        # First goal
-        goal_msg.order.work_order_id = "1"
-        first_feedbacks: list[ExecuteWorkOrder.Feedback] = []
-        first_fb_fut = Future()
+        def on_fb(msg):
+            feedbacks.append(msg.feedback)
+            if len(feedbacks) >= 5:
+                fb_fut.set_result(None)
 
-        def on_first_fb(msg):
-            first_feedbacks.append(msg.feedback)
-            if len(first_feedbacks) >= 5:
-                first_fb_fut.set_result(None)
-
-        first_goal_handle = cast(
-            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_first_fb)
+        goal_handle = cast(
+            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_fb)
         )
-        self.assertTrue(first_goal_handle.accepted)
+        self.assertTrue(goal_handle.accepted)
 
-        # Second goal
-        goal_msg.order.work_order_id = "2"
-        second_feedbacks: list[ExecuteWorkOrder.Feedback] = []
-        second_fb_fut = Future()
-
-        def on_second_fb(msg):
-            second_feedbacks.append(msg.feedback)
-            if len(second_feedbacks) >= 5:
-                second_fb_fut.set_result(None)
-
-        second_goal_handle = cast(
-            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_second_fb)
-        )
-        self.assertTrue(second_goal_handle.accepted)
-
-        # Third goal
-        goal_msg.order.work_order_id = "3"
-        third_feedbacks: list[ExecuteWorkOrder.Feedback] = []
-        third_fb_fut = Future()
-
-        def on_third_fb(msg):
-            third_feedbacks.append(msg.feedback)
-            if len(third_feedbacks) >= 5:
-                third_fb_fut.set_result(None)
-
-        third_goal_handle = cast(
-            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_third_fb)
-        )
-        self.assertTrue(third_goal_handle.accepted)
-
-        # Results
-        results = await first_goal_handle.get_result_async()
+        results = await goal_handle.get_result_async()
         self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
-        results = await second_goal_handle.get_result_async()
-        self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
-        results = await third_goal_handle.get_result_async()
-        self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
+
+        # check that we receive the correct feedbacks
+        # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
+        #   high load so we only check the last feedback as a workaround.
+        self.assertGreater(len(feedbacks), 0)
+        for msg in feedbacks:
+            # The first task is transportation
+            self.assertEqual(len(msg.task_states), 3)
+            state: TaskState = msg.task_states[1]  # type: ignore
+            self.assertEqual(state.workcell_id, "workcell_1")
+            self.assertEqual(state.task_id, "1/place_on_conveyor/0")
+            state: TaskState = msg.task_states[2]  # type: ignore
+            self.assertEqual(state.workcell_id, "workcell_2")
+            self.assertEqual(state.task_id, "1/pick_from_conveyor/1")
+
+        state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
+        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
+        state: TaskState = feedbacks[-1].task_states[1]  # type: ignore
+        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
+        state: TaskState = feedbacks[-1].task_states[2]  # type: ignore
+        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
