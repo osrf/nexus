@@ -66,7 +66,7 @@ std::optional<endpoints::TransportAction::ActionType::Goal> TransporterRequest::
 make_goal()
 {
   endpoints::TransportAction::ActionType::Goal goal;
-  goal.request.id = this->_ctx->job_id;
+  goal.request.id = this->_ctx->get_job_id();
   goal.request.requester = this->_node->get_name();
   // TODO(Yadunund): Parse work order and assign action type and params.
   // See https://github.com/osrf/nexus/issues/68.

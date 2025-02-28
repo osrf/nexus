@@ -43,11 +43,11 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
   }
 
   // Create a list of destination from the current context tasks
-  const auto& task_assignments = this->_ctx->workcell_task_assignments;
+  const auto& task_assignments = this->_ctx->get_workcell_task_assignments();
   YAML::Node orders;
   std::vector<std::string> locations;
 
-  for (const auto& task : this->_ctx->tasks)
+  for (const auto& task : this->_ctx->get_tasks())
   {
     auto assignment_it = task_assignments.find(task.task_id);
     if (assignment_it == task_assignments.end())
@@ -66,8 +66,8 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
     order["workcell_task_id"] = task.task_id;
     orders.push_back(order);
   }
-  this->_transport_task.work_order_id = this->_ctx->job_id;
-  this->_transport_task.task_id = this->_ctx->job_id;
+  this->_transport_task.work_order_id = this->_ctx->get_job_id();
+  this->_transport_task.task_id = this->_ctx->get_job_id();
   this->_transport_task.type = "transportation";
   YAML::Emitter out;
   out << orders;
@@ -78,7 +78,7 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
     std::make_shared<endpoints::IsTaskDoableService::ServiceType::Request>();
   req->task = this->_transport_task;
   // send request to all transporters in parallel
-  for (auto& [workcell_id, session] : this->_ctx->workcell_sessions)
+  for (auto& [workcell_id, session] : this->_ctx->get_workcell_sessions())
   {
     auto fut = session->task_doable_client->async_send_request(req);
     this->_ongoing_requests.emplace(workcell_id,
@@ -161,11 +161,11 @@ BT::NodeStatus AssignTransporterWorkcell::_update_ongoing_requests()
         this->setOutput("transport_task", this->_transport_task);
         // Update the context
         const auto& task_id = this->_transport_task.task_id;
-        this->_ctx->workcell_task_assignments.emplace(task_id, workcell_id);
-        auto p = this->_ctx->task_states.emplace(task_id, nexus_orchestrator_msgs::msg::TaskState());
-        auto& task_state = p.first->second;
+        this->_ctx->set_workcell_task_assignment(task_id, workcell_id);
+        auto task_state = nexus_orchestrator_msgs::msg::TaskState();
         task_state.workcell_id = workcell_id;
         task_state.task_id = task_id;
+        this->_ctx->set_task_state(task_id, task_state);
         return BT::NodeStatus::SUCCESS;
       }
       else

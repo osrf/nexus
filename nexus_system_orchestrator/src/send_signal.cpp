@@ -28,7 +28,7 @@ BT::NodeStatus SendSignal::tick()
   if (!task)
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: port [task] is required",
+      this->_ctx->get_node().get_logger(), "%s: port [task] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -37,50 +37,51 @@ BT::NodeStatus SendSignal::tick()
   if (!signal)
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: port [signal] is required",
+      this->_ctx->get_node().get_logger(), "%s: port [signal] is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
 
   try
   {
+    const auto workcell_task_assignments = this->_ctx->get_workcell_task_assignments();
     auto it = std::find_if(
-      this->_ctx->workcell_task_assignments.cbegin(),
-      this->_ctx->workcell_task_assignments.cend(),
+      workcell_task_assignments.cbegin(),
+      workcell_task_assignments.cend(),
       [&task](const std::pair<std::string, std::string>& p)
       {
         return p.first == task->task_id;
       });
-    if (it == this->_ctx->workcell_task_assignments.cend())
+    if (it == workcell_task_assignments.cend())
     {
       RCLCPP_ERROR(
-        this->_ctx->node.get_logger(), "%s: Unable to find workcell assigned to task [%s]",
+        this->_ctx->get_node().get_logger(), "%s: Unable to find workcell assigned to task [%s]",
         this->name().c_str(), task->task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
     const auto& workcell = it->second;
 
-    const auto& session = this->_ctx->workcell_sessions.at(workcell);
+    const auto& session = this->_ctx->get_workcell_sessions().at(workcell);
     auto req =
       std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
     req->task_id = task->task_id;
     req->signal = *signal;
     auto resp = session->signal_wc_client->send_request(req);
     RCLCPP_INFO(
-      this->_ctx->node.get_logger(), "%s: Sent signal [%s] to workcell [%s]",
+      this->_ctx->get_node().get_logger(), "%s: Sent signal [%s] to workcell [%s]",
       this->name().c_str(), signal->c_str(), workcell.c_str());
     if (!resp->success)
     {
       RCLCPP_WARN(
-        this->_ctx->node.get_logger(),
+        this->_ctx->get_node().get_logger(),
         "%s: Workcell is not able to accept [%s] signal now. Queuing the signal to be sent on the next task request.",
         this->name().c_str(), signal->c_str());
-      this->_ctx->queued_signals[task->task_id].emplace_back(*signal);
+      this->_ctx->add_queued_signal(task->task_id, *signal);
     }
   }
   catch (const std::out_of_range& e)
   {
-    RCLCPP_ERROR(this->_ctx->node.get_logger(), "%s: %s",
+    RCLCPP_ERROR(this->_ctx->get_node().get_logger(), "%s: %s",
       this->name().c_str(), e.what());
     return BT::NodeStatus::FAILURE;
   }

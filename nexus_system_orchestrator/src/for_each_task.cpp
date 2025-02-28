@@ -35,23 +35,24 @@ BT::NodeStatus ForEachTask::tick()
   {
     this->_first_tick = false;
     RCLCPP_DEBUG(this->_logger, "Looping through %lu tasks",
-      this->_ctx->tasks.size());
+      this->_ctx->get_task_number());
   }
-  if (this->_ctx->tasks.size() == 0)
+  if (this->_ctx->get_task_number() == 0)
   {
     return BT::NodeStatus::SUCCESS;
   }
 
   this->setStatus(BT::NodeStatus::RUNNING);
 
-  while (this->_current_idx < this->_ctx->tasks.size())
+  const auto tasks = this->_ctx->get_tasks();
+  while (this->_current_idx < tasks.size())
   {
-    auto current_task = this->_ctx->tasks.at(this->_current_idx);
+    auto current_task = tasks.at(this->_current_idx);
     this->setOutput("task", current_task);
     try
     {
       this->setOutput("workcell",
-        this->_ctx->workcell_task_assignments.at(current_task.task_id));
+        this->_ctx->get_workcell_task_assignments().at(current_task.task_id));
     }
     catch (const std::out_of_range&)
     {

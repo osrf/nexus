@@ -55,7 +55,7 @@ BT::NodeStatus WorkcellRequest::onStart()
 
   try
   {
-    this->_session = this->_ctx->workcell_sessions.at(this->_workcell_id);
+    this->_session = this->_ctx->get_workcell_sessions().at(this->_workcell_id);
   }
   catch (const std::out_of_range&)
   {
@@ -81,20 +81,20 @@ WorkcellRequest::make_goal()
   goal.task = this->_task;
   try
   {
-    auto& signals = this->_ctx->queued_signals.at(this->_task.task_id);
+    auto& signals = this->_ctx->get_queued_signals().at(this->_task.task_id);
     goal.start_signals = signals;
     signals.clear();
   }
   catch (const std::out_of_range&)
   {
     RCLCPP_DEBUG(
-      this->_ctx->node.get_logger(), "%s: No queued signals for task [%s]",
+      this->_ctx->get_node().get_logger(), "%s: No queued signals for task [%s]",
       this->name().c_str(), this->_task.task_id.c_str());
     // ignore
   }
-  goal.task.previous_results = this->_ctx->task_results;
+  goal.task.previous_results = this->_ctx->get_task_results();
   RCLCPP_INFO_STREAM(
-    this->_ctx->node.get_logger(), "%s: Sending workcell request:" << std::endl << nexus_orchestrator_msgs::action::to_yaml(
+    this->_ctx->get_node().get_logger(), "%s: Sending workcell request:" << std::endl << nexus_orchestrator_msgs::action::to_yaml(
         goal));
   return goal;
 }
@@ -102,8 +102,8 @@ WorkcellRequest::make_goal()
 void WorkcellRequest::on_feedback(
   endpoints::WorkcellRequestAction::ActionType::Feedback::ConstSharedPtr msg)
 {
-  this->_ctx->task_states.at(this->_task.task_id) = msg->state;
-  this->_on_task_progress(this->_ctx->task_states);
+  this->_ctx->set_task_state(this->_task.task_id, msg->state);
+  this->_on_task_progress(this->_ctx->get_task_states());
 }
 
 bool WorkcellRequest::on_result(
@@ -111,7 +111,7 @@ bool WorkcellRequest::on_result(
 {
   if (!result.result->success)
   {
-    this->_ctx->errors.emplace_back(result.result->message);
+    this->_ctx->add_error(result.result->message);
     return false;
   }
 
@@ -124,10 +124,12 @@ bool WorkcellRequest::on_result(
     return false;
   }
 
-  this->_ctx->task_results = result.result->result; // -.-
-  this->_ctx->task_states.at(this->_task.task_id).status =
-    TaskState::STATUS_FINISHED;
-  this->_on_task_progress(this->_ctx->task_states);
+  this->_ctx->set_task_results(result.result->result); // -.-
+
+  auto task_state = this->_ctx->get_task_states().at(this->_task.task_id);
+  task_state.status = TaskState::STATUS_FINISHED;
+  this->_ctx->set_task_state(this->_task.task_id, task_state);
+  this->_on_task_progress(this->_ctx->get_task_states());
   return true;
 }
 
