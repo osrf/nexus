@@ -108,13 +108,6 @@ public:
     return _task_remapper;
   }
 
-  Context& set_workcell_task_assignments(const std::unordered_map<std::string, std::string>& assignments)
-  {
-    std::lock_guard<std::mutex> lock(_workcell_task_assignments_mutex);
-    _workcell_task_assignments = assignments;
-    return *this;
-  }
-
   Context& set_workcell_task_assignment(const std::string& task_id, const std::string& workcell_id)
   {
     std::lock_guard<std::mutex> lock(_workcell_task_assignments_mutex);
@@ -154,13 +147,6 @@ public:
     return _transporter_sessions;
   }
 
-  Context& set_task_states(const std::unordered_map<std::string, TaskState>& states)
-  {
-    std::lock_guard<std::mutex> lock(_task_states_mutex);
-    _task_states = states;
-    return *this;
-  }
-
   Context& set_task_state(const std::string& task_id, const TaskState& task_state)
   {
     std::lock_guard<std::mutex> lock(_task_states_mutex);
@@ -187,13 +173,6 @@ public:
     return _goal_handle;
   }
 
-  Context& set_errors(const std::vector<std::string>& errors)
-  {
-    std::lock_guard<std::mutex> lock(_errors_mutex);
-    _errors = errors;
-    return *this;
-  }
-
   Context& add_error(const std::string& error)
   {
     std::lock_guard<std::mutex> lock(_errors_mutex);
@@ -218,13 +197,6 @@ public:
   {
     std::lock_guard<std::mutex> lock(_task_results_mutex);
     return _task_results;
-  }
-
-  Context& set_queued_signals(const std::unordered_map<std::string, std::vector<std::string>>& signals)
-  {
-    std::lock_guard<std::mutex> lock(_queued_signals_mutex);
-    _queued_signals = signals;
-    return *this;
   }
 
   Context& add_queued_signal(const std::string& task_id, const std::string& signal) {
