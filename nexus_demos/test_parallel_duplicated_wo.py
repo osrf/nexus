@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Johnson & Johnson
+# Copyright (C) 2025 Open Source Robotics Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,18 +16,16 @@ import os
 import sys
 from typing import cast
 
-from action_msgs.msg import GoalStatus
-from managed_process import managed_process
 from nexus_orchestrator_msgs.action import ExecuteWorkOrder
-from nexus_orchestrator_msgs.msg import TaskState
 from nexus_test_case import NexusTestCase
-from rclpy import Future
+from managed_process import managed_process
 from rclpy.action import ActionClient
-from rclpy.action.client import ClientGoalHandle, GoalStatus
+from rclpy.action.client import ClientGoalHandle
 from ros_testcase import RosTestCase
 import subprocess
 
-class PickAndPlaceTest(NexusTestCase):
+
+class ParallelWoTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
@@ -52,49 +50,41 @@ class PickAndPlaceTest(NexusTestCase):
         await self.wait_for_transporters("transporter_node")
         print("all transporters are ready")
 
-        # give some time for discovery to happen
-        await self.ros_sleep(5)
-
         # create action client to send work order
         self.action_client = ActionClient(
             self.node, ExecuteWorkOrder, "/system_orchestrator/execute_order"
         )
+        self.action_client.wait_for_server()
 
     def tearDown(self):
         self.proc.__exit__(None, None, None)
 
-    @RosTestCase.timeout(600)  # 10min
-    async def test_pick_and_place_wo(self):
-        self.action_client.wait_for_server()
+    @RosTestCase.timeout(180)  # 3min
+    async def test_reject_jobs_over_max(self):
+        """
+        New jobs should be rejected when the max number of jobs is already executing.
+        """
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/pick_from_conveyor.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
             goal_msg.order.work_order = f.read()
-        feedbacks: list[ExecuteWorkOrder.Feedback] = []
-        fb_fut = Future()
-
-        def on_fb(msg):
-            feedbacks.append(msg.feedback)
-            if len(feedbacks) >= 5:
-                fb_fut.set_result(None)
-
         goal_handle = cast(
-            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg, on_fb)
+            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg)
         )
         self.assertTrue(goal_handle.accepted)
 
-        results = await goal_handle.get_result_async()
-        self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
+        goal_msg_2 = ExecuteWorkOrder.Goal()
+        goal_msg_2.order.work_order_id = "2"
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+            goal_msg_2.order.work_order = f.read()
+        goal_handle_2 = cast(
+            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg_2)
+        )
+        self.assertTrue(goal_handle_2.accepted)
 
-        # check that we receive the correct feedbacks
-        # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
-        #   high load so we only check the last feedback as a workaround.
-        self.assertGreater(len(feedbacks), 0)
-        for msg in feedbacks:
-            self.assertEqual(len(msg.task_states), 1)
-            state: TaskState = msg.task_states[0]  # type: ignore
-            self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id,"1/pick_from_conveyor/0")
-
-        # state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
-        # self.assertEqual(state.status, TaskState.STATUS_FINISHED)
+        goal_msg_3 = goal_msg
+        goal_msg_3.order.work_order_id = "3"
+        goal_handle_3 = cast(
+            ClientGoalHandle, await self.action_client.send_goal_async(goal_msg_3)
+        )
+        self.assertFalse(goal_handle_3.accepted)
