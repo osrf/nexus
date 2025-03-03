@@ -111,7 +111,7 @@ public:
   Context& set_workcell_task_assignment(const std::string& task_id, const std::string& workcell_id)
   {
     std::lock_guard<std::mutex> lock(_workcell_task_assignments_mutex);
-    _workcell_task_assignments.emplace(task_id, workcell_id);
+    _workcell_task_assignments[task_id] = workcell_id;
     return *this;
   }
 
@@ -150,7 +150,7 @@ public:
   Context& set_task_state(const std::string& task_id, const TaskState& task_state)
   {
     std::lock_guard<std::mutex> lock(_task_states_mutex);
-    _task_states.emplace(task_id, task_state);
+    _task_states[task_id] = task_state;
     return *this;
   }
 
