@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # This script does the following:
-# 1. Install CycloneDDS (Iron dist.) if not already installed
-# 2. Change RMW_IMPLEMENTATION to CycloneDDS
+# 1. Install RMW Zenoh (Jazzy dist.) if not already installed
+# 2. Change RMW_IMPLEMENTATION to rmw_zenoh_cpp
 # 3. Enable multicast on loopback interface
 
-RMW_PACKAGE="ros-jazzy-rmw-cyclonedds-cpp"
+RMW_PACKAGE="ros-jazzy-rmw-zenoh-cpp"
 
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $RMW_PACKAGE|grep "install ok installed")
 
@@ -23,12 +23,12 @@ if [ "$PKG_OK" = "" ]; then
 fi
 
 while true; do
-    read -p "Restart ROS Daemon and set RMW_IMPLEMENTATION to 'rmw_cyclonedds_cpp'? (y/n)" yn
+    read -p "Restart ROS Daemon and set RMW_IMPLEMENTATION to 'rmw_zenoh_cpp'? (y/n)" yn
     case $yn in
         [Yy]* )
           ros2 daemon stop;
           echo "Stopped ROS2 Daemon"
-          export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp;
+          export RMW_IMPLEMENTATION=rmw_zenoh_cpp;
           ros2 daemon start;
           echo "Started ROS2 Daemon"
           break;;

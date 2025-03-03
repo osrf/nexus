@@ -8,8 +8,8 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 >NOTE: The ROS_DOMAIN_ID occupied by the Zenoh bridges during launch time may be different from the `domain` values in the Zenoh bridge configurations. This is because the launch file overrides the domain ID of the zenoh bridges to ensure that it is same as that of the orchestrator.
 
 ### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
-> NOTE: Before running any of these commands, you must set the rmw implmentation to cyclonedds with
-`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+> NOTE: Before running any of these commands, you must set the rmw implmentation to Zenoh with
+`export RMW_IMPLEMENTATION=rmw_zenoh_cpp`
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
 ```bash
 ros2 launch nexus_demos launch.py headless:=False

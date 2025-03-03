@@ -33,10 +33,10 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     if (
         "RMW_IMPLEMENTATION" not in os.environ
-        or os.environ["RMW_IMPLEMENTATION"] != "rmw_cyclonedds_cpp"
+        or os.environ["RMW_IMPLEMENTATION"] != "rmw_zenoh_cpp"
     ):
         print(
-            "Only cycloneDDS is supported, the environment variable RMW_IMPLEMENTATION must be set to rmw_cyclonedds_cpp",
+            "Only RMW Zenoh is supported, the environment variable RMW_IMPLEMENTATION must be set to rmw_zenoh_cpp",
             file=sys.stderr,
         )
         exit(1)
