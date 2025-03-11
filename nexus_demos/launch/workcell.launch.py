@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.actions import LifecycleNode
 from launch_ros.parameter_descriptions import Parameter
@@ -32,19 +29,17 @@ from launch.actions import (
     RegisterEventHandler,
     SetEnvironmentVariable,
 )
-from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
-def activate_node_service(node_name, ros_domain_id):
+def activate_node_service(node_name):
     activate_node_proc = ExecuteProcess(
         cmd=[
             'python3',
             [FindPackageShare('nexus_demos'), "/scripts/activate_node.py"],
             node_name,
         ],
-        additional_env={'ROS_DOMAIN_ID': ros_domain_id},
     )
 
     def check_activate_return_code(event, _):
@@ -70,13 +65,10 @@ def activate_node_service(node_name, ros_domain_id):
 
 
 def launch_setup(context, *args, **kwargs):
-    config_path = get_package_share_directory("nexus_demos")
-
     # Initialize launch configuration
     workcell_id = LaunchConfiguration("workcell_id")
     bt_path = LaunchConfiguration("bt_path")
     task_checker_plugin = LaunchConfiguration("task_checker_plugin")
-    ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
     controller_config_package = LaunchConfiguration("controller_config_package")
     planner_config_package = LaunchConfiguration("planner_config_package")
@@ -91,9 +83,9 @@ def launch_setup(context, *args, **kwargs):
     dispenser_properties = LaunchConfiguration("dispenser_properties")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot_ip = LaunchConfiguration("robot_ip")
-    use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
-    zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    zenoh_router_config_filename = LaunchConfiguration("zenoh_router_config_filename")
+    zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -188,7 +180,34 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        SetEnvironmentVariable('ROS_DOMAIN_ID', ros_domain_id),
+        GroupAction(
+            [
+                IncludeLaunchDescription(
+                    [
+                        PathJoinSubstitution(
+                            [
+                                FindPackageShare("nexus_demos"),
+                                "launch",
+                                "zenoh_router.launch.py",
+                            ]
+                        )
+                    ],
+                    launch_arguments={
+                        "zenoh_config_package": zenoh_config_package,
+                        "zenoh_router_config_filename": zenoh_router_config_filename,
+                    }.items(),
+                )
+            ]
+        ),
+        SetEnvironmentVariable(
+            "ZENOH_SESSION_CONFIG_URI",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(zenoh_config_package),
+                    zenoh_session_config_filename,
+                ]
+            )
+        ),
         mock_dispenser_node,
         mock_product_detector_node,
         mock_gripper_node,
@@ -252,26 +271,7 @@ def launch_setup(context, *args, **kwargs):
                 )
             ]
         ),
-        GroupAction(
-            [
-                IncludeLaunchDescription(
-                    [
-                        PathJoinSubstitution([
-                            FindPackageShare('nexus_demos'),
-                            'launch',
-                            'zenoh_bridge.launch.py'
-                        ])
-                    ],
-                    launch_arguments={
-                        'zenoh_config_package': zenoh_config_package,
-                        'zenoh_config_filename': zenoh_config_filename,
-                        'ros_domain_id': ros_domain_id.perform(context),
-                    }.items()
-                )
-            ],
-            condition=IfCondition(use_zenoh_bridge),
-        ),
-        activate_node_service("motion_planner_server", ros_domain_id.perform(context)),
+        activate_node_service("motion_planner_server"),
     ]
 
 
@@ -290,11 +290,6 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "task_checker_plugin",
             description="Fully qualified name of the plugin to load to check if a task is doable.",
-        ),
-        DeclareLaunchArgument(
-            "ros_domain_id",
-            default_value="0",
-            description="ROS_DOMAIN_ID environment variable",
         ),
         DeclareLaunchArgument(
             "headless",
@@ -367,19 +362,19 @@ def generate_launch_description():
             description="The IP address of the real robot when use_fake_hardware is False.",
         ),
         DeclareLaunchArgument(
-            "use_zenoh_bridge",
-            default_value="true",
-            description="Set true to launch the Zenoh DDS Bridge",
-        ),
-        DeclareLaunchArgument(
             name="zenoh_config_package",
             default_value="nexus_demos",
             description="Package containing Zenoh DDS bridge configurations",
         ),
         DeclareLaunchArgument(
-            name="zenoh_config_filename",
-            default_value="config/zenoh/workcell_1.json5",
-            description="Zenoh DDS bridge configuration filepath",
+            name="zenoh_router_config_filename",
+            default_value="config/zenoh/workcell_1_router_config.json5",
+            description="RMW Zenoh router configuration filepath",
+        ),
+        DeclareLaunchArgument(
+            name="zenoh_session_config_filename",
+            default_value="config/zenoh/workcell_1_session_config.json5",
+            description="RMW Zenoh session configuration filepath",
         ),
         OpaqueFunction(function = launch_setup)
     ])

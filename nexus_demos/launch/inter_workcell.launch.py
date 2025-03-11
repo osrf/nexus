@@ -106,12 +106,11 @@ def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None)
 
 
 def launch_setup(context, *args, **kwargs):
-    ros_domain_id = LaunchConfiguration("ros_domain_id")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
-    use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
-    zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    zenoh_router_config_filename = LaunchConfiguration("zenoh_router_config_filename")
+    zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
     transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
@@ -194,7 +193,7 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(headless),
     )
 
-    zenoh_bridge = GroupAction(
+    zenoh_router = GroupAction(
         [
             IncludeLaunchDescription(
                 [
@@ -202,18 +201,16 @@ def launch_setup(context, *args, **kwargs):
                         [
                             FindPackageShare("nexus_demos"),
                             "launch",
-                            "zenoh_bridge.launch.py",
+                            "zenoh_router.launch.py",
                         ]
                     )
                 ],
                 launch_arguments={
                     "zenoh_config_package": zenoh_config_package,
-                    "zenoh_config_filename": zenoh_config_filename,
-                    "ros_domain_id": ros_domain_id.perform(context),
+                    "zenoh_router_config_filename": zenoh_router_config_filename,
                 }.items(),
             )
-        ],
-        condition=IfCondition(use_zenoh_bridge),
+        ]
     )
 
     activate_system_orchestrator = GroupAction(
@@ -224,13 +221,21 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
+        SetEnvironmentVariable(
+            "ZENOH_SESSION_CONFIG_URI",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(zenoh_config_package),
+                    zenoh_session_config_filename,
+                ]
+            )
+        ),
         system_orchestrator_node,
         rmf_transporter,
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
-        zenoh_bridge,
+        zenoh_router,
         activate_system_orchestrator,
         activate_transporter_node,
         activate_node(mock_emergency_alarm_node),
@@ -241,11 +246,6 @@ def generate_launch_description():
 
     return launch.LaunchDescription(
         [
-            DeclareLaunchArgument(
-                "ros_domain_id",
-                default_value="0",
-                description="ROS_DOMAIN_ID environment variable",
-            ),
             DeclareLaunchArgument(
                 "use_fake_hardware",
                 default_value="true",
@@ -258,19 +258,19 @@ def generate_launch_description():
                 between workcells.",
             ),
             DeclareLaunchArgument(
-                "use_zenoh_bridge",
-                default_value="true",
-                description="Set true to launch the Zenoh DDS Bridge",
-            ),
-            DeclareLaunchArgument(
                 name="zenoh_config_package",
                 default_value="nexus_demos",
-                description="Package containing Zenoh DDS bridge configurations",
+                description="Package containing RMW Zenoh router and session configurations",
             ),
             DeclareLaunchArgument(
-                name="zenoh_config_filename",
-                default_value="config/zenoh/system_orchestrator.json5",
-                description="Zenoh DDS bridge configuration filepath",
+                name="zenoh_router_config_filename",
+                default_value="config/zenoh/system_orchestrator_router_config.json5",
+                description="RMW Zenoh router configuration filepath",
+            ),
+            DeclareLaunchArgument(
+                name="zenoh_session_config_filename",
+                default_value="config/zenoh/system_orchestrator_session_config.json5",
+                description="RMW Zenoh session configuration filepath",
             ),
             DeclareLaunchArgument(
                 "transporter_plugin",

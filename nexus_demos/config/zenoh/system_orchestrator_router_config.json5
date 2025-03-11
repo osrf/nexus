@@ -1,0 +1,11 @@
+{
+  mode: "router",
+  connect: {
+    endpoints: [],
+  },
+  listen: {
+    endpoints: [
+      "tcp/[::]:7447"
+    ],
+  },
+}

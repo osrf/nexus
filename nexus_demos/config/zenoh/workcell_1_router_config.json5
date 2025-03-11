@@ -1,0 +1,99 @@
+{
+  mode: "router",
+  connect: {
+    endpoints: [
+      // system orchestrator
+      "tcp/localhost:7447",
+    ],
+  },
+  listen: {
+    endpoints: [
+      "tcp/[::]:7448"
+    ],
+  },
+  access_control: {
+    "enabled": true,
+    "default_permission": "deny",
+    "rules":
+    [
+      {
+        "id": "liveliness_tokens",
+        "messages": [
+          "liveliness_token",
+          "liveliness_query",
+          "declare_liveliness_subscriber",
+        ],
+        "flows": ["ingress", "egress"],
+        "permission": "allow",
+        "key_exprs": [
+          "@ros2_lv/**"
+        ],
+      },
+      {
+        "id": "bridged_topics",
+        "messages": [
+          "put",
+          "declare_subscriber",
+        ],
+        "flows": ["ingress", "egress"],
+        "permission": "allow",
+        "key_exprs": [
+          "*/workcell_1/workcell_state/**",
+        ],
+      },
+      {
+        "id": "bridged_services",
+        "messages": [
+          "query",
+          "declare_queryable",
+          "reply",
+        ],
+        "flows": ["ingress", "egress"],
+        "permission": "allow",
+        "key_exprs": [
+          "*/register_workcell/**",
+          "*/workcell_1/is_task_doable/**",
+          "*/workcell_1/queue_task/**",
+          "*/workcell_1/remove_pending_task/**",
+          "*/workcell_1/get_state/**",
+          "*/workcell_1/change_state/**",
+          "*/workcell_1/signal/**",
+          "*/workcell_1/pause/**",
+        ],
+      },
+      {
+        "id": "bridged_actions",
+        "messages": [
+          "query",
+          "declare_queryable",
+          "reply",
+          "put",
+          "declare_subscriber",
+        ],
+        "flows": ["ingress", "egress"],
+        "permission": "allow",
+        "key_exprs": [
+          "*/workcell_1/request/**",
+        ],
+      },
+    ],
+    "subjects":
+    [
+      {
+        "id": "all_subjects",
+      },
+    ],
+    "policies":
+    [
+      {
+        "rules": [
+          "bridged_topics",
+          "bridged_services",
+          "bridged_actions",
+          "liveliness_tokens",
+        ],
+        "subjects": ["all_subjects"],
+      },
+    ]
+  },
+}
