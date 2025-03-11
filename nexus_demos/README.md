@@ -18,17 +18,17 @@ ros2 launch nexus_demos launch.py headless:=False
 ### Method 2: Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
 Launch with Workcell 1
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=true run_workcell_2:=false
 ```
 
 Launch with Workcell 2
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=false run_workcell_2:=true
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=false run_workcell_2:=true
 ```
 
 Testing with real hardware
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
 ```
 
 ## Launch Orchestrators individually

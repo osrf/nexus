@@ -27,6 +27,9 @@ jobs:
     - name: vcs
       run: |
         vcs import . < abb.repos
+    - name: rmw_zenoh_cpp source
+      run: |
+        git clone https://github.com/ros2/rmw_zenoh -b jazzy
     - name: rosdep
       run: |
         apt update

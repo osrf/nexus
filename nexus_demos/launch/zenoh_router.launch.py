@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
         )
     ]
 
-    zenoh_bridge_exec = ExecuteProcess(
+    zenoh_router_exec = ExecuteProcess(
         cmd=cmd,
         shell=True,
         additional_env={
@@ -54,7 +54,7 @@ def launch_setup(context, *args, **kwargs):
         },
     )
 
-    return [zenoh_bridge_exec]
+    return [zenoh_router_exec]
 
 def generate_launch_description():
     declared_arguments = []
