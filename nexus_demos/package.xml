@@ -26,7 +26,7 @@
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
   <depend>yaml_cpp_vendor</depend>
-  <depend>rmw_cyclonedds_cpp</depend>
+  <depend>rmw_zenoh_cpp</depend>
 
   <exec_depend>abb_bringup</exec_depend>
   <exec_depend>abb_irb1300_support</exec_depend>
@@ -43,7 +43,6 @@
   <exec_depend>nexus_rviz_plugins</exec_depend>
   <exec_depend>nexus_system_orchestrator</exec_depend>
   <exec_depend>nexus_workcell_orchestrator</exec_depend>
-  <exec_depend>nexus_zenoh_bridge_dds_vendor</exec_depend>
 
   <!-- Open-RMF dependencies. -->
   <exec_depend>rmf_building_map_tools</exec_depend>

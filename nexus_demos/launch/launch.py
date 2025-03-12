@@ -33,17 +33,16 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     if (
         "RMW_IMPLEMENTATION" not in os.environ
-        or os.environ["RMW_IMPLEMENTATION"] != "rmw_cyclonedds_cpp"
+        or os.environ["RMW_IMPLEMENTATION"] != "rmw_zenoh_cpp"
     ):
         print(
-            "Only cycloneDDS is supported, the environment variable RMW_IMPLEMENTATION must be set to rmw_cyclonedds_cpp",
+            "Only RMW Zenoh is supported, the environment variable RMW_IMPLEMENTATION must be set to rmw_zenoh_cpp",
             file=sys.stderr,
         )
         exit(1)
 
     headless = LaunchConfiguration("headless")
     use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
-    use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot1_ip = LaunchConfiguration("robot1_ip")
     robot2_ip = LaunchConfiguration("robot2_ip")
@@ -63,20 +62,9 @@ def launch_setup(context, *args, **kwargs):
             )
             inter_workcell_domain_id = 0
 
-    if use_zenoh_bridge.perform(context).lower() == "true":
-        log_msg += "Using the zenoh bridge\n"
-        workcell_1_domain_id = inter_workcell_domain_id + 1
-        workcell_2_domain_id = inter_workcell_domain_id + 2
-    else:
-        log_msg += "Not using zenoh bridge\n"
-        if (
-            run_workcell_1.perform(context).lower() == "true"
-            and run_workcell_2.perform(context).lower() == "true"
-        ):
-            print("To run both workcells, enable the Zenoh Bridge")
-            sys.exit(1)
-        workcell_1_domain_id = inter_workcell_domain_id
-        workcell_2_domain_id = inter_workcell_domain_id
+    workcell_1_domain_id = inter_workcell_domain_id + 1
+    workcell_2_domain_id = inter_workcell_domain_id + 2
+
     log_msg += f"Inter-workcell has ROS_DOMAIN_ID {inter_workcell_domain_id}\n"
     if run_workcell_1.perform(context).lower() == "true":
         log_msg += f"Workcell 1 has ROS_DOMAIN_ID {workcell_1_domain_id}\n"
@@ -114,7 +102,8 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "ros_domain_id": str(inter_workcell_domain_id),
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
+                    "zenoh_router_config_filename": "config/zenoh/system_orchestrator_router_config.json5",
+                    "zenoh_session_config_filename": "config/zenoh/system_orchestrator_session_config.json5",
                     "use_rmf_transporter": use_rmf_transporter,
                     "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
@@ -148,7 +137,6 @@ def launch_setup(context, *args, **kwargs):
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "ros_domain_id": str(workcell_1_domain_id),
                     "headless": headless,
-                    "use_zenoh_bridge": use_zenoh_bridge,
                     "controller_config_package": "nexus_demos",
                     "planner_config_package": "nexus_demos",
                     "planner_config_file": "abb_irb910sc_planner_params.yaml",
@@ -163,7 +151,8 @@ def launch_setup(context, *args, **kwargs):
                     "use_fake_hardware": use_fake_hardware,
                     "robot_ip": robot1_ip,
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_config_filename": "config/zenoh/workcell_1.json5",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_1_router_config.json5",
+                    "zenoh_session_config_filename": "config/zenoh/workcell_1_session_config.json5",
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -191,7 +180,6 @@ def launch_setup(context, *args, **kwargs):
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "ros_domain_id": str(workcell_2_domain_id),
                     "headless": headless,
-                    "use_zenoh_bridge": use_zenoh_bridge,
                     "controller_config_package": "nexus_demos",
                     "planner_config_package": "nexus_demos",
                     "planner_config_file": "abb_irb1300_planner_params.yaml",
@@ -206,7 +194,8 @@ def launch_setup(context, *args, **kwargs):
                     "use_fake_hardware": use_fake_hardware,
                     "robot_ip": robot2_ip,
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_config_filename": "config/zenoh/workcell_2.json5",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_2_router_config.json5",
+                    "zenoh_session_config_filename": "config/zenoh/workcell_2_session_config.json5",
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )
@@ -234,13 +223,6 @@ def generate_launch_description():
                 default_value="false",
                 description="Set true to rely on an Open-RMF managed fleet to transport material\
                 between workcells.",
-            ),
-            DeclareLaunchArgument(
-                "use_zenoh_bridge",
-                default_value="true",
-                description="Set true to launch the Zenoh DDS Bridge with each orchestrator\
-                in different domains. Else, all orchestrators are launched under the \
-                same Domain ID without a Zenoh bridge.",
             ),
             DeclareLaunchArgument(
                 "use_fake_hardware",

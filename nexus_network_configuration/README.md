@@ -6,7 +6,7 @@ This package simplifies the Zenoh DDS Bridge setup for multiple NEXUS orchestrat
 
 # First-time setup for deploying a LOCALHOST only environment
 
-1. Make sure that CycloneDDS is installed and made the default middleware, and that multicast on loopback interface is enabled for localhost-only communication.
+1. Make sure that `rmw_zenoh_cpp` is installed and made the default middleware, and that multicast on loopback interface is enabled for localhost-only communication.
 ```
 ./scripts/set_up_network.sh
 ```

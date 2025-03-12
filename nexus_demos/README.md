@@ -8,8 +8,8 @@ The [launch.py script](launch/launch.py) will launch the system orchestrator and
 >NOTE: The ROS_DOMAIN_ID occupied by the Zenoh bridges during launch time may be different from the `domain` values in the Zenoh bridge configurations. This is because the launch file overrides the domain ID of the zenoh bridges to ensure that it is same as that of the orchestrator.
 
 ### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
-> NOTE: Before running any of these commands, you must set the rmw implmentation to cyclonedds with
-`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+> NOTE: Before running any of these commands, you must set the rmw implmentation to Zenoh with
+`export RMW_IMPLEMENTATION=rmw_zenoh_cpp`
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
 ```bash
 ros2 launch nexus_demos launch.py headless:=False
@@ -18,17 +18,17 @@ ros2 launch nexus_demos launch.py headless:=False
 ### Method 2: Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
 Launch with Workcell 1
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=true run_workcell_2:=false
 ```
 
 Launch with Workcell 2
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=false run_workcell_2:=true
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=false run_workcell_2:=true
 ```
 
 Testing with real hardware
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
 ```
 
 ## Launch Orchestrators individually
