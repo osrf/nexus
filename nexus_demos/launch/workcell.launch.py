@@ -33,13 +33,14 @@ from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
-def activate_node_service(node_name):
+def activate_node_service(node_name, ros_domain_id):
     activate_node_proc = ExecuteProcess(
         cmd=[
             'python3',
             [FindPackageShare('nexus_demos'), "/scripts/activate_node.py"],
             node_name,
         ],
+        additional_env={'ROS_DOMAIN_ID': ros_domain_id},
     )
 
     def check_activate_return_code(event, _):
@@ -69,6 +70,7 @@ def launch_setup(context, *args, **kwargs):
     workcell_id = LaunchConfiguration("workcell_id")
     bt_path = LaunchConfiguration("bt_path")
     task_checker_plugin = LaunchConfiguration("task_checker_plugin")
+    ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
     controller_config_package = LaunchConfiguration("controller_config_package")
     planner_config_package = LaunchConfiguration("planner_config_package")
@@ -180,6 +182,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        SetEnvironmentVariable('ROS_DOMAIN_ID', ros_domain_id),
         GroupAction(
             [
                 IncludeLaunchDescription(
@@ -195,6 +198,7 @@ def launch_setup(context, *args, **kwargs):
                     launch_arguments={
                         "zenoh_config_package": zenoh_config_package,
                         "zenoh_router_config_filename": zenoh_router_config_filename,
+                        'ros_domain_id': ros_domain_id.perform(context),
                     }.items(),
                 )
             ]
@@ -271,7 +275,7 @@ def launch_setup(context, *args, **kwargs):
                 )
             ]
         ),
-        activate_node_service("motion_planner_server"),
+        activate_node_service("motion_planner_server", ros_domain_id.perform(context)),
     ]
 
 
@@ -290,6 +294,11 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "task_checker_plugin",
             description="Fully qualified name of the plugin to load to check if a task is doable.",
+        ),
+        DeclareLaunchArgument(
+            "ros_domain_id",
+            default_value="0",
+            description="ROS_DOMAIN_ID environment variable",
         ),
         DeclareLaunchArgument(
             "headless",

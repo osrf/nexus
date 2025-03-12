@@ -106,6 +106,7 @@ def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None)
 
 
 def launch_setup(context, *args, **kwargs):
+    ros_domain_id = LaunchConfiguration("ros_domain_id")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
@@ -208,6 +209,7 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "zenoh_config_package": zenoh_config_package,
                     "zenoh_router_config_filename": zenoh_router_config_filename,
+                    "ros_domain_id": ros_domain_id.perform(context),
                 }.items(),
             )
         ]
@@ -221,6 +223,8 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        zenoh_router,
+        SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         SetEnvironmentVariable(
             "ZENOH_SESSION_CONFIG_URI",
             PathJoinSubstitution(
@@ -235,7 +239,6 @@ def launch_setup(context, *args, **kwargs):
         transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
-        zenoh_router,
         activate_system_orchestrator,
         activate_transporter_node,
         activate_node(mock_emergency_alarm_node),
@@ -246,6 +249,11 @@ def generate_launch_description():
 
     return launch.LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "ros_domain_id",
+                default_value="0",
+                description="ROS_DOMAIN_ID environment variable",
+            ),
             DeclareLaunchArgument(
                 "use_fake_hardware",
                 default_value="true",
