@@ -24,6 +24,7 @@
 #include <nexus_orchestrator_msgs/srv/register_workcell.hpp>
 #include <nexus_orchestrator_msgs/srv/remove_pending_task.hpp>
 #include <nexus_orchestrator_msgs/srv/signal_workcell.hpp>
+#include <nexus_orchestrator_msgs/srv/unregister_workcell.hpp>
 #include <nexus_transporter_msgs/action/transport.hpp>
 #include <nexus_transporter_msgs/srv/is_transporter_available.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
@@ -252,6 +253,26 @@ public:
   template<typename NodePtrT>
   static rclcpp::Client<RegisterWorkcellService::ServiceType>::SharedPtr create_client(NodePtrT node) {
     return node->template create_client<RegisterWorkcellService::ServiceType>(RegisterWorkcellService::service_name());
+  }
+};
+
+class UnregisterWorkcellService {
+public:
+  using ServiceType = nexus_orchestrator_msgs::srv::UnregisterWorkcell;
+
+  static inline std::string service_name() {
+    const std::string name = "/unregister_workcell";
+    return name;
+  }
+
+  template<typename NodePtrT, typename CallbackT>
+  static rclcpp::Service<UnregisterWorkcellService::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
+    return node->template create_service<UnregisterWorkcellService::ServiceType>(UnregisterWorkcellService::service_name(), std::forward<CallbackT>(callback));
+  }
+
+  template<typename NodePtrT>
+  static rclcpp::Client<UnregisterWorkcellService::ServiceType>::SharedPtr create_client(NodePtrT node) {
+    return node->template create_client<UnregisterWorkcellService::ServiceType>(UnregisterWorkcellService::service_name());
   }
 };
 
