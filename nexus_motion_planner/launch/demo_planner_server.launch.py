@@ -27,7 +27,7 @@ from launch.substitutions import (
     PathJoinSubstitution,
 )
 
-from launch_ros.actions import Node
+from launch_ros.actions import Node, LifecycleNode
 from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
@@ -50,6 +50,7 @@ def launch_setup(context, *args, **kwargs):
     robot_xacro_file = LaunchConfiguration("robot_xacro_file")
     moveit_config_package = LaunchConfiguration("moveit_config_package")
     moveit_config_file = LaunchConfiguration("moveit_config_file")
+    autostart_motion_planner = LaunchConfiguration("autostart_motion_planner")
 
     planner_server_params = PathJoinSubstitution(
         [
@@ -149,7 +150,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Start the nexus_motion_planner server
-    motion_planner = Node(
+    motion_planner = LifecycleNode(
         package = "nexus_motion_planner",
         executable = "motion_planner_server",
         name = "motion_planner_server",
@@ -160,6 +161,7 @@ def launch_setup(context, *args, **kwargs):
           kinematics_yaml,
           planner_server_params,
         ],
+        autostart=autostart_motion_planner.perform(context).lower() == "true",
     )
 
     # RViz
@@ -270,6 +272,13 @@ def generate_launch_description():
             "publish_item",
             default_value="true",
             description="Publish the static transform for item",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "autostart_motion_planner",
+            default_value="false",
+            description="Automatically start the motion planner lifecycle node",
         )
     )
     return LaunchDescription(
