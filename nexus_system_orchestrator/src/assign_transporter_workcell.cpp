@@ -43,14 +43,14 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
   }
 
   // Create a list of destination from the current context tasks
-  const auto& task_assignments = this->_ctx->get_workcell_task_assignments();
   YAML::Node orders;
   std::vector<std::string> locations;
 
   for (const auto& task : this->_ctx->get_tasks())
   {
-    auto assignment_it = task_assignments.find(task.task_id);
-    if (assignment_it == task_assignments.end())
+    const auto assigned_workcell_id =
+      this->_ctx->get_workcell_task_assignment(task.task_id);
+    if (!assigned_workcell_id.has_value())
     {
       RCLCPP_ERROR(
         node->get_logger(), "%s: Unable to transport, task [%s] was not assigned to a workcell",
@@ -62,7 +62,7 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
     // TODO(luca) remove consecutive duplicates (multiple tasks to same workcell that don't need transportation)
     YAML::Node order;
     order["type"] = "pickup";
-    order["destination"] = assignment_it->second;
+    order["destination"] = *assigned_workcell_id;
     order["workcell_task_id"] = task.task_id;
     orders.push_back(order);
   }

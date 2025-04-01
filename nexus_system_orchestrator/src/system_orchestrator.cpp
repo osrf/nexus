@@ -855,19 +855,17 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
     for (const auto& [task_id, wc_id] : job.ctx->get_workcell_task_assignments())
     {
       // should we try to remove all tasks anyway even if they are not pending?
-      try
-      {
-        if (job.ctx->get_task_states().at(task_id).status !=
-          TaskState::STATUS_ASSIGNED)
-        {
-          continue;
-        }
-      }
-      catch (const std::out_of_range&)
+      const auto task_state = job.ctx->get_task_state(task_id);
+      if (!task_state.has_value())
       {
         RCLCPP_WARN(
           this->get_logger(), "Failed to remove pending task [%s]: missing task state",
           task_id.c_str());
+        continue;
+      }
+      if ((*task_state).status != TaskState::STATUS_ASSIGNED)
+      {
+        continue;
       }
 
       const auto req =

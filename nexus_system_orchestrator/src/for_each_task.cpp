@@ -49,17 +49,16 @@ BT::NodeStatus ForEachTask::tick()
   {
     auto current_task = tasks.at(this->_current_idx);
     this->setOutput("task", current_task);
-    try
-    {
-      this->setOutput("workcell",
-        this->_ctx->get_workcell_task_assignments().at(current_task.task_id));
-    }
-    catch (const std::out_of_range&)
+
+    const auto assigned_workcell_id =
+      this->_ctx->get_workcell_task_assignment(current_task.task_id);
+    if (!assigned_workcell_id.has_value())
     {
       RCLCPP_ERROR(this->_logger, "task [%s] not assigned to any workcell",
         current_task.task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
+    this->setOutput("workcell", *assigned_workcell_id);
 
     this->setStatus(BT::NodeStatus::RUNNING);
     auto child_state = this->child_node_->executeTick();

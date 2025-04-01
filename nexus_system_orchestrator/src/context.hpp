@@ -30,6 +30,7 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 #include <mutex>
+#include <optional>
 
 namespace nexus::system_orchestrator {
 
@@ -121,6 +122,17 @@ public:
     return _workcell_task_assignments;
   }
 
+  std::optional<std::string> get_workcell_task_assignment(const std::string& workcell_task_id) const
+  {
+    std::lock_guard<std::mutex> lock(_mutex);
+    auto assignment_it = _workcell_task_assignments.find(workcell_task_id);
+    if (assignment_it == _workcell_task_assignments.end())
+    {
+      return std::nullopt;
+    }
+    return assignment_it->second;
+  }
+
   Context& set_workcell_sessions(const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
   {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -132,6 +144,17 @@ public:
   {
     std::lock_guard<std::mutex> lock(_mutex);
     return _workcell_sessions;
+  }
+
+  std::shared_ptr<WorkcellSession> get_workcell_session(const std::string& workcell_id) const
+  {
+    std::lock_guard<std::mutex> lock(_mutex);
+    auto workcell_session_it = _workcell_sessions.find(workcell_id);
+    if (workcell_session_it == _workcell_sessions.end())
+    {
+      return nullptr;
+    }
+    return workcell_session_it->second;
   }
 
   Context& set_transporter_sessions(const std::unordered_map<std::string, std::shared_ptr<TransporterSession>>& sessions)
@@ -158,6 +181,17 @@ public:
   {
     std::lock_guard<std::mutex> lock(_mutex);
     return _task_states;
+  }
+
+  std::optional<TaskState> get_task_state(const std::string& task_id) const
+  {
+    std::lock_guard<std::mutex> lock(_mutex);
+    const auto it = _task_states.find(task_id);
+    if (it == _task_states.end())
+    {
+      return std::nullopt;
+    }
+    return it->second;
   }
 
   Context& set_goal_handle(const std::shared_ptr<WorkOrderGoalHandle>& handle)
@@ -205,10 +239,21 @@ public:
     return *this;
   }
 
-  std::unordered_map<std::string, std::vector<std::string>> get_queued_signals() const
+  Context& set_task_queued_signals(const std::string& task_id, const std::vector<std::string>& signals) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _queued_signals[task_id] = signals;
+    return *this;
+  }
+
+  std::optional<std::vector<std::string>> get_task_queued_signals(const std::string& task_id) const
   {
     std::lock_guard<std::mutex> lock(_mutex);
-    return _queued_signals;
+    const auto it = _queued_signals.find(task_id);
+    if (it == _queued_signals.end())
+    {
+      return std::nullopt;
+    }
+    return it->second;
   }
 
 private:

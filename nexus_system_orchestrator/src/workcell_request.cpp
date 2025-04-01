@@ -53,11 +53,8 @@ BT::NodeStatus WorkcellRequest::onStart()
   }
   this->_workcell_id = maybe_workcell.value();
 
-  try
-  {
-    this->_session = this->_ctx->get_workcell_sessions().at(this->_workcell_id);
-  }
-  catch (const std::out_of_range&)
+  this->_session = this->_ctx->get_workcell_session(this->_workcell_id);
+  if (!this->_session)
   {
     RCLCPP_ERROR(this->_node->get_logger(), "%s: workcell [%s] not found",
       this->name().c_str(),
@@ -79,19 +76,17 @@ WorkcellRequest::make_goal()
 {
   endpoints::WorkcellRequestAction::ActionType::Goal goal;
   goal.task = this->_task;
-  try
-  {
-    auto& signals = this->_ctx->get_queued_signals().at(this->_task.task_id);
-    goal.start_signals = signals;
-    signals.clear();
-  }
-  catch (const std::out_of_range&)
+  const auto signals = this->_ctx->get_task_queued_signals(this->_task.task_id);
+  if (!signals.has_value())
   {
     RCLCPP_DEBUG(
       this->_ctx->get_node().get_logger(), "%s: No queued signals for task [%s]",
       this->name().c_str(), this->_task.task_id.c_str());
     // ignore
   }
+  goal.start_signals = *signals;
+  this->_ctx->set_task_queued_signals(this->_task.task_id, {});
+
   goal.task.previous_results = this->_ctx->get_task_results();
   RCLCPP_INFO_STREAM(
     this->_ctx->get_node().get_logger(), "%s: Sending workcell request:" << std::endl << nexus_orchestrator_msgs::action::to_yaml(
@@ -126,9 +121,18 @@ bool WorkcellRequest::on_result(
 
   this->_ctx->set_task_results(result.result->result); // -.-
 
-  auto task_state = this->_ctx->get_task_states().at(this->_task.task_id);
-  task_state.status = TaskState::STATUS_FINISHED;
-  this->_ctx->set_task_state(this->_task.task_id, task_state);
+  const auto task_state = this->_ctx->get_task_state(this->_task.task_id);
+  if (!task_state.has_value())
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: task state not available",
+      this->name().c_str());
+    return false;
+  }
+
+  auto updated_state = *task_state;
+  updated_state.status = TaskState::STATUS_FINISHED;
+  this->_ctx->set_task_state(this->_task.task_id, updated_state);
   this->_on_task_progress(this->_ctx->get_task_states());
   return true;
 }

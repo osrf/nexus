@@ -44,24 +44,25 @@ BT::NodeStatus SendSignal::tick()
 
   try
   {
-    const auto workcell_task_assignments = this->_ctx->get_workcell_task_assignments();
-    auto it = std::find_if(
-      workcell_task_assignments.cbegin(),
-      workcell_task_assignments.cend(),
-      [&task](const std::pair<std::string, std::string>& p)
-      {
-        return p.first == task->task_id;
-      });
-    if (it == workcell_task_assignments.cend())
+    const auto assigned_workcell_id =
+      this->_ctx->get_workcell_task_assignment(task->task_id);
+    if (!assigned_workcell_id.has_value())
     {
       RCLCPP_ERROR(
         this->_ctx->get_node().get_logger(), "%s: Unable to find workcell assigned to task [%s]",
         this->name().c_str(), task->task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
-    const auto& workcell = it->second;
 
-    const auto& session = this->_ctx->get_workcell_sessions().at(workcell);
+    const auto session = this->_ctx->get_workcell_session(*assigned_workcell_id);
+    if (!session)
+    {
+      RCLCPP_ERROR(this->_ctx->get_node().get_logger(),
+        "%s: Unable to find workcell session for this workcell",
+        this->name().c_str());
+      return BT::NodeStatus::FAILURE;
+    }
+
     auto req =
       std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
     req->task_id = task->task_id;
@@ -69,7 +70,7 @@ BT::NodeStatus SendSignal::tick()
     auto resp = session->signal_wc_client->send_request(req);
     RCLCPP_INFO(
       this->_ctx->get_node().get_logger(), "%s: Sent signal [%s] to workcell [%s]",
-      this->name().c_str(), signal->c_str(), workcell.c_str());
+      this->name().c_str(), signal->c_str(), (*assigned_workcell_id).c_str());
     if (!resp->success)
     {
       RCLCPP_WARN(
