@@ -46,168 +46,168 @@ public:
 
   rclcpp_lifecycle::LifecycleNode& get_node() const
   {
-    std::lock_guard<std::mutex> lock(_node_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _node;
   }
 
   Context& set_job_id(const std::string& job_id)
   {
-    std::lock_guard<std::mutex> lock(_job_id_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _job_id = job_id;
     return *this;
   }
 
   std::string get_job_id() const
   {
-    std::lock_guard<std::mutex> lock(_job_id_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _job_id;
   }
 
   Context& set_work_order(const WorkOrder& wo)
   {
-    std::lock_guard<std::mutex> lock(_wo_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _wo = wo;
     return *this;
   }
 
   WorkOrder get_work_order() const
   {
-    std::lock_guard<std::mutex> lock(_wo_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _wo;
   }
 
   Context& set_tasks(const std::vector<WorkcellTask>& tasks)
   {
-    std::lock_guard<std::mutex> lock(_tasks_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _tasks = tasks;
     return *this;
   }
 
   std::vector<WorkcellTask> get_tasks() const
   {
-    std::lock_guard<std::mutex> lock(_tasks_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _tasks;
   }
 
   std::size_t get_task_number() const
   {
-    std::lock_guard<std::mutex> lock(_tasks_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _tasks.size();
   }
 
   Context& set_task_remapper(const std::shared_ptr<const common::TaskRemapper>& remapper)
   {
-    std::lock_guard<std::mutex> lock(_task_remapper_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _task_remapper = remapper;
     return *this;
   }
 
   std::shared_ptr<const common::TaskRemapper> get_task_remapper() const
   {
-    std::lock_guard<std::mutex> lock(_task_remapper_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _task_remapper;
   }
 
   Context& set_workcell_task_assignment(const std::string& task_id, const std::string& workcell_id)
   {
-    std::lock_guard<std::mutex> lock(_workcell_task_assignments_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _workcell_task_assignments[task_id] = workcell_id;
     return *this;
   }
 
   std::unordered_map<std::string, std::string> get_workcell_task_assignments() const
   {
-    std::lock_guard<std::mutex> lock(_workcell_task_assignments_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _workcell_task_assignments;
   }
 
   Context& set_workcell_sessions(const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
   {
-    std::lock_guard<std::mutex> lock(_workcell_sessions_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _workcell_sessions = sessions;
     return *this;
   }
 
   std::unordered_map<std::string, std::shared_ptr<WorkcellSession>> get_workcell_sessions() const
   {
-    std::lock_guard<std::mutex> lock(_workcell_sessions_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _workcell_sessions;
   }
 
   Context& set_transporter_sessions(const std::unordered_map<std::string, std::shared_ptr<TransporterSession>>& sessions)
   {
-    std::lock_guard<std::mutex> lock(_transporter_sessions_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _transporter_sessions = sessions;
     return *this;
   }
 
   std::unordered_map<std::string, std::shared_ptr<TransporterSession>> get_transporter_sessions() const
   {
-    std::lock_guard<std::mutex> lock(_transporter_sessions_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _transporter_sessions;
   }
 
   Context& set_task_state(const std::string& task_id, const TaskState& task_state)
   {
-    std::lock_guard<std::mutex> lock(_task_states_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _task_states[task_id] = task_state;
     return *this;
   }
 
   std::unordered_map<std::string, TaskState> get_task_states() const
   {
-    std::lock_guard<std::mutex> lock(_task_states_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _task_states;
   }
 
   Context& set_goal_handle(const std::shared_ptr<WorkOrderGoalHandle>& handle)
   {
-    std::lock_guard<std::mutex> lock(_goal_handle_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _goal_handle = handle;
     return *this;
   }
 
   std::shared_ptr<WorkOrderGoalHandle> get_goal_handle() const
   {
-    std::lock_guard<std::mutex> lock(_goal_handle_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _goal_handle;
   }
 
   Context& add_error(const std::string& error)
   {
-    std::lock_guard<std::mutex> lock(_errors_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _errors.emplace_back(error);
     return *this;
   }
 
   std::vector<std::string> get_errors() const
   {
-    std::lock_guard<std::mutex> lock(_errors_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _errors;
   }
 
   Context& set_task_results(const std::string& results)
   {
-    std::lock_guard<std::mutex> lock(_task_results_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _task_results = results;
     return *this;
   }
 
   std::string get_task_results() const
   {
-    std::lock_guard<std::mutex> lock(_task_results_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _task_results;
   }
 
   Context& add_queued_signal(const std::string& task_id, const std::string& signal) {
-    std::lock_guard<std::mutex> lock(_queued_signals_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _queued_signals[task_id].emplace_back(signal);
     return *this;
   }
 
   std::unordered_map<std::string, std::vector<std::string>> get_queued_signals() const
   {
-    std::lock_guard<std::mutex> lock(_queued_signals_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _queued_signals;
   }
 
@@ -244,19 +244,7 @@ private:
    */
   std::unordered_map<std::string, std::vector<std::string>> _queued_signals;
 
-  mutable std::mutex _node_mutex;
-  mutable std::mutex _job_id_mutex;
-  mutable std::mutex _wo_mutex;
-  mutable std::mutex _tasks_mutex;
-  mutable std::mutex _task_remapper_mutex;
-  mutable std::mutex _workcell_task_assignments_mutex;
-  mutable std::mutex _workcell_sessions_mutex;
-  mutable std::mutex _transporter_sessions_mutex;
-  mutable std::mutex _task_states_mutex;
-  mutable std::mutex _goal_handle_mutex;
-  mutable std::mutex _errors_mutex;
-  mutable std::mutex _task_results_mutex;
-  mutable std::mutex _queued_signals_mutex;
+  mutable std::mutex _mutex;
 };
 
 }
