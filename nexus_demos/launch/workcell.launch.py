@@ -13,60 +13,23 @@
 # limitations under the License.
 
 import os
-
 from ament_index_python.packages import get_package_share_directory
 
-from launch_ros.actions import LifecycleNode
-from launch_ros.parameter_descriptions import Parameter
+import launch_ros
+from launch_ros.actions import Node, LifecycleNode
+from launch_ros.descriptions import Parameter
 from launch_ros.substitutions import FindPackageShare
 
 import launch
 from launch.actions import (
     DeclareLaunchArgument,
-    EmitEvent,
-    ExecuteProcess,
     GroupAction,
     IncludeLaunchDescription,
-    LogInfo,
     OpaqueFunction,
-    RegisterEventHandler,
     SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition
-from launch.event_handlers import OnProcessExit
-from launch.events import Shutdown
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
-
-def activate_node_service(node_name, ros_domain_id):
-    activate_node_proc = ExecuteProcess(
-        cmd=[
-            'python3',
-            [FindPackageShare('nexus_demos'), "/scripts/activate_node.py"],
-            node_name,
-        ],
-        additional_env={'ROS_DOMAIN_ID': ros_domain_id},
-    )
-
-    def check_activate_return_code(event, _):
-        if event.returncode != 0:
-            return [
-                LogInfo(msg=f"Activating node '{node_name}' failed!"),
-                EmitEvent(event=Shutdown(reason=f"Activating node '{node_name}' failed!"))
-            ]
-        return []
-
-    return GroupAction(
-        [
-            LogInfo(msg=f"Activating {node_name}..."),
-            activate_node_proc,
-            RegisterEventHandler(
-                OnProcessExit(
-                    target_action=activate_node_proc,
-                    on_exit=check_activate_return_code,
-                )
-            ),
-        ],
-    )
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 
 def launch_setup(context, *args, **kwargs):
@@ -234,21 +197,9 @@ def launch_setup(context, *args, **kwargs):
                         ("robot_xacro_file", robot_xacro_file),
                         ("moveit_config_package", moveit_config_package),
                         ("moveit_config_file", moveit_config_file),
-                        ("headless", headless),
-                    ]
-                ),
-            ]
-        ),
-        GroupAction(
-            [
-                IncludeLaunchDescription(
-                    [
-                        PathJoinSubstitution([
-                            FindPackageShare("nexus_demos"),
-                            'launch',
-                            tf_publisher_launch_file,
-                        ])
-                    ]
+                        ("headless", "true"),
+                        ("autostart_motion_planner", "true"),
+                    ],
                 )
             ]
         ),
@@ -271,7 +222,6 @@ def launch_setup(context, *args, **kwargs):
             ],
             condition=IfCondition(use_zenoh_bridge),
         ),
-        activate_node_service("motion_planner_server", ros_domain_id.perform(context)),
     ]
 
 

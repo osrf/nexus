@@ -18,9 +18,7 @@ from ament_index_python.packages import get_package_share_directory
 import launch_ros
 from launch_ros.actions import Node, LifecycleNode
 from launch_ros.descriptions import ParameterValue
-from launch_ros.event_handlers import OnStateTransition
 from launch_ros.substitutions import FindPackageShare
-import lifecycle_msgs
 
 import launch
 from launch.actions import (
@@ -32,77 +30,6 @@ from launch.actions import (
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-
-
-def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None):
-
-    configure_event = None
-
-    if depend_node is not None:
-        configure_event = launch.actions.RegisterEventHandler(
-            OnStateTransition(
-                target_lifecycle_node=depend_node,
-                goal_state="active",
-                entities=[
-                    launch.actions.EmitEvent(
-                        event=launch_ros.events.lifecycle.ChangeState(
-                            lifecycle_node_matcher=launch.events.matches_action(
-                                target_node
-                            ),
-                            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
-                        )
-                    )
-                ],
-            )
-        )
-    else:
-        # Make the talker node take the 'configure' transition.
-        configure_event = launch.actions.EmitEvent(
-            event=launch_ros.events.lifecycle.ChangeState(
-                lifecycle_node_matcher=launch.events.matches_action(target_node),
-                transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
-            )
-        )
-
-    inactive_state_handler = launch.actions.RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=target_node,
-            goal_state="inactive",
-            entities=[
-                launch.actions.LogInfo(
-                    msg=f"node {target_node.node_executable} reached the 'inactive' state."
-                ),
-                launch.actions.EmitEvent(
-                    event=launch_ros.events.lifecycle.ChangeState(
-                        lifecycle_node_matcher=launch.events.matches_action(
-                            target_node
-                        ),
-                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
-                    )
-                ),
-            ],
-        )
-    )
-
-    active_state_handler = launch.actions.RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=target_node,
-            goal_state="active",
-            entities=[
-                launch.actions.LogInfo(
-                    msg=f"node {target_node.node_executable} reached the 'active' state"
-                ),
-            ],
-        )
-    )
-
-    return GroupAction(
-        [
-            configure_event,
-            inactive_state_handler,
-            active_state_handler,
-        ]
-    )
 
 
 def launch_setup(context, *args, **kwargs):
@@ -134,6 +61,7 @@ def launch_setup(context, *args, **kwargs):
                 "max_jobs": max_jobs,
             }
         ],
+        autostart=IfCondition(activate_system_orchestrator).evaluate(context),
     )
 
     rmf_transporter = GroupAction(
@@ -170,13 +98,7 @@ def launch_setup(context, *args, **kwargs):
             {"unloading_station": "unloading"},
         ],
         condition=UnlessCondition(use_rmf_transporter),
-    )
-
-    activate_transporter_node = GroupAction(
-        [
-            activate_node(transporter_node),
-        ],
-        condition=UnlessCondition(use_rmf_transporter),
+        autostart=UnlessCondition(use_rmf_transporter).evaluate(context),
     )
 
     mock_emergency_alarm_node = LifecycleNode(
@@ -184,6 +106,7 @@ def launch_setup(context, *args, **kwargs):
         namespace="",
         package="nexus_demos",
         executable="mock_emergency_alarm",
+        autostart=True,
     )
 
     nexus_panel = Node(
@@ -216,13 +139,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_zenoh_bridge),
     )
 
-    activate_system_orchestrator = GroupAction(
-        [
-            activate_node(system_orchestrator_node),
-        ],
-        condition=IfCondition(activate_system_orchestrator),
-    )
-
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
@@ -231,9 +147,6 @@ def launch_setup(context, *args, **kwargs):
         mock_emergency_alarm_node,
         nexus_panel,
         zenoh_bridge,
-        activate_system_orchestrator,
-        activate_transporter_node,
-        activate_node(mock_emergency_alarm_node),
     ]
 
 
