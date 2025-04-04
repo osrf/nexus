@@ -35,9 +35,9 @@ BT::NodeStatus ForEachTask::tick()
   {
     this->_first_tick = false;
     RCLCPP_DEBUG(this->_logger, "Looping through %lu tasks",
-      this->_ctx->get_task_number());
+      this->_ctx->get_num_tasks());
   }
-  if (this->_ctx->get_task_number() == 0)
+  if (this->_ctx->get_num_tasks() == 0)
   {
     return BT::NodeStatus::SUCCESS;
   }

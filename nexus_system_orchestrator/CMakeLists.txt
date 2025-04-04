@@ -26,6 +26,7 @@ add_library(${PROJECT_NAME}_plugin SHARED
   src/system_orchestrator.cpp
   src/transporter_request.cpp
   src/workcell_request.cpp
+  src/context.cpp
 )
 target_include_directories(${PROJECT_NAME}_plugin PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>

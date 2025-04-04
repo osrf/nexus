@@ -31,6 +31,10 @@
 
 #include <mutex>
 #include <optional>
+#include <unordered_map>
+#include <vector>
+#include <memory>
+#include <string>
 
 namespace nexus::system_orchestrator {
 
@@ -43,218 +47,83 @@ public:
   using WorkcellTask = nexus_orchestrator_msgs::msg::WorkcellTask;
   using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 
-  Context(rclcpp_lifecycle::LifecycleNode& node) : _node(node) {}
+  explicit Context(rclcpp_lifecycle::LifecycleNode& node);
 
-  rclcpp_lifecycle::LifecycleNode& get_node() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _node;
-  }
+  rclcpp_lifecycle::LifecycleNode& get_node() const;
 
-  Context& set_job_id(const std::string& job_id)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _job_id = job_id;
-    return *this;
-  }
+  Context& set_job_id(const std::string& job_id);
 
-  std::string get_job_id() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _job_id;
-  }
+  std::string get_job_id() const;
 
-  Context& set_work_order(const WorkOrder& wo)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _wo = wo;
-    return *this;
-  }
+  Context& set_work_order(const WorkOrder& wo);
 
-  WorkOrder get_work_order() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _wo;
-  }
+  WorkOrder get_work_order() const;
 
-  Context& set_tasks(const std::vector<WorkcellTask>& tasks)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _tasks = tasks;
-    return *this;
-  }
+  Context& set_tasks(const std::vector<WorkcellTask>& tasks);
 
-  std::vector<WorkcellTask> get_tasks() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _tasks;
-  }
+  std::vector<WorkcellTask> get_tasks() const;
 
-  std::size_t get_task_number() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _tasks.size();
-  }
+  std::size_t get_num_tasks() const;
 
-  Context& set_task_remapper(const std::shared_ptr<const common::TaskRemapper>& remapper)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _task_remapper = remapper;
-    return *this;
-  }
+  Context& set_task_remapper(
+    const std::shared_ptr<const common::TaskRemapper>& remapper);
 
-  std::shared_ptr<const common::TaskRemapper> get_task_remapper() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _task_remapper;
-  }
+  std::shared_ptr<const common::TaskRemapper> get_task_remapper() const;
 
-  Context& set_workcell_task_assignment(const std::string& task_id, const std::string& workcell_id)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _workcell_task_assignments[task_id] = workcell_id;
-    return *this;
-  }
+  Context& set_workcell_task_assignment(
+    const std::string& task_id,
+    const std::string& workcell_id);
 
-  std::unordered_map<std::string, std::string> get_workcell_task_assignments() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _workcell_task_assignments;
-  }
+  std::unordered_map<std::string, std::string> get_workcell_task_assignments()
+    const;
 
-  std::optional<std::string> get_workcell_task_assignment(const std::string& workcell_task_id) const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    auto assignment_it = _workcell_task_assignments.find(workcell_task_id);
-    if (assignment_it == _workcell_task_assignments.end())
-    {
-      return std::nullopt;
-    }
-    return assignment_it->second;
-  }
+  std::optional<std::string> get_workcell_task_assignment(
+    const std::string& workcell_task_id) const;
 
-  Context& set_workcell_sessions(const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _workcell_sessions = sessions;
-    return *this;
-  }
+  Context& set_workcell_sessions(
+    const std::unordered_map<std::string,
+    std::shared_ptr<WorkcellSession>>& sessions);
 
-  std::unordered_map<std::string, std::shared_ptr<WorkcellSession>> get_workcell_sessions() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _workcell_sessions;
-  }
+  std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>
+    get_workcell_sessions() const;
 
-  std::shared_ptr<WorkcellSession> get_workcell_session(const std::string& workcell_id) const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    auto workcell_session_it = _workcell_sessions.find(workcell_id);
-    if (workcell_session_it == _workcell_sessions.end())
-    {
-      return nullptr;
-    }
-    return workcell_session_it->second;
-  }
+  std::shared_ptr<WorkcellSession> get_workcell_session(
+    const std::string& workcell_id) const;
 
-  Context& set_transporter_sessions(const std::unordered_map<std::string, std::shared_ptr<TransporterSession>>& sessions)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _transporter_sessions = sessions;
-    return *this;
-  }
+  Context& set_transporter_sessions(
+    const std::unordered_map<std::string,
+    std::shared_ptr<TransporterSession>>& sessions);
 
-  std::unordered_map<std::string, std::shared_ptr<TransporterSession>> get_transporter_sessions() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _transporter_sessions;
-  }
+  std::unordered_map<std::string, std::shared_ptr<TransporterSession>>
+    get_transporter_sessions() const;
 
-  Context& set_task_state(const std::string& task_id, const TaskState& task_state)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _task_states[task_id] = task_state;
-    return *this;
-  }
+  Context& set_task_state(const std::string& task_id, const TaskState& task_state);
 
-  std::unordered_map<std::string, TaskState> get_task_states() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _task_states;
-  }
+  std::unordered_map<std::string, TaskState> get_task_states() const;
 
-  std::optional<TaskState> get_task_state(const std::string& task_id) const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    const auto it = _task_states.find(task_id);
-    if (it == _task_states.end())
-    {
-      return std::nullopt;
-    }
-    return it->second;
-  }
+  std::optional<TaskState> get_task_state(const std::string& task_id) const;
 
-  Context& set_goal_handle(const std::shared_ptr<WorkOrderGoalHandle>& handle)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _goal_handle = handle;
-    return *this;
-  }
+  Context& set_goal_handle(
+    const std::shared_ptr<WorkOrderGoalHandle>& handle);
 
-  std::shared_ptr<WorkOrderGoalHandle> get_goal_handle() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _goal_handle;
-  }
+  std::shared_ptr<WorkOrderGoalHandle> get_goal_handle() const;
 
-  Context& add_error(const std::string& error)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _errors.emplace_back(error);
-    return *this;
-  }
+  Context& add_error(const std::string& error);
 
-  std::vector<std::string> get_errors() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _errors;
-  }
+  std::vector<std::string> get_errors() const;
 
-  Context& set_task_results(const std::string& results)
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _task_results = results;
-    return *this;
-  }
+  Context& set_task_results(const std::string& results);
 
-  std::string get_task_results() const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _task_results;
-  }
+  std::string get_task_results() const;
 
-  Context& add_queued_signal(const std::string& task_id, const std::string& signal) {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _queued_signals[task_id].emplace_back(signal);
-    return *this;
-  }
+  Context& add_queued_signal(const std::string& task_id, const std::string& signal);
 
-  Context& set_task_queued_signals(const std::string& task_id, const std::vector<std::string>& signals) {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _queued_signals[task_id] = signals;
-    return *this;
-  }
+  Context& set_task_queued_signals(
+    const std::string& task_id,
+    const std::vector<std::string>& signals);
 
-  std::optional<std::vector<std::string>> get_task_queued_signals(const std::string& task_id) const
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    const auto it = _queued_signals.find(task_id);
-    if (it == _queued_signals.end())
-    {
-      return std::nullopt;
-    }
-    return it->second;
-  }
+  std::optional<std::vector<std::string>> get_task_queued_signals(
+    const std::string& task_id) const;
 
 private:
   // using reference to prevent circular references
@@ -274,11 +143,13 @@ private:
    */
   std::unordered_map<std::string,
   std::shared_ptr<WorkcellSession>> _workcell_sessions;
+
   /**
    * Map of transporter ids and it's session.
    */
   std::unordered_map<std::string,
   std::shared_ptr<TransporterSession>> _transporter_sessions;
+
   std::unordered_map<std::string, TaskState> _task_states = {};
   std::shared_ptr<WorkOrderGoalHandle> _goal_handle = nullptr;
   std::vector<std::string> _errors = {};
@@ -292,6 +163,6 @@ private:
   mutable std::mutex _mutex;
 };
 
-}
+} // namespace nexus::system_orchestrator
 
-#endif
+#endif // NEXUS_SYSTEM_ORCHESTRATOR__CONTEXT_HPP
