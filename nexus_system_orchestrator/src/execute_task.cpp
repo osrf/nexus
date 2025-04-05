@@ -25,7 +25,7 @@ BT::NodeStatus ExecuteTask::onStart()
   if (!task)
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: [task] port is required",
+      this->_ctx->get_node().get_logger(), "%s: [task] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
@@ -34,18 +34,18 @@ BT::NodeStatus ExecuteTask::onStart()
   if (!workcell)
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: [workcell] port is required",
+      this->_ctx->get_node().get_logger(), "%s: [workcell] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
 
   // Remap the BT filename to load if one is provided.
   std::string bt_name = task->type;
-  const auto new_task = _ctx->task_remapper->remap(task->type);
+  const auto new_task = _ctx->get_task_remapper()->remap(task->type);
   if (new_task.has_value())
   {
     RCLCPP_DEBUG(
-      _ctx->node.get_logger(),
+      _ctx->get_node().get_logger(),
       "[ExecuteTask] Loading remapped BT [%s] for original task type [%s]",
       new_task.value().c_str(),
       task->type.c_str()
@@ -56,7 +56,7 @@ BT::NodeStatus ExecuteTask::onStart()
   if (!std::filesystem::is_regular_file(task_bt_path))
   {
     RCLCPP_ERROR(
-      this->_ctx->node.get_logger(), "%s: no behavior tree to execute task type [%s]",
+      this->_ctx->get_node().get_logger(), "%s: no behavior tree to execute task type [%s]",
       this->name().c_str(), task->type.c_str());
     return BT::NodeStatus::FAILURE;
   }
