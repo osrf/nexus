@@ -76,6 +76,7 @@ def launch_setup(context, *args, **kwargs):
     workcell_id = LaunchConfiguration("workcell_id")
     bt_path = LaunchConfiguration("bt_path")
     task_checker_plugin = LaunchConfiguration("task_checker_plugin")
+    max_jobs = LaunchConfiguration("max_jobs")
     ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
     controller_config_package = LaunchConfiguration("controller_config_package")
@@ -94,6 +95,7 @@ def launch_setup(context, *args, **kwargs):
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    remap_task_types = LaunchConfiguration("remap_task_types")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -152,6 +154,7 @@ def launch_setup(context, *args, **kwargs):
             ),
             Parameter("bt_path", bt_path),
             Parameter("task_checker_plugin", task_checker_plugin),
+            Parameter("max_jobs", max_jobs),
             Parameter(
                 "hardware_nodes",
                 [
@@ -183,6 +186,7 @@ def launch_setup(context, *args, **kwargs):
                 "abb_irb1300",
             ),
             Parameter("gripper_max_effort", 0.0),
+            Parameter("remap_task_types", remap_task_types),
         ],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -292,6 +296,11 @@ def generate_launch_description():
             description="Fully qualified name of the plugin to load to check if a task is doable.",
         ),
         DeclareLaunchArgument(
+            "max_jobs",
+            default_value="1",
+            description="Maximum number of parallel jobs that this workcell is allowed to handle.",
+        ),
+        DeclareLaunchArgument(
             "ros_domain_id",
             default_value="0",
             description="ROS_DOMAIN_ID environment variable",
@@ -380,6 +389,11 @@ def generate_launch_description():
             name="zenoh_config_filename",
             default_value="config/zenoh/workcell_1.json5",
             description="Zenoh DDS bridge configuration filepath",
+        ),
+        DeclareLaunchArgument(
+            "remap_task_types",
+            default_value="",
+            description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         OpaqueFunction(function = launch_setup)
     ])
