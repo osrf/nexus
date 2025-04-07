@@ -50,7 +50,7 @@ BT::NodeStatus BidTransporter::onStart()
 
   auto req =
     std::make_shared<endpoints::IsTransporterAvailableService::ServiceType::Request>();
-  req->request.id = this->_ctx->job_id;
+  req->request.id = this->_ctx->get_job_id();
   req->request.requester = node->get_name();
   // TODO(Yadunund): Parse work order and assign action type and params.
   // See https://github.com/osrf/nexus/issues/68.
@@ -61,7 +61,7 @@ BT::NodeStatus BidTransporter::onStart()
       .params("")
   );
   // send request to all transporters in parallel
-  for (auto& [transporter_id, session] : this->_ctx->transporter_sessions)
+  for (auto& [transporter_id, session] : this->_ctx->get_transporter_sessions())
   {
     auto fut = session->available_client->async_send_request(req);
     this->_ongoing_requests.emplace(transporter_id,

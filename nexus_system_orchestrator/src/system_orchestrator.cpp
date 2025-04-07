@@ -491,13 +491,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
         this->_publish_wo_feedback(*ctx);
         try
         {
-          this->_publish_wo_states(this->_jobs.at(ctx->job_id));
+          this->_publish_wo_states(this->_jobs.at(ctx->get_job_id()));
         }
         catch (const std::out_of_range&)
         {
           RCLCPP_WARN(this->get_logger(),
           "Error when publishing work order states: Work order [%s] not found",
-          ctx->job_id.c_str());
+          ctx->get_job_id().c_str());
         }
       });
     });
@@ -556,12 +556,13 @@ void SystemOrchestrator::_create_job(const WorkOrderActionType::Goal& goal)
   auto tasks = this->_parse_wo(work_order_id, wo);
 
   // using `new` because make_shared does not work with aggregate initializer
-  std::shared_ptr<Context> ctx{new Context{*this,
-      work_order_id, wo, tasks, this->_task_remapper,
-      std::unordered_map<std::string, std::string>{},
-      this->_workcell_sessions,
-      this->_transporter_sessions, {}, nullptr,
-      std::vector<std::string>{}}};
+  std::shared_ptr<Context> ctx{new Context(*this)};
+  ctx->set_job_id(work_order_id)
+  .set_work_order(wo)
+  .set_tasks(tasks)
+  .set_task_remapper(this->_task_remapper)
+  .set_workcell_sessions(this->_workcell_sessions)
+  .set_transporter_sessions(this->_transporter_sessions);
   auto bt = this->_create_bt(goal, ctx);
 
   const auto& [it,
@@ -602,12 +603,12 @@ void SystemOrchestrator::_init_job(
   try
   {
     auto& job = this->_jobs.at(work_order_id);
-    job.ctx->goal_handle = goal_handle;
+    job.ctx->set_goal_handle(goal_handle);
     job.bt_logging = std::make_unique<common::BtLogging>(job.bt,
         this->shared_from_this());
     job.state = WorkOrderState::STATE_BIDDING;
     _publish_wo_states(job);
-    this->_assign_all_tasks(job.ctx->tasks,
+    this->_assign_all_tasks(job.ctx->get_tasks(),
       [this, &job, goal_handle,
       work_order_id](const std::unordered_map<std::string,
       std::optional<std::string>>& maybe_task_assignments)
@@ -625,11 +626,8 @@ void SystemOrchestrator::_init_job(
             this->_jobs.erase(work_order_id);
             return;
           }
-          job.ctx->workcell_task_assignments.emplace(task_id,
-          *maybe_assignment);
-          auto p = job.ctx->task_states.emplace(task_id,
-          TaskState());
-          auto& task_state = p.first->second;
+          job.ctx->set_workcell_task_assignment(task_id, *maybe_assignment);
+          auto task_state = TaskState();
           task_state.workcell_id = *maybe_assignment;
           task_state.task_id = task_id;
           auto req =
@@ -663,11 +661,12 @@ void SystemOrchestrator::_init_job(
             return;
           }
           task_state.status = TaskState::STATUS_ASSIGNED;
+          job.ctx->set_task_state(task_id, TaskState(task_state));
         }
         job.state = WorkOrderState::STATE_EXECUTING;
         this->_publish_wo_states(job);
         RCLCPP_INFO(this->get_logger(), "Starting work order [%s]",
-        job.ctx->job_id.c_str());
+        job.ctx->get_job_id().c_str());
       });
   }
   catch (const std::exception& e)
@@ -745,7 +744,7 @@ void SystemOrchestrator::_handle_wo_cancel(
 void SystemOrchestrator::_handle_wo_failed(const Job& job)
 {
   std::ostringstream oss;
-  for (const auto& e : job.ctx->errors)
+  for (const auto& e : job.ctx->get_errors())
   {
     oss << "[" << e << "]";
   }
@@ -755,7 +754,7 @@ void SystemOrchestrator::_handle_wo_failed(const Job& job)
     this->get_logger(), "Failed to execute work order:" << reasons);
   auto result_msg = std::make_shared<WorkOrderActionType::Result>();
   result_msg->message = reasons;
-  job.ctx->goal_handle->abort(std::move(result_msg));
+  job.ctx->get_goal_handle()->abort(std::move(result_msg));
 }
 
 void SystemOrchestrator::_handle_register_workcell(
@@ -852,23 +851,21 @@ void SystemOrchestrator::_halt_job(const std::string& job_id)
   {
     auto& job = this->_jobs.at(job_id);
     job.bt.haltTree();
-    job.ctx->errors.emplace_back("Work order halted");
-    for (const auto& [task_id, wc_id] : job.ctx->workcell_task_assignments)
+    job.ctx->add_error("Work order halted");
+    for (const auto& [task_id, wc_id] : job.ctx->get_workcell_task_assignments())
     {
       // should we try to remove all tasks anyway even if they are not pending?
-      try
-      {
-        if (job.ctx->task_states.at(task_id).status !=
-          TaskState::STATUS_ASSIGNED)
-        {
-          continue;
-        }
-      }
-      catch (const std::out_of_range&)
+      const auto task_state = job.ctx->get_task_state(task_id);
+      if (!task_state.has_value())
       {
         RCLCPP_WARN(
           this->get_logger(), "Failed to remove pending task [%s]: missing task state",
           task_id.c_str());
+        continue;
+      }
+      if ((*task_state).status != TaskState::STATUS_ASSIGNED)
+      {
+        continue;
       }
 
       const auto req =
@@ -935,7 +932,7 @@ void SystemOrchestrator::_spin_bts_once()
       continue;
     }
 
-    auto goal_handle = job.ctx->goal_handle;
+    auto goal_handle = job.ctx->get_goal_handle();
     try
     {
       const auto bt_status = job.bt.tickRoot();
@@ -944,7 +941,7 @@ void SystemOrchestrator::_spin_bts_once()
         case BT::NodeStatus::SUCCESS: {
           RCLCPP_INFO(
             this->get_logger(), "Finished work order [%s]",
-            job.ctx->job_id.c_str());
+            job.ctx->get_job_id().c_str());
           auto result_msg = std::make_shared<WorkOrderActionType::Result>();
           auto report = job.bt_logging->generate_report();
           result_msg->message = common::ReportConverter::to_string(report);
@@ -974,7 +971,7 @@ void SystemOrchestrator::_spin_bts_once()
           std::ostringstream oss;
           oss << "Failed to execute work order [" << job_id <<
             "]: unexpected status [" << bt_status << "]";
-          job.ctx->errors.emplace_back(oss.str());
+          job.ctx->add_error(oss.str());
           job.state = WorkOrderState::STATE_FAILED;
           this->_handle_wo_failed(job);
           this->_publish_wo_states(job);
@@ -1103,10 +1100,11 @@ void SystemOrchestrator::_assign_all_tasks(
 auto SystemOrchestrator::_get_wo_state(const Job& job) const -> WorkOrderState
 {
   WorkOrderState state;
-  state.id = job.ctx->job_id;
+  state.id = job.ctx->get_job_id();
   state.state = job.state;
-  state.task_states.reserve(job.ctx->task_states.size());
-  for (const auto& [_, task_state] : job.ctx->task_states)
+  const auto task_states = job.ctx->get_task_states();
+  state.task_states.reserve(task_states.size());
+  for (const auto& [_, task_state] : task_states)
   {
     state.task_states.emplace_back(task_state);
   }
@@ -1128,12 +1126,13 @@ void SystemOrchestrator::_publish_wo_feedback(const Context& ctx)
 {
   auto wo_feedback =
     std::make_shared<endpoints::WorkOrderAction::ActionType::Feedback>();
-  wo_feedback->task_states.reserve(ctx.task_states.size());
-  for (const auto& [_, state] : ctx.task_states)
+  const auto task_states = ctx.get_task_states();
+  wo_feedback->task_states.reserve(task_states.size());
+  for (const auto& [_, state] : task_states)
   {
     wo_feedback->task_states.emplace_back(state);
   }
-  ctx.goal_handle->publish_feedback(wo_feedback);
+  ctx.get_goal_handle()->publish_feedback(wo_feedback);
 }
 
 void SystemOrchestrator::_publish_wo_states(const Job& job)
