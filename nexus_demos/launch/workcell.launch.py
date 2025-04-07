@@ -187,7 +187,6 @@ def launch_setup(context, *args, **kwargs):
             ),
             Parameter("gripper_max_effort", 0.0),
             Parameter("remap_task_types", remap_task_types),
-            # "remap_task_types": ParameterValue(remap_task_types, value_type=str),
         ],
         arguments=['--ros-args', '--log-level', 'info'],
     )
