@@ -295,7 +295,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "remap_task_types",
                 default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
-                description="File name of the main system orchestrator behavior tree",
+                description="A yaml containing a dictionary of task types and an array of remaps",
             ),
             DeclareLaunchArgument(
                 "nexus_rviz_config",

@@ -95,6 +95,7 @@ def launch_setup(context, *args, **kwargs):
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    remap_task_types = LaunchConfiguration("remap_task_types")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -185,6 +186,8 @@ def launch_setup(context, *args, **kwargs):
                 "abb_irb1300",
             ),
             Parameter("gripper_max_effort", 0.0),
+            Parameter("remap_task_types", remap_task_types),
+            # "remap_task_types": ParameterValue(remap_task_types, value_type=str),
         ],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -387,6 +390,11 @@ def generate_launch_description():
             name="zenoh_config_filename",
             default_value="config/zenoh/workcell_1.json5",
             description="Zenoh DDS bridge configuration filepath",
+        ),
+        DeclareLaunchArgument(
+            "remap_task_types",
+            default_value="",
+            description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         OpaqueFunction(function = launch_setup)
     ])

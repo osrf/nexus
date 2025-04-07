@@ -87,6 +87,8 @@ def launch_setup(context, *args, **kwargs):
     remap_task_types = """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }"""
+    workcell_1_remap_task_types = ""
+    workcell_2_remap_task_types = ""
     rviz_config_filename = "nexus_panel.rviz"
     max_jobs = "2"
     max_workcell_jobs = "1"
@@ -94,6 +96,7 @@ def launch_setup(context, *args, **kwargs):
         remap_task_types = """{
                             pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
                         }"""
+        workcell_1_remap_task_types = "\"place_on_amr: [place_on_conveyor]\""
         main_bt_filename = "main_rmf.xml"
         rviz_config_filename = "nexus_panel_rmf.rviz"
         max_jobs = "10"
@@ -150,6 +153,7 @@ def launch_setup(context, *args, **kwargs):
                         FindPackageShare("nexus_demos"),
                         "/config/workcell_1_bts",
                     ),
+                    "remap_task_types": workcell_1_remap_task_types,
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "max_jobs": max_workcell_jobs,
                     "ros_domain_id": str(workcell_1_domain_id),
@@ -194,6 +198,7 @@ def launch_setup(context, *args, **kwargs):
                         FindPackageShare("nexus_demos"),
                         "/config/workcell_2_bts",
                     ),
+                    "remap_task_types": workcell_2_remap_task_types,
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "max_jobs": max_workcell_jobs,
                     "ros_domain_id": str(workcell_2_domain_id),
