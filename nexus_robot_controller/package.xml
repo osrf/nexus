@@ -19,6 +19,8 @@
   <build_depend>ros2_control</build_depend>
   <build_depend>std_msgs</build_depend>
 
+  <depend>backward_ros</depend>
+
   <exec_depend>behaviortree_cpp_v3</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>controller_manager</exec_depend>

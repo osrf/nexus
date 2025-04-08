@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(nexus_robot_controller)
 
 find_package(ament_cmake REQUIRED)
+find_package(backward_ros REQUIRED)
 find_package(controller_manager REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)

@@ -3,6 +3,7 @@ set(PROJECT_NAME nexus_demos)
 project(${PROJECT_NAME} VERSION 0.0.1)
 
 find_package(ament_cmake REQUIRED)
+find_package(backward_ros REQUIRED)
 find_package(nexus_endpoints REQUIRED)
 find_package(nexus_transporter REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)

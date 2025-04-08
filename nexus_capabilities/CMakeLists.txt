@@ -10,6 +10,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 set(dep_pkgs
+  backward_ros
   behaviortree_cpp_v3
   geometry_msgs
   nexus_common

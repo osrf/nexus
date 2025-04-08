@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 set(dep_pkgs
+  backward_ros
   nexus_endpoints
   rclcpp
   rclcpp_components

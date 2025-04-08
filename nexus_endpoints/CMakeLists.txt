@@ -3,6 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(nexus_endpoints)
 
+find_package(backward_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(ament_cmake REQUIRED)

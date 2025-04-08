@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>backward_ros</depend>
   <depend>diagnostic_updater</depend>
   <depend>nexus_common</depend>
   <depend>nexus_cmake</depend>
