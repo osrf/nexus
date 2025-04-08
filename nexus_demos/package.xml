@@ -13,6 +13,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>ament_index_python</depend>
+  <depend>backward_ros</depend>
   <depend>lifecycle_msgs</depend>
   <depend>pluginlib</depend>
   <depend>nexus_transporter</depend>

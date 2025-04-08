@@ -12,6 +12,7 @@
   <depend>nexus_endpoints</depend>
   <depend>nexus_transporter_msgs</depend>
 
+  <depend>backward_ros</depend>
   <depend>geometry_msgs</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>

@@ -3,6 +3,7 @@ set(PROJECT_NAME nexus_system_orchestrator)
 project(${PROJECT_NAME} VERSION 0.0.1)
 
 find_package(ament_cmake REQUIRED)
+find_package(backward_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)

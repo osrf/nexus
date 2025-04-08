@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(backward_ros REQUIRED)
 find_package(behaviortree_cpp_v3 REQUIRED)
 find_package(nexus_endpoints REQUIRED)
 find_package(nexus_lifecycle_manager REQUIRED)
