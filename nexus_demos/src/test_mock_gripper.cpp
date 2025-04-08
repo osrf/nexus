@@ -41,7 +41,7 @@ SCENARIO("Test Gripper Mock")
 {
   rclcpp::init(0, nullptr);
 
-  node = std::make_shared<MockGripper>(rclcpp::NodeOptions(), 0.5);
+  node = std::make_shared<nexus_demos::MockGripper>(rclcpp::NodeOptions());
 
   node->configure();
   node->activate();
@@ -60,13 +60,11 @@ SCENARIO("Test Gripper Mock")
 
   auto goal_msg = GripperAction::Goal();
   goal_msg.command.position = 0.6;
-
   bool goal_response = false;
   double end_position = 0.0;
 
   auto goal_response_callback =
-    [&goal_response](GoalHandleGripperAction::SharedPtr
-      goal_handle)
+    [&goal_response](GoalHandleGripperAction::SharedPtr goal_handle)
     {
       if (goal_handle)
       {

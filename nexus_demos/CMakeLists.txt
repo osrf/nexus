@@ -20,14 +20,26 @@ set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
 ###############################################################################
 
-add_executable(mock_gripper src/mock_gripper.cpp)
-target_link_libraries(mock_gripper PRIVATE
+add_library(mock_gripper_component src/mock_gripper.cpp)
+target_link_libraries(mock_gripper_component PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
+  rclcpp_components::component
   rclcpp_action::rclcpp_action
   rclcpp_lifecycle::rclcpp_lifecycle
 )
-install(TARGETS mock_gripper RUNTIME DESTINATION lib/${PROJECT_NAME})
+target_compile_features(mock_gripper_component INTERFACE cxx_std_17)
+rclcpp_components_register_node(mock_emergency_alarm_component
+  PLUGIN "nexus_demos::MockGripper"
+  EXECUTABLE mock_gripper_node
+  EXECUTOR SingleThreadedExecutor)
+install(
+  TARGETS mock_gripper_component
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 
 ###############################################################################
 
@@ -87,6 +99,15 @@ rclcpp_components_register_node(mock_printer
   EXECUTABLE mock_printer_node
   EXECUTOR SingleThreadedExecutor)
 
+install(
+  TARGETS
+    mock_printer
+    EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 ###############################################################################
 add_test(NAME all_tests COMMAND python3 -m unittest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -104,15 +125,6 @@ install(DIRECTORY launch config rviz scripts DESTINATION share/${PROJECT_NAME})
 # Install the zenoh config directory containing generated configs.
 message("zenoh_cfg_output_dir: " ${zenoh_cfg_output_dir})
 install(DIRECTORY ${zenoh_cfg_output_dir} DESTINATION share/${PROJECT_NAME}/config/)
-
-install(
-  TARGETS
-    mock_printer
-    EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
 
 if(BUILD_TESTING)
   find_package(rmf_utils REQUIRED)
@@ -139,6 +151,7 @@ if(BUILD_TESTING)
     # ros2 run nexus_demos test_mocks
     add_executable(test_mocks
       test/main.cpp
+      src/mock_gripper.cpp
       src/test_mock_detection.cpp
       src/test_mock_gripper.cpp
     )
@@ -147,6 +160,7 @@ if(BUILD_TESTING)
       nexus_endpoints::nexus_endpoints
       rclcpp::rclcpp
       rclcpp_action::rclcpp_action
+      rclcpp_components::component
       rclcpp_lifecycle::rclcpp_lifecycle
       rcpputils::rcpputils
       yaml-cpp::yaml-cpp
