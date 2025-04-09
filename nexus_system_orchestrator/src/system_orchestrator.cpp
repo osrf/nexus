@@ -42,6 +42,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace nexus::system_orchestrator {
 
@@ -125,6 +126,14 @@ SystemOrchestrator::SystemOrchestrator(const rclcpp::NodeOptions& options)
     this->declare_parameter("bid_request_timeout", 5000, desc);
     this->_bid_request_timeout =
       this->get_parameter("bid_request_timeout").as_int();
+  }
+
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "A list of BT node names whose state changes should not be logged.";
+    this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
   }
 
   this->_lifecycle_mgr =
@@ -604,8 +613,10 @@ void SystemOrchestrator::_init_job(
   {
     auto& job = this->_jobs.at(work_order_id);
     job.ctx->set_goal_handle(goal_handle);
-    job.bt_logging = std::make_unique<common::BtLogging>(job.bt,
-        this->shared_from_this());
+    job.bt_logging = std::make_unique<common::BtLogging>(
+      job.bt,
+      this->shared_from_this(),
+      this->get_parameter("bt_logging_blocklist").as_string_array());
     job.state = WorkOrderState::STATE_BIDDING;
     _publish_wo_states(job);
     this->_assign_all_tasks(job.ctx->get_tasks(),

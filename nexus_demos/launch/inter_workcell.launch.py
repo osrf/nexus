@@ -33,6 +33,8 @@ from launch.actions import (
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
+from typing import List
+
 
 def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None):
 
@@ -120,6 +122,10 @@ def launch_setup(context, *args, **kwargs):
     nexus_rviz_config = LaunchConfiguration("nexus_rviz_config")
     system_orchestrator_bt_dir = LaunchConfiguration("system_orchestrator_bt_dir")
     max_jobs = LaunchConfiguration("max_jobs")
+    # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
+    # LaunchConfiguration. The best way to configure this would be via a YAML params which we
+    # pass to this node.
+    bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
 
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
@@ -129,6 +135,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "bt_path": system_orchestrator_bt_dir,
+                "bt_logging_blocklist": ParameterValue(bt_logging_blocklist, value_type=List[str]),
                 "remap_task_types": ParameterValue(remap_task_types, value_type=str),
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": max_jobs,
