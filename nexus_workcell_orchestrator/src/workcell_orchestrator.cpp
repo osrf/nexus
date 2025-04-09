@@ -823,11 +823,11 @@ void WorkcellOrchestrator::_tick_all_bts()
     // failed task.
     if (task_status == TaskState::STATUS_FAILED)
     {
+      this->_ctxs.erase(it);
       this->_cancel_all_tasks();
       break;
     }
 
-    // `_tick_bt` returns true if the task is finished
     if (task_status == TaskState::STATUS_FINISHED)
     {
       // NOTE: iterator is invalidated, it is important to
