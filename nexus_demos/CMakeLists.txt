@@ -73,8 +73,13 @@ rclcpp_components_register_node(mock_emergency_alarm_component
   PLUGIN "MockEmergencyAlarm"
   EXECUTABLE mock_emergency_alarm
   EXECUTOR SingleThreadedExecutor)
-install(TARGETS mock_emergency_alarm_component RUNTIME DESTINATION lib/${PROJECT_NAME})
-
+install(
+  TARGETS mock_emergency_alarm_component
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 ###############################################################################
 ament_export_targets(export_${PROJECT_NAME})
 
