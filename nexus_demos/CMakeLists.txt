@@ -20,7 +20,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
 ###############################################################################
 
-add_library(mock_gripper_component src/mock_gripper.cpp)
+add_library(mock_gripper_component SHARED src/mock_gripper.cpp)
 target_link_libraries(mock_gripper_component PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
@@ -29,9 +29,9 @@ target_link_libraries(mock_gripper_component PRIVATE
   rclcpp_lifecycle::rclcpp_lifecycle
 )
 target_compile_features(mock_gripper_component INTERFACE cxx_std_17)
-rclcpp_components_register_node(mock_emergency_alarm_component
+rclcpp_components_register_node(mock_gripper_component
   PLUGIN "nexus_demos::MockGripper"
-  EXECUTABLE mock_gripper_node
+  EXECUTABLE mock_gripper
   EXECUTOR SingleThreadedExecutor)
 install(
   TARGETS mock_gripper_component
