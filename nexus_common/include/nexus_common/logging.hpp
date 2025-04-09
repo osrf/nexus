@@ -18,6 +18,11 @@
 #ifndef NEXUS_COMMON__LOGGING
 #define NEXUS_COMMON__LOGGING
 
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include "nexus_common_export.hpp"
 
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -79,14 +84,26 @@ public: template<typename LogFunctor,
     // We don't really need a non-const `BT::Tree` but specifying it anyway to make it
     // more clear that it does not take ownership.
     BT::Tree& bt,
-    LogFunctor log_f)
+    LogFunctor log_f,
+    const std::vector<std::string>& blocklist_nodes = {})
   : _bt(bt)
   {
     this->_node_states.reserve(bt.nodes.size());
+    std::unordered_set<std::string> blocklist_set;
+    for (const std::string & bn : blocklist_nodes)
+    {
+      blocklist_set.insert(bn);
+    }
 
     this->_bt_subs.reserve(bt.nodes.size());
     for (const auto& n : bt.nodes)
     {
+      if (blocklist_set.count(n->name()) > 0)
+      {
+        // If the node name is part of the blocklist, don't register a cb
+        // to log status changes.
+        continue;
+      }
       this->_bt_subs.emplace_back(n->subscribeToStatusChange([this,
         log_f](BT::TimePoint now,
         const BT::TreeNode& bt_node,
@@ -132,8 +149,8 @@ public: template<typename NodePtrT,
     std::enable_if_t<!std::is_invocable_v<NodePtrT,
     const std::string&>, bool> = true>
   BtLogging(
-    BT::Tree& bt, NodePtrT node)
-  : BtLogging(bt, RclcppInfoLogF<NodePtrT>(node))
+    BT::Tree& bt, NodePtrT node, const std::vector<std::string>& blocklist_nodes = {})
+  : BtLogging(bt, RclcppInfoLogF<NodePtrT>(node), blocklist_nodes)
   {}
 
 /**

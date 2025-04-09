@@ -154,6 +154,14 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     this->_max_parallel_jobs = this->get_parameter("max_jobs").as_int();
   }
 
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "A list of BT node names whose state changes should not be logged.";
+    this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
+  }
+
   this->_register_workcell_client =
     this->create_client<endpoints::RegisterWorkcellService::ServiceType>(
     endpoints::RegisterWorkcellService::service_name());
@@ -391,8 +399,10 @@ auto WorkcellOrchestrator::_configure(
         ctx->task_state.workcell_id = this->get_name();
         ctx->task_state.task_id = ctx->task.task_id;
         ctx->bt = this->_create_bt(ctx);
-        ctx->bt_logging = std::make_unique<common::BtLogging>(ctx->bt,
-        this->shared_from_this());
+        ctx->bt_logging = std::make_unique<common::BtLogging>(
+          ctx->bt,
+          this->shared_from_this(),
+          this->get_parameter("bt_logging_blocklist").as_string_array());
       }
       catch (const std::exception& e)
       {

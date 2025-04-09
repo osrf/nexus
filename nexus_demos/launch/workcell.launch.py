@@ -37,6 +37,9 @@ from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
 
+from typing import List
+
+
 def activate_node_service(node_name, ros_domain_id):
     activate_node_proc = ExecuteProcess(
         cmd=[
@@ -96,6 +99,10 @@ def launch_setup(context, *args, **kwargs):
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
     remap_task_types = LaunchConfiguration("remap_task_types")
+    # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
+    # LaunchConfiguration. The best way to configure this would be via a YAML params which we
+    # pass to this node.
+    bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -187,6 +194,7 @@ def launch_setup(context, *args, **kwargs):
             ),
             Parameter("gripper_max_effort", 0.0),
             Parameter("remap_task_types", remap_task_types),
+            Parameter("bt_logging_blocklist", bt_logging_blocklist),
         ],
         arguments=['--ros-args', '--log-level', 'info'],
     )
