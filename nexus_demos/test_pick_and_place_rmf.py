@@ -27,7 +27,7 @@ from rclpy.action.client import ClientGoalHandle, GoalStatus
 from ros_testcase import RosTestCase
 import subprocess
 
-class PickAndPlaceTest(NexusTestCase):
+class PickAndPlaceRMFTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
@@ -71,7 +71,7 @@ class PickAndPlaceTest(NexusTestCase):
         self.proc.__exit__(None, None, None)
 
     @RosTestCase.timeout(600)  # 10min
-    async def test_pick_and_place_wo(self):
+    async def test_pick_and_place_wo_with_rmf(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"

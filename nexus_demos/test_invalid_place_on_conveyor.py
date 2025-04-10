@@ -27,7 +27,7 @@ from rclpy.action.client import ClientGoalHandle, GoalStatus
 from ros_testcase import RosTestCase
 import subprocess
 
-class PickAndPlaceTest(NexusTestCase):
+class InvalidPlaceOnConveyorTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
