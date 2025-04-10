@@ -1,0 +1,8 @@
+<?xml version='1.0'?>
+<root main_tree_to_execute="PickAndPlace">
+  <BehaviorTree ID="PickAndPlace">
+    <Sequence name="root_sequence">
+      <plan_motion.PlanMotion name="plan_to_pickup_top" robot_name="abb_irb910sc" goal="invalid_goal" scale_speed="0.5" cartesian="true" result="{pickup_top_traj}" />
+    </Sequence>
+  </BehaviorTree>
+</root>

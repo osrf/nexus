@@ -48,7 +48,9 @@ def launch_setup(context, *args, **kwargs):
     robot1_ip = LaunchConfiguration("robot1_ip")
     robot2_ip = LaunchConfiguration("robot2_ip")
     run_workcell_1 = LaunchConfiguration("run_workcell_1")
+    workcell_1_remap_task_types = LaunchConfiguration("workcell_1_remap_task_types")
     run_workcell_2 = LaunchConfiguration("run_workcell_2")
+    workcell_2_remap_task_types = LaunchConfiguration("workcell_2_remap_task_types")
 
     inter_workcell_domain_id = 0
     workcell_1_domain_id = 0
@@ -87,8 +89,6 @@ def launch_setup(context, *args, **kwargs):
     remap_task_types = """{
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }"""
-    workcell_1_remap_task_types = ""
-    workcell_2_remap_task_types = ""
     rviz_config_filename = "nexus_panel.rviz"
     max_jobs = "2"
     max_workcell_jobs = "1"
@@ -96,11 +96,12 @@ def launch_setup(context, *args, **kwargs):
         remap_task_types = """{
                             pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
                         }"""
-        workcell_1_remap_task_types = "\"place_on_amr: [place_on_conveyor]\""
         main_bt_filename = "main_rmf.xml"
         rviz_config_filename = "nexus_panel_rmf.rviz"
         max_jobs = "10"
         max_workcell_jobs = "10"
+        if len(workcell_1_remap_task_types.perform(context)) == 0:
+            workcell_1_remap_task_types = "\"place_on_amr: [place_on_conveyor]\""
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(
@@ -275,9 +276,19 @@ def generate_launch_description():
                 description="Whether to run workcell_1",
             ),
             DeclareLaunchArgument(
+                "workcell_1_remap_task_types",
+                default_value="",
+                description="Yaml string describing task type remaps of workcell_1.",
+            ),
+            DeclareLaunchArgument(
                 "run_workcell_2",
                 default_value="true",
                 description="Whether to run workcell_2",
+            ),
+            DeclareLaunchArgument(
+                "workcell_2_remap_task_types",
+                default_value="",
+                description="Yaml string describing task type remaps of workcell_2.",
             ),
             SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
             OpaqueFunction(function=launch_setup),

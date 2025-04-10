@@ -27,7 +27,7 @@ from rclpy.action.client import ClientGoalHandle, GoalStatus
 from ros_testcase import RosTestCase
 import subprocess
 
-class PickAndPlaceRMFTest(NexusTestCase):
+class InvalidPlaceOnConveyorTest(NexusTestCase):
     @RosTestCase.timeout(60)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
@@ -40,24 +40,17 @@ class PickAndPlaceRMFTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-                (
-                     "ros2",
-                     "launch",
-                     "nexus_demos",
-                     "launch.py",
-                     "sim_update_rate:=10000",
-                     "use_rmf_transporter:=true"
-                 ),
+            ("ros2", "launch", "nexus_demos", "launch.py", "workcell_1_remap_task_types:=\"invalid_place_on_conveyor: [place_on_conveyor]\""),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
         self.wait_for_nodes("system_orchestrator")
         await self.wait_for_lifecycle_active("system_orchestrator")
 
-        await self.wait_for_workcells("workcell_1", "workcell_2", "rmf_nexus_transporter")
+        await self.wait_for_workcells("workcell_1", "workcell_2")
         print("all workcells are ready")
-        await self.wait_for_robot_state()
-        print("AMRs are ready")
+        await self.wait_for_transporters("transporter_node")
+        print("all transporters are ready")
 
         # give some time for discovery to happen
         await self.ros_sleep(5)
@@ -71,11 +64,11 @@ class PickAndPlaceRMFTest(NexusTestCase):
         self.proc.__exit__(None, None, None)
 
     @RosTestCase.timeout(600)  # 10min
-    async def test_pick_and_place_wo_with_rmf(self):
+    async def test_abort_invalid_place_on_conveyor_wo(self):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/place_on_conveyor.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
         fb_fut = Future()
@@ -91,25 +84,4 @@ class PickAndPlaceRMFTest(NexusTestCase):
         self.assertTrue(goal_handle.accepted)
 
         results = await goal_handle.get_result_async()
-        self.assertEqual(results.status, GoalStatus.STATUS_SUCCEEDED)
-
-        # check that we receive the correct feedbacks
-        # FIXME(koonpeng): First few feedbacks are sometimes missed when the system in under
-        #   high load so we only check the last feedback as a workaround.
-        self.assertGreater(len(feedbacks), 0)
-        for msg in feedbacks:
-            # The first task is transportation
-            self.assertEqual(len(msg.task_states), 3)
-            state: TaskState = msg.task_states[1]  # type: ignore
-            self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "1/place_on_conveyor/0")
-            state: TaskState = msg.task_states[2]  # type: ignore
-            self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "1/pick_from_conveyor/1")
-
-        state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
-        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
-        state: TaskState = feedbacks[-1].task_states[1]  # type: ignore
-        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
-        state: TaskState = feedbacks[-1].task_states[2]  # type: ignore
-        self.assertEqual(state.status, TaskState.STATUS_FINISHED)
+        self.assertEqual(results.status, GoalStatus.STATUS_ABORTED)
