@@ -43,19 +43,30 @@ install(
 
 ###############################################################################
 
-add_executable(mock_detection src/mock_detection.cpp)
-target_link_libraries(mock_detection PRIVATE
+add_library(mock_detector_component SHARED src/mock_detector.cpp)
+target_link_libraries(mock_detector_component PRIVATE
   nexus_endpoints::nexus_endpoints
   rclcpp::rclcpp
+  rclcpp_components::component
   rclcpp_lifecycle::rclcpp_lifecycle
   yaml-cpp::yaml-cpp
   ${tf2_ros_TARGETS}
 )
-target_include_directories(mock_detection PRIVATE
+target_include_directories(mock_detector_component PRIVATE
   ${tf2_ros_INCLUDE_DIRS}
 )
-install(TARGETS mock_detection RUNTIME DESTINATION lib/${PROJECT_NAME})
-
+target_compile_features(mock_detector_component INTERFACE cxx_std_17)
+rclcpp_components_register_node(mock_detector_component
+  PLUGIN "nexus_demos::MockDetector"
+  EXECUTABLE mock_detector
+  EXECUTOR SingleThreadedExecutor)
+install(
+  TARGETS mock_detector_component
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 ###############################################################################
 
 add_library(mock_emergency_alarm_component SHARED src/mock_emergency_alarm.cpp)
@@ -156,8 +167,9 @@ if(BUILD_TESTING)
     # ros2 run nexus_demos test_mocks
     add_executable(test_mocks
       test/main.cpp
+      src/mock_detector.cpp
       src/mock_gripper.cpp
-      src/test_mock_detection.cpp
+      src/test_mock_detector.cpp
       src/test_mock_gripper.cpp
     )
     target_link_libraries(test_mocks

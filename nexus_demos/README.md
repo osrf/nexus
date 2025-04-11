@@ -114,7 +114,7 @@ sku_id2:
 Save this file and launch the vision mock node:
 
 ```bash
-ros2 run nexus_demos mock_detection --ros-args -p config_file:=<path config file>
+ros2 run nexus_demos mock_detector --ros-args -p config_file:=<path config file>
 ```
 
 To transition lifecycle states
