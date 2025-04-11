@@ -15,27 +15,26 @@
 #include <memory>
 
 #include <nexus_endpoints.hpp>
-
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
+
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 using namespace std::literals;
 
-using CallbackReturn =
-  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
-
-//==============================================================================
 namespace nexus_demos {
 
-class MockGripper : public rclcpp_lifecycle::LifecycleNode
+using CallbackReturn =
+  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+//==============================================================================
+class MockDetector : public rclcpp_lifecycle::LifecycleNode
 {
 public:
-  using GripperCommandAction = nexus::endpoints::GripperCommandAction;
-  using GoalHandleGripper =
-    rclcpp_action::ServerGoalHandle<GripperCommandAction::ActionType>;
+  using DetectorService = nexus::endpoints::DetectorService;
+  using ServiceType = DetectorService::ServiceType;
 
-  explicit MockGripper(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  explicit MockDetector(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
   CallbackReturn on_configure(const rclcpp_lifecycle::State& previous) override;
   CallbackReturn on_activate(const rclcpp_lifecycle::State& previous) override;
@@ -44,9 +43,29 @@ public:
   CallbackReturn on_shutdown(const rclcpp_lifecycle::State& previous) override;
 
 private:
-  rclcpp_action::Server<GripperCommandAction::ActionType>::
-  SharedPtr action_server_;
-  int _delay_millis;
-};
 
+  struct DetectionData
+  {
+    vision_msgs::msg::Detection3DArray detection_array;
+    std::vector<geometry_msgs::msg::TransformStamped> tf_msgs;
+  };
+
+  rclcpp::Service<ServiceType>::SharedPtr srv_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  std::unordered_map<std::string, std::shared_ptr<DetectionData>> map_;
+  std::string frame_id_;
+  std::string config_file_;
+
+  void update_map(
+    const std::string& id,
+    double x, double y, double z,
+    double qx = 0.0, double qy = 0.0, double qz = 0.0, double qw = 1.0);
+
+  void fill_tf_msgs(
+    const vision_msgs::msg::Detection3DArray& detection_array,
+    std::vector<geometry_msgs::msg::TransformStamped>& tf_msgs);
+
+  void publish_transforms(
+    const std::vector<geometry_msgs::msg::TransformStamped>& tf_msgs);
+};
 }  // namespace nexus_demos

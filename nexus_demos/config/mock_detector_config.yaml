@@ -1,0 +1,7 @@
+frame_id: camera
+keys:
+  - sku_id1
+sku_id1:
+  detected_units: 2
+  position: [[2.0, 2.1, 2.2], [4.5, 5.4, 3.7]] #x,y,z in meters
+  rotation: [[0.707, 0.0, 0.707, 1.0], [0.0, 0.0, 0.0, 1.0]] # qx,qy,qz,qw quaternions

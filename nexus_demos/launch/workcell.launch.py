@@ -122,7 +122,7 @@ def launch_setup(context, *args, **kwargs):
         name=workcell_id.perform(context) + "_mock_product_detector",
         namespace="",
         package="nexus_demos",
-        executable="mock_detection",
+        executable="mock_detector",
         parameters=[
             {"autostart": True},
             {"config_file":
