@@ -58,11 +58,9 @@ SCENARIO("Test Gripper Mock")
     return;
   }
 
-  auto goal_msg = GripperAction::Goal();
-  goal_msg.command.position = 0.6;
   bool goal_response = false;
   double end_position = 0.0;
-
+  double end_effort = 0.0;
   auto goal_response_callback =
     [&goal_response](GoalHandleGripperAction::SharedPtr goal_handle)
     {
@@ -73,29 +71,24 @@ SCENARIO("Test Gripper Mock")
     };
 
   auto result_callback =
-    [&end_position](const GoalHandleGripperAction::WrappedResult& result)
+    [&end_position, &end_effort](const GoalHandleGripperAction::WrappedResult& result)
     {
       end_position = result.result->position;
+      end_effort = result.result->effort;
     };
 
   auto send_goal_options =
     rclcpp_action::Client<GripperAction>::SendGoalOptions();
   send_goal_options.goal_response_callback = goal_response_callback;
   send_goal_options.result_callback = result_callback;
+
+  auto goal_msg = GripperAction::Goal();
+  goal_msg.command.position = 0.6;
+  goal_msg.command.max_effort = 0.8;
   auto future = client->async_send_goal(goal_msg, send_goal_options);
   spin_until_future_complete(future);
-
   auto goal_handle = future.get();
-  CHECK(goal_response == false);
-  CHECK(nullptr == goal_handle.get());
 
-  goal_msg = GripperAction::Goal();
-  goal_msg.command.position = 0.2;
-
-  future = client->async_send_goal(goal_msg, send_goal_options);
-  spin_until_future_complete(future);
-
-  goal_handle = future.get();
   CHECK(rclcpp_action::GoalStatus::STATUS_ACCEPTED ==
     goal_handle->get_status());
 
@@ -103,7 +96,26 @@ SCENARIO("Test Gripper Mock")
   spin_until_future_complete(future_result);
 
   CHECK(goal_response == true);
+  CHECK(0.6 == end_position);
+  CHECK(0.8 == end_effort);
+
+  // Try another goal.
+  goal_msg = GripperAction::Goal();
+  goal_msg.command.position = 0.2;
+  goal_msg.command.max_effort = 0.1;
+  future = client->async_send_goal(goal_msg, send_goal_options);
+  spin_until_future_complete(future);
+  goal_handle = future.get();
+
+  CHECK(rclcpp_action::GoalStatus::STATUS_ACCEPTED ==
+    goal_handle->get_status());
+
+  future_result = client->async_get_result(goal_handle);
+  spin_until_future_complete(future_result);
+
+  CHECK(goal_response == true);
   CHECK(0.2 == end_position);
+  CHECK(0.1 == end_effort);
 
   node.reset();
 
