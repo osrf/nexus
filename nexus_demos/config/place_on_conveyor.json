@@ -9,7 +9,16 @@
   },
   "steps": [
     {
-      "processId": "place_on_conveyor"
+      "processId": "place_on_conveyor",
+      "outputs": [
+        {
+          "SkuId": "productA",
+          "description": "productA",
+          "unit": "dummy_unit",
+          "quantity": 1.0,
+          "quantityPerPallet": 1.0
+        }
+      ]
     }
   ]
 }
