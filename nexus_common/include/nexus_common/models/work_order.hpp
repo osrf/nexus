@@ -27,7 +27,7 @@
 
 namespace nexus::common {
 
-class WorkOrder
+struct WorkOrder
 {
 public: struct Step
   {
@@ -74,9 +74,9 @@ public: YAML::Node yaml;
 public: WorkOrder(YAML::Node yaml)
   : yaml(std::move(yaml)) {}
 
-public: WorkOrder() {}
+  WorkOrder() {}
 
-public: std::string work_instruction_name() const
+  std::string work_instruction_name() const
   {
     return this->yaml["workInstructionName"].as<std::string>();
   }
