@@ -25,7 +25,7 @@
 
 namespace nexus::common {
 
-class WorkOrder
+struct WorkOrder
 {
 public: struct Step
   {
@@ -46,6 +46,15 @@ public: struct Step
       return this->yaml["processParams"];
     }
 
+    std::vector<MetaData> inputs() const
+    {
+      return this->yaml["inputs"].as<std::vector<MetaData>>();
+    }
+
+    std::vector<MetaData> outputs() const
+    {
+      return this->yaml["outputs"].as<std::vector<MetaData>>();
+    }
   };
 
 public: YAML::Node yaml;
@@ -53,9 +62,9 @@ public: YAML::Node yaml;
 public: WorkOrder(YAML::Node yaml)
   : yaml(std::move(yaml)) {}
 
-public: WorkOrder() {}
+  WorkOrder() {}
 
-public: std::string work_instruction_name() const
+  std::string work_instruction_name() const
   {
     return this->yaml["workInstructionName"].as<std::string>();
   }
@@ -74,7 +83,7 @@ public: std::vector<Step> steps() const
   }
 };
 
-}
+} // namespace nexus::common
 
 namespace YAML {
 
@@ -109,6 +118,6 @@ struct convert<nexus::common::WorkOrder>
   }
 };
 
-}
+} // namespace YAML
 
-#endif
+#endif // NEXUS_COMMON__MODELS__WORK_ORDER_HPP

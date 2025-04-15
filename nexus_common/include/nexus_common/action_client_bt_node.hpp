@@ -79,7 +79,8 @@ protected: virtual void on_feedback(typename ActionT::Feedback::ConstSharedPtr);
    * the action is considered a success and false otherwise.
    */
 protected: virtual bool on_result(
-    const typename rclcpp_action::ClientGoalHandle<ActionT>::WrappedResult& result);
+    const typename rclcpp_action::ClientGoalHandle<ActionT>::WrappedResult&
+    result);
 
 private: rclcpp::executors::SingleThreadedExecutor _executor;
 private: rclcpp::CallbackGroup::SharedPtr _cb_group;
@@ -131,7 +132,7 @@ BT::NodeStatus ActionClientBtNode<NodePtrT, ActionT>::onStart()
   typename rclcpp_action::Client<ActionT>::SendGoalOptions options;
   options.feedback_callback =
     [this](typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr,
-      typename ActionT::Feedback::ConstSharedPtr feedback)
+    typename ActionT::Feedback::ConstSharedPtr feedback)
     {
       this->on_feedback(feedback);
     };

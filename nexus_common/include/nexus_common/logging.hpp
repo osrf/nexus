@@ -90,7 +90,7 @@ public: template<typename LogFunctor,
   {
     this->_node_states.reserve(bt.nodes.size());
     std::unordered_set<std::string> blocklist_set;
-    for (const std::string & bn : blocklist_nodes)
+    for (const std::string& bn : blocklist_nodes)
     {
       blocklist_set.insert(bn);
     }
@@ -149,7 +149,8 @@ public: template<typename NodePtrT,
     std::enable_if_t<!std::is_invocable_v<NodePtrT,
     const std::string&>, bool> = true>
   BtLogging(
-    BT::Tree& bt, NodePtrT node, const std::vector<std::string>& blocklist_nodes = {})
+    BT::Tree& bt, NodePtrT node,
+    const std::vector<std::string>& blocklist_nodes = {})
   : BtLogging(bt, RclcppInfoLogF<NodePtrT>(node), blocklist_nodes)
   {}
 

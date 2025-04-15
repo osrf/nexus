@@ -15,9 +15,8 @@
  *
  */
 
+#include <nexus_common/models/work_order.hpp>
 #include <rmf_utils/catch.hpp>
-
-#include "models/work_order.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -103,13 +102,6 @@ TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
     R"RAW(
       {
         "workInstructionName": "CV-299 (Rev 4)",
-        "item": {
-          "SkuId": "1001",
-          "description": "dummy_sku",
-          "unit": "dummy_unit",
-          "quantity": 1.0,
-          "quantityPerPallet": 1.0
-        },
         "steps": [
           {
             "processId": "pickup"
@@ -131,7 +123,7 @@ TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
       REQUIRE_FALSE(maybe_metadata.has_value());
       REQUIRE(work_order.steps().size() == 3);
 
-      const auto steps = work_order.steps();
+    const auto steps = work_order.steps();
 
       const auto step1 = steps[0];
       CHECK(step1.process_id() == "pickup");
@@ -152,4 +144,4 @@ TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
   check_data(work_order);
 }
 
-}
+} // namespace nexus::common::test

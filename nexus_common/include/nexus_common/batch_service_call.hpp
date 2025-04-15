@@ -64,7 +64,7 @@ struct BatchServiceResult
  */
 template<typename NodePtrT, typename ServiceT, typename KeyT,
   typename DoneCallbackT = std::function<void(const std::unordered_map<KeyT,
-  BatchServiceResult<ServiceT>>&)>>
+  BatchServiceResult<ServiceT>>& )>>
 CancellationToken batch_service_call(
   NodePtrT node,
   const std::unordered_map<KeyT, BatchServiceReq<ServiceT>>& batch_reqs,
