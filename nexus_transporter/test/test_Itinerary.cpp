@@ -50,7 +50,7 @@ SCENARIO("Test Itinerary")
   CHECK(itinerary.id() == id);
   const auto & destinations_ = itinerary.destinations();
   CHECK(destinations_.size() == 1);
-  CHECK(destinations_[0].name == "pallet_1");
+  CHECK(destinations_[0].name == "workcell_1");
   CHECK(destinations_[0].action == Destination::ACTION_PICKUP);
   CHECK(destinations_[0].params == "");
   CHECK(itinerary.transporter_name() == transporter_name);
@@ -75,8 +75,8 @@ SCENARIO("Test Itinerary")
     itinerary.destinations(std::move(new_destinations));
     const auto & new_destinations_ = itinerary.destinations();
     CHECK(new_destinations_.size() == 1);
-    CHECK(new_destinations_[0].name == "pallet_1");
-    CHECK(new_destinations_[0].action == Destination::ACTION_PICKUP);
+    CHECK(new_destinations_[0].name == "workcell_2");
+    CHECK(new_destinations_[0].action == Destination::ACTION_DROPOFF);
     CHECK(new_destinations_[0].params == "");
   }
   WHEN("Setting new transporter_name")

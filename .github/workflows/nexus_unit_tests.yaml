@@ -28,6 +28,12 @@ jobs:
       - name: build and test
         uses: ros-tooling/action-ros-ci@v0.3
         with:
-          package-name: nexus_common nexus_motion_planner
-          target-ros2-distro: ${{ inputs.ros-distribution }}
+          package-name: |
+            nexus_common
+            nexus_lifecycle_manager
+            nexus_motion_planner
+            nexus_system_orchestrator
+            nexus_transporter
+            nexus_workcell_orchestrator
+          target-ros2-distro: ${{ matrix.ros_distribution }}
           colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
