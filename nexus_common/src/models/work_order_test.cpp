@@ -25,7 +25,68 @@
 
 namespace nexus::common::test {
 
-TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
+TEST_CASE("WorkOrder serialization with metadata", "[Model][Serialization]")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "workInstructionName": "CV-299 (Rev 4)",
+        "metadata": {
+          "SkuId": "1001",
+          "description": "dummy_sku",
+          "unit": "dummy_unit",
+          "quantity": 1.0,
+          "quantityPerPallet": 1.0
+        },
+        "steps": [
+          {
+            "processId": "pickup"
+          },
+          {
+            "processId": "place"
+          },
+          {
+            "processId": "inspect"
+          }
+        ]
+      }
+  )RAW"};
+
+  auto check_data = [](const WorkOrder& work_order)
+    {
+      CHECK(work_order.work_instruction_name() == "CV-299 (Rev 4)");
+      const auto maybe_metadata = work_order.metadata();
+      REQUIRE(maybe_metadata.has_value());
+      const auto& metadata = maybe_metadata.value();
+      CHECK(metadata.yaml["sku_id"].as<std::string>() == "1001");
+      CHECK(metadata.yaml["description"].as<std::string>() == "dummy_sku");
+      CHECK(metadata.yaml["unit"].as<std::string>() == "dummy_unit");
+      CHECK(metadata.yaml["quantity"].as<int>() == 1);
+      CHECK(metadata.yaml["quantity_per_pallet"].as<int>() == 1);
+      REQUIRE(work_order.steps().size() == 3);
+
+      const auto steps = work_order.steps();
+
+      const auto step1 = steps[0];
+      CHECK(step1.process_id() == "pickup");
+
+      const auto& step2 = steps[1];
+      CHECK(step2.process_id() == "place");
+
+      const auto& step3 = steps[2];
+      CHECK(step3.process_id() == "inspect");
+    };
+
+  auto work_order = YAML::Load(raw).as<WorkOrder>();
+  check_data(work_order);
+
+  YAML::Emitter out;
+  raw = (out << YAML::Node{work_order}).c_str();
+  work_order = YAML::Load(raw).as<WorkOrder>();
+  check_data(work_order);
+}
+
+TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
 {
   std::string raw{
     R"RAW(
@@ -40,16 +101,13 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
         },
         "steps": [
           {
-            "processId": "pickup",
-            "name": "pickup item"
+            "processId": "pickup"
           },
           {
-            "processId": "place",
-            "name": "place item"
+            "processId": "place"
           },
           {
-            "processId": "inspect",
-            "name": "inspect item"
+            "processId": "inspect"
           }
         ]
       }
@@ -58,28 +116,20 @@ TEST_CASE("WorkOrder serialization", "[Model][Serialization]")
   auto check_data = [](const WorkOrder& work_order)
     {
       CHECK(work_order.work_instruction_name() == "CV-299 (Rev 4)");
-      const auto item = work_order.item();
-      CHECK(item.sku_id() == "1001");
-      CHECK(item.description() == "dummy_sku");
-      CHECK(item.unit() == "dummy_unit");
-      CHECK(item.quantity() == 1);
-      CHECK(item.quantity_per_pallet() == 1);
+      const auto maybe_metadata = work_order.metadata();
+      REQUIRE_FALSE(maybe_metadata.has_value());
       REQUIRE(work_order.steps().size() == 3);
 
       const auto steps = work_order.steps();
 
       const auto step1 = steps[0];
       CHECK(step1.process_id() == "pickup");
-      CHECK(step1.name() ==
-        "pickup item");
 
       const auto& step2 = steps[1];
       CHECK(step2.process_id() == "place");
-      CHECK(step2.name() == "place item");
 
       const auto& step3 = steps[2];
       CHECK(step3.process_id() == "inspect");
-      CHECK(step3.name() == "inspect item");
     };
 
   auto work_order = YAML::Load(raw).as<WorkOrder>();

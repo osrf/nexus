@@ -719,10 +719,11 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
       this->_generate_task_id(work_order_id, step.process_id(), step_index++);
     task.type = step.process_id();
 
-    // FIXME(koonpeng): data from arcstone is missing the work order item,
-    // workaround by injecting it in.
+    // Inject metadata into payload for workcell.
     YAML::Node processed_step = step.yaml;
-    processed_step["item"] = work_order.item();
+    processed_step["metadata"] =
+      work_order.metadata().has_value() ? work_order.metadata().value() :
+      YAML::Node{};
     YAML::Emitter out;
     out << processed_step;
     task.payload = out.c_str();
