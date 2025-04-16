@@ -163,17 +163,15 @@ if(BUILD_TESTING)
     find_package(ament_index_cpp REQUIRED)
     find_package(rcpputils REQUIRED)
 
-    # To run the test use:
-    # ros2 run nexus_demos test_mocks
-    add_executable(test_mocks
+    ament_add_catch2(test_mocks
       test/main.cpp
-      src/mock_detector.cpp
-      src/mock_gripper.cpp
       src/test_mock_detector.cpp
       src/test_mock_gripper.cpp
     )
     target_link_libraries(test_mocks
       ament_index_cpp::ament_index_cpp
+      mock_detector_component
+      mock_gripper_component
       nexus_endpoints::nexus_endpoints
       rclcpp::rclcpp
       rclcpp_action::rclcpp_action
@@ -187,7 +185,6 @@ if(BUILD_TESTING)
     target_include_directories(test_mocks PUBLIC
       ${tf2_ros_INCLUDE_DIRS}
     )
-    install(TARGETS test_mocks RUNTIME DESTINATION lib/${PROJECT_NAME})
   endif()
 endif()
 
