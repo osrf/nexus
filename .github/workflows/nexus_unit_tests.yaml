@@ -37,3 +37,4 @@ jobs:
             nexus_workcell_orchestrator
           target-ros2-distro: ${{ matrix.ros_distribution }}
           colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
+          vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/main/abb.repos
