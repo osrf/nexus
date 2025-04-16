@@ -27,6 +27,8 @@ jobs:
 
       - name: build and test
         uses: ros-tooling/action-ros-ci@v0.3
+        env:
+          RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
         with:
           package-name: |
             nexus_common
