@@ -2,3 +2,4 @@ __pycache__/
 /thirdparty/
 .vscode/
 *.ikcache
+**/*.rmf_schedule_node.yaml

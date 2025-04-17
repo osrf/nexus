@@ -25,6 +25,9 @@ jobs:
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
+      # Only tests that can be run without arbitrary number of workers. For
+      # tests that require --parallel-workers 1, run it in
+      # nexus_integration_tests.
       - name: build and test
         uses: ros-tooling/action-ros-ci@v0.3
         env:
