@@ -33,7 +33,6 @@ jobs:
           package-name: |
             nexus_common
             nexus_lifecycle_manager
-            nexus_motion_planner
             nexus_system_orchestrator
             nexus_transporter
             nexus_workcell_orchestrator
