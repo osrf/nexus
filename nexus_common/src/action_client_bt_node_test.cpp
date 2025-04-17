@@ -44,7 +44,8 @@ public: static BT::PortsList providedPorts()
 
 public: TestActionBtNode(const std::string& name,
     const BT::NodeConfiguration& config, rclcpp::Node::SharedPtr node,
-    rclcpp_action::Client<example_interfaces::action::Fibonacci>::SharedPtr client)
+    rclcpp_action::Client<example_interfaces::action::Fibonacci>::SharedPtr
+    client)
   : ActionClientBtNode<rclcpp::Node::SharedPtr,
       example_interfaces::action::Fibonacci>(name, config, node),
     _client(client) {}
@@ -116,13 +117,15 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
         return rclcpp_action::GoalResponse::REJECT;
       },
       [&](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>)
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>)
       {
         rejected_goal.set_value();
         return rclcpp_action::CancelResponse::REJECT;
       },
       [](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>
         handle)
       {
         handle->abort(
@@ -145,12 +148,14 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       },
       [](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>)
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>)
       {
         return rclcpp_action::CancelResponse::REJECT;
       },
       [](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>
         handle)
       {
         handle->abort(
@@ -178,13 +183,15 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       },
       [&](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>)
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>)
       {
         got_cancel.set_value();
         return rclcpp_action::CancelResponse::ACCEPT;
       },
       [&](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>
         handle)
       {
         started_job.set_value();
@@ -202,7 +209,7 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
     tick_until(bt, [&](auto)
       {
         return started_job_fut.wait_for(std::chrono::seconds(
-          0)) == std::future_status::ready;
+            0)) == std::future_status::ready;
       }, std::chrono::seconds(1));
     bt.haltTree();
     CHECK(got_cancel_fut.wait_for(std::chrono::seconds(0)) ==
@@ -225,12 +232,14 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       },
       [&](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>)
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>)
       {
         return rclcpp_action::CancelResponse::REJECT;
       },
       [&](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>
         handle)
       {
         started_job.set_value();
@@ -247,7 +256,7 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
     tick_until(bt, [&](auto)
       {
         return started_job_fut.wait_for(std::chrono::seconds(
-          0)) == std::future_status::ready;
+            0)) == std::future_status::ready;
       }, std::chrono::seconds(1));
 
     // test action takes 1 second, halting the tree should cause it to block until
@@ -270,12 +279,14 @@ TEST_CASE("ActionClientBtNode", "[BehaviorTree]")
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       },
       [](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>)
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>)
       {
         return rclcpp_action::CancelResponse::REJECT;
       },
       [](
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::action::Fibonacci>>
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<example_interfaces::
+        action::Fibonacci>>
         handle)
       {
         handle->succeed(

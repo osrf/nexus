@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Johnson & Johnson
+ * Copyright (C) 2025 Open Source Robotics Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,47 @@
  *
  */
 
-#ifndef NEXUS_COMMON__MODELS__WORK_ORDER_HPP
-#define NEXUS_COMMON__MODELS__WORK_ORDER_HPP
+#ifndef NEXUS_COMMON__MODELS__ITEM_HPP
+#define NEXUS_COMMON__MODELS__ITEM_HPP
 
 #include <nexus_common/yaml_helpers.hpp>
-#include <nexus_common/models/item.hpp>
-#include <nexus_common/models/parameter.hpp>
-#include <nexus_common/models/step.hpp>
+
+#include <string>
 
 namespace nexus::common {
 
-struct WorkOrder
+struct Item
 {
   YAML::Node yaml;
 
-  WorkOrder(YAML::Node yaml)
+  Item(YAML::Node yaml)
   : yaml(std::move(yaml)) {}
 
-  WorkOrder() {}
+  Item() {}
 
-  std::string work_instruction_name() const
+  std::string sku_id() const
   {
-    return this->yaml["workInstructionName"].as<std::string>();
+    return this->yaml["SkuId"].as<std::string>();
   }
 
-  std::vector<Step> steps() const
+  std::string description() const
   {
-    return this->yaml["steps"].as<std::vector<Step>>();
+    return this->yaml["description"].as<std::string>();
+  }
+
+  std::string unit() const
+  {
+    return this->yaml["unit"].as<std::string>();
+  }
+
+  int32_t quantity() const
+  {
+    return this->yaml["quantity"].as<double>();
+  }
+
+  int32_t quantity_per_pallet() const
+  {
+    return this->yaml["quantityPerPallet"].as<double>();
   }
 };
 
@@ -50,14 +64,14 @@ struct WorkOrder
 namespace YAML {
 
 template<>
-struct convert<nexus::common::WorkOrder>
+struct convert<nexus::common::Item>
 {
-  static Node encode(const nexus::common::WorkOrder& data)
+  static Node encode(const nexus::common::Item& data)
   {
     return data.yaml;
   }
 
-  static bool decode(const Node& node, nexus::common::WorkOrder& data)
+  static bool decode(const Node& node, nexus::common::Item& data)
   {
     data.yaml = node;
     return true;
@@ -66,4 +80,4 @@ struct convert<nexus::common::WorkOrder>
 
 } // namespace YAML
 
-#endif // NEXUS_COMMON__MODELS__WORK_ORDER_HPP
+#endif // NEXUS_COMMON__MODELS__ITEM_HPP

@@ -1,0 +1,44 @@
+name: nexus_unit_tests
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+defaults:
+  run:
+    shell: bash
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ros:${{ matrix.ros_distribution }}-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distribution:
+          - jazzy
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+
+      # Only tests that can be run without arbitrary number of workers. For
+      # tests that require --parallel-workers 1, run it in
+      # nexus_integration_tests.
+      - name: build and test
+        uses: ros-tooling/action-ros-ci@v0.3
+        env:
+          RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+        with:
+          package-name: |
+            nexus_common
+            nexus_lifecycle_manager
+            nexus_system_orchestrator
+            nexus_transporter
+            nexus_workcell_orchestrator
+          target-ros2-distro: ${{ matrix.ros_distribution }}
+          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
+          vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/main/abb.repos

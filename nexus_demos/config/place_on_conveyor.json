@@ -1,16 +1,18 @@
 {
   "workInstructionName": "Place on conveyor",
-  "item": {
-    "SkuId": "productA",
-    "description": "productA",
-    "unit": "dummy_unit",
-    "quantity": 1.0,
-    "quantityPerPallet": 1.0
-  },
   "steps": [
     {
       "processId": "place_on_conveyor",
-      "name": "Pick and Place"
+      "name": "Pick and Place",
+      "outputItems": [
+        {
+          "SkuId": "productA",
+          "description": "productA",
+          "unit": "dummy_unit",
+          "quantity": 1.0,
+          "quantityPerPallet": 1.0
+        }
+      ]
     }
   ]
 }
