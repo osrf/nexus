@@ -50,6 +50,11 @@ public: struct Step
       return this->yaml["processId"].as<std::string>();
     }
 
+    YAML::Node process_params() const
+    {
+      return this->yaml["processParams"];
+    }
+
   };
 
 public: YAML::Node yaml;

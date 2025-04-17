@@ -25,7 +25,8 @@
 
 namespace nexus::common::test {
 
-TEST_CASE("WorkOrder serialization with metadata", "[Model][Serialization]")
+TEST_CASE("WorkOrder serialization with metadata and process params",
+  "[Model][Serialization]")
 {
   std::string raw{
     R"RAW(
@@ -35,12 +36,16 @@ TEST_CASE("WorkOrder serialization with metadata", "[Model][Serialization]")
           "SkuId": "1001",
           "description": "dummy_sku",
           "unit": "dummy_unit",
-          "quantity": 1.0,
-          "quantityPerPallet": 1.0
+          "quantity": 1,
+          "quantityPerPallet": 1
         },
         "steps": [
           {
-            "processId": "pickup"
+            "processId": "pickup",
+            "processParams": {
+              "param1": 10,
+              "param2": "base_link"
+            }
           },
           {
             "processId": "place"
@@ -57,24 +62,30 @@ TEST_CASE("WorkOrder serialization with metadata", "[Model][Serialization]")
       CHECK(work_order.work_instruction_name() == "CV-299 (Rev 4)");
       const auto maybe_metadata = work_order.metadata();
       REQUIRE(maybe_metadata.has_value());
-      const auto& metadata = maybe_metadata.value();
-      CHECK(metadata.yaml["sku_id"].as<std::string>() == "1001");
+      const auto metadata = maybe_metadata.value();
+      CHECK(metadata.yaml["SkuId"].as<std::string>() == "1001");
       CHECK(metadata.yaml["description"].as<std::string>() == "dummy_sku");
       CHECK(metadata.yaml["unit"].as<std::string>() == "dummy_unit");
       CHECK(metadata.yaml["quantity"].as<int>() == 1);
-      CHECK(metadata.yaml["quantity_per_pallet"].as<int>() == 1);
+      CHECK(metadata.yaml["quantityPerPallet"].as<int>() == 1);
       REQUIRE(work_order.steps().size() == 3);
 
       const auto steps = work_order.steps();
 
       const auto step1 = steps[0];
       CHECK(step1.process_id() == "pickup");
+      const auto & step1_params = step1.process_params();
+      REQUIRE(step1_params);
+      CHECK(step1_params["param1"].as<int>() == 10);
+      CHECK(step1_params["param2"].as<std::string>() == "base_link");
 
       const auto& step2 = steps[1];
       CHECK(step2.process_id() == "place");
+      CHECK_FALSE(step2.process_params());
 
       const auto& step3 = steps[2];
       CHECK(step3.process_id() == "inspect");
+      CHECK_FALSE(step3.process_params());
     };
 
   auto work_order = YAML::Load(raw).as<WorkOrder>();
