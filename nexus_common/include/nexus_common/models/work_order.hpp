@@ -20,22 +20,13 @@
 
 #include <optional>
 
+#include "metadata.hpp"
 #include "../yaml_helpers.hpp"
 
 namespace nexus::common {
 
 class WorkOrder
 {
-public: struct MetaData
-  {
-    YAML::Node yaml;
-
-    MetaData(YAML::Node yaml)
-    : yaml(std::move(yaml)) {}
-
-    MetaData() {}
-  };
-
 public: struct Step
   {
     YAML::Node yaml;
@@ -86,21 +77,6 @@ public: std::vector<Step> steps() const
 }
 
 namespace YAML {
-
-template<>
-struct convert<nexus::common::WorkOrder::MetaData>
-{
-  static Node encode(const nexus::common::WorkOrder::MetaData& data)
-  {
-    return data.yaml;
-  }
-
-  static bool decode(const Node& node, nexus::common::WorkOrder::MetaData& data)
-  {
-    data.yaml = node;
-    return true;
-  }
-};
 
 template<>
 struct convert<nexus::common::WorkOrder::Step>
