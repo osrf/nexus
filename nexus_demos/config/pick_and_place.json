@@ -1,6 +1,6 @@
 {
   "workInstructionName": "Pick and Place",
-  "item": {
+  "metadata": {
     "SkuId": "productA",
     "description": "productA",
     "unit": "dummy_unit",
@@ -9,12 +9,10 @@
   },
   "steps": [
     {
-      "processId": "place_on_conveyor",
-      "name": "Pick and Place"
+      "processId": "place_on_conveyor"
     },
     {
-      "processId": "pick_from_conveyor",
-      "name": "Pick and Place"
+      "processId": "pick_from_conveyor"
     }
   ]
 }
