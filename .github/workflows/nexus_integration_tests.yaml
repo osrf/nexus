@@ -27,6 +27,11 @@ jobs:
     - name: vcs
       run: |
         vcs import . < abb.repos
+        vcs import . < nexus/rmf.repos
+        cd thirdparty/rmf/rmf_internal_msgs
+        git sparse-checkout set rmf_task_msgs
+        cd ../rmf_ros2
+        git sparse-checkout set rmf_fleet_adapter rmf_fleet_adapter_python rmf_task_ros2
     - name: rosdep
       run: |
         apt update

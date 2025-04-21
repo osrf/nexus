@@ -145,7 +145,7 @@ public:
       return std::nullopt;
     }
     // This transporter can only go to one destination at a time.
-    const auto & destination = destinations[0];
+    const auto& destination = destinations[0];
     if (_destinations.find(destination.name) == _destinations.end())
       return std::nullopt;
 
@@ -212,13 +212,13 @@ public:
       }
     }
 
-    const auto & destinations = itinerary.destinations();
+    const auto& destinations = itinerary.destinations();
     if (destinations.empty())
     {
       completed_cb(true);
       return;
     }
-    const auto & destination = destinations[0];
+    const auto& destination = destinations[0];
     if (current_location.name.has_value() &&
       destination.name == current_location.name)
     {
@@ -244,7 +244,7 @@ public:
 
           _transporters.at(current_transporter)->itinerary = itinerary;
         }
-        const auto & destination = itinerary.destinations()[0];
+        const auto& destination = itinerary.destinations()[0];
         const auto& dest_pose =
         _destinations.find(destination.name)->second;
         const auto& current_pose = _transporters.at(
@@ -286,7 +286,8 @@ public:
           state.location.pose.position.x += x_increment;
           dist_traveled += abs(x_increment);
           _transporters.at(
-            current_transporter)->current_location.pose = state.location.pose.position.x;
+            current_transporter)->current_location.pose =
+          state.location.pose.position.x;
           feedback_cb(state);
         }
 

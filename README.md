@@ -33,6 +33,14 @@ mkdir ~/ws_nexus/src -p
 cd ~/ws_nexus/src/
 git clone git@github.com:osrf/nexus
 vcs import . < nexus/abb.repos
+vcs import . < nexus/rmf.repos
+
+# To reduce build-time, we only sparse checkout the features we need
+cd ~/ws_nexus/src/thirdparty/rmf/rmf_internal_msgs
+git sparse-checkout set rmf_task_msgs
+cd ~/ws_nexus/src/thirdparty/rmf/rmf_ros2
+git sparse-checkout set rmf_fleet_adapter rmf_fleet_adapter_python rmf_task_ros2
+
 cd ~/ws_nexus
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -y -r
 ```
