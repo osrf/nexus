@@ -1,22 +1,17 @@
 {
   "workInstructionName": "Pick from conveyor",
-  "metadata": {
-    "SkuId": "productA",
-    "description": "productA",
-    "unit": "dummy_unit",
-    "quantity": 1.0,
-    "quantityPerPallet": 1.0
-  },
   "steps": [
     {
       "processId": "pick_from_conveyor",
-      "inputs": [
+      "inputItems": [
         {
-          "SkuId": "productA",
-          "description": "productA",
-          "unit": "dummy_unit",
-          "quantity": 1.0,
-          "quantityPerPallet": 1.0
+          "guid": "productA",
+          "metadata": {
+            "description": "productA",
+            "unit": "dummy_unit",
+            "quantity": 1.0,
+            "quantityPerPallet": 1.0
+          }
         }
       ]
     }

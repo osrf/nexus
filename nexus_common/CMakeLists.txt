@@ -123,6 +123,7 @@ if(BUILD_TESTING)
   nexus_add_test(service_client_bt_node_test src/service_client_bt_node_test.cpp)
   nexus_add_test(models_test
     src/main_test.cpp
+    src/models/item_test.cpp
     src/models/work_order_test.cpp
   )
   nexus_add_test(ros_utils_test

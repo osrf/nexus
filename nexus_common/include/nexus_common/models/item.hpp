@@ -15,22 +15,39 @@
  *
  */
 
-#ifndef NEXUS_COMMON__MODELS__METADATA_HPP
-#define NEXUS_COMMON__MODELS__METADATA_HPP
+#ifndef NEXUS_COMMON__MODELS__ITEM_HPP
+#define NEXUS_COMMON__MODELS__ITEM_HPP
 
+#include <optional>
+
+#include "metadata.hpp"
 #include "../yaml_helpers.hpp"
 
 namespace nexus::common {
 
-class MetaData
+class Item
 {
 public:
   YAML::Node yaml;
 
-  MetaData(YAML::Node yaml)
+  Item(YAML::Node yaml)
   : yaml(std::move(yaml)) {}
 
-  MetaData() {}
+  Item() {}
+
+  std::string guid() const
+  {
+    return this->yaml["guid"].as<std::string>();
+  }
+
+  std::optional<MetaData> metadata() const
+  {
+    if (this->yaml["metadata"])
+    {
+      return this->yaml["metadata"];
+    }
+    return std::nullopt;
+  }
 };
 
 }  // namespace nexus::common
@@ -38,14 +55,14 @@ public:
 namespace YAML {
 
 template<>
-struct convert<nexus::common::MetaData>
+struct convert<nexus::common::Item>
 {
-  static Node encode(const nexus::common::MetaData& data)
+  static Node encode(const nexus::common::Item& data)
   {
     return data.yaml;
   }
 
-  static bool decode(const Node& node, nexus::common::MetaData& data)
+  static bool decode(const Node& node, nexus::common::Item& data)
   {
     data.yaml = node;
     return true;
@@ -54,4 +71,4 @@ struct convert<nexus::common::MetaData>
 
 }  // namespace YAML
 
-#endif  // NEXUS_COMMON__MODELS__METADATA_HPP
+#endif  // NEXUS_COMMON__MODELS__ITEM_HPP

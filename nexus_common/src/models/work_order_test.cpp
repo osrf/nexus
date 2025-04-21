@@ -44,13 +44,57 @@ TEST_CASE("WorkOrder serialization with metadata and process params",
             "processParams": {
               "param1": 10,
               "param2": "base_link"
-            }
+            },
+            "inputItems": [
+              {
+                "guid": "1001",
+                "metadata": {
+                  "description": "dummy_sku",
+                  "unit": "dummy_unit",
+                  "quantity": 1,
+                  "quantityPerPallet": 1
+                }
+              }
+            ]
           },
           {
-            "processId": "place"
+            "processId": "place",
+            "outputItems": [
+              {
+                "guid": "1001",
+                "metadata": {
+                  "description": "dummy_sku",
+                  "unit": "dummy_unit",
+                  "quantity": 1,
+                  "quantityPerPallet": 1
+                }
+              }
+            ]
           },
           {
-            "processId": "inspect"
+            "processId": "inspect",
+            "inputItems": [
+              {
+                "guid": "1001",
+                "metadata": {
+                  "description": "dummy_sku",
+                  "unit": "dummy_unit",
+                  "quantity": 1,
+                  "quantityPerPallet": 1
+                }
+              }
+            ],
+            "outputItems": [
+              {
+                "guid": "1001",
+                "metadata": {
+                  "description": "dummy_sku",
+                  "unit": "dummy_unit",
+                  "quantity": 1,
+                  "quantityPerPallet": 1
+                }
+              }
+            ]
           }
         ]
       }
@@ -77,14 +121,60 @@ TEST_CASE("WorkOrder serialization with metadata and process params",
     REQUIRE(step1_params);
     CHECK(step1_params["param1"].as<int>() == 10);
     CHECK(step1_params["param2"].as<std::string>() == "base_link");
+    const auto& step1_inputs = step1.input_items();
+    REQUIRE(step1_inputs.size() == 1);
+    auto item = step1_inputs[0];
+    CHECK(item.guid() == "1001");
+    REQUIRE(item.metadata().has_value());
+    const auto input_1_metadata = item.metadata().value();
+    CHECK(input_1_metadata.yaml["description"].as<std::string>() ==
+      "dummy_sku");
+    CHECK(input_1_metadata.yaml["unit"].as<std::string>() == "dummy_unit");
+    CHECK(input_1_metadata.yaml["quantity"].as<int>() == 1);
+    CHECK(input_1_metadata.yaml["quantityPerPallet"].as<int>() == 1);
+    CHECK(step1.output_items().size() == 0);
 
     const auto& step2 = steps[1];
     CHECK(step2.process_id() == "place");
     CHECK_FALSE(step2.process_params());
+    CHECK(step2.input_items().size() == 0);
+    const auto& step2_outputs = step2.output_items();
+    REQUIRE(step2_outputs.size() == 1);
+    item = step2_outputs[0];
+    CHECK(item.guid() == "1001");
+    REQUIRE(item.metadata().has_value());
+    const auto output_2_metadata = item.metadata().value();
+    CHECK(output_2_metadata.yaml["description"].as<std::string>() ==
+      "dummy_sku");
+    CHECK(output_2_metadata.yaml["unit"].as<std::string>() == "dummy_unit");
+    CHECK(output_2_metadata.yaml["quantity"].as<int>() == 1);
+    CHECK(output_2_metadata.yaml["quantityPerPallet"].as<int>() == 1);
 
     const auto& step3 = steps[2];
     CHECK(step3.process_id() == "inspect");
     CHECK_FALSE(step3.process_params());
+    const auto& step3_inputs = step3.input_items();
+    REQUIRE(step3_inputs.size() == 1);
+    item = step3_inputs[0];
+    CHECK(item.guid() == "1001");
+    REQUIRE(item.metadata().has_value());
+    const auto input_3_metadata = item.metadata().value();
+    CHECK(input_3_metadata.yaml["description"].as<std::string>() ==
+      "dummy_sku");
+    CHECK(input_3_metadata.yaml["unit"].as<std::string>() == "dummy_unit");
+    CHECK(input_3_metadata.yaml["quantity"].as<int>() == 1);
+    CHECK(input_3_metadata.yaml["quantityPerPallet"].as<int>() == 1);
+    const auto& step3_outputs = step3.output_items();
+    REQUIRE(step3_outputs.size() == 1);
+    item = step3_outputs[0];
+    CHECK(item.guid() == "1001");
+    REQUIRE(item.metadata().has_value());
+    const auto output_3_metadata = item.metadata().value();
+    CHECK(output_3_metadata.yaml["description"].as<std::string>() ==
+      "dummy_sku");
+    CHECK(output_3_metadata.yaml["unit"].as<std::string>() == "dummy_unit");
+    CHECK(output_3_metadata.yaml["quantity"].as<int>() == 1);
+    CHECK(output_3_metadata.yaml["quantityPerPallet"].as<int>() == 1);
   };
 
   auto work_order = YAML::Load(raw).as<WorkOrder>();

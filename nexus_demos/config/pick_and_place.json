@@ -1,34 +1,31 @@
 {
   "workInstructionName": "Pick and Place",
-  "metadata": {
-    "SkuId": "productA",
-    "description": "productA",
-    "unit": "dummy_unit",
-    "quantity": 1.0,
-    "quantityPerPallet": 1.0
-  },
   "steps": [
     {
       "processId": "place_on_conveyor",
-      "outputs": [
+      "outputItems": [
         {
-          "SkuId": "productA",
-          "description": "productA",
-          "unit": "dummy_unit",
-          "quantity": 1.0,
-          "quantityPerPallet": 1.0
+          "guid": "productA",
+          "metadata": {
+            "description": "productA",
+            "unit": "dummy_unit",
+            "quantity": 1.0,
+            "quantityPerPallet": 1.0
+          }
         }
       ]
     },
     {
       "processId": "pick_from_conveyor",
-      "inputs": [
+      "inputItems": [
         {
-          "SkuId": "productA",
-          "description": "productA",
-          "unit": "dummy_unit",
-          "quantity": 1.0,
-          "quantityPerPallet": 1.0
+          "guid": "productA",
+          "metadata": {
+            "description": "productA",
+            "unit": "dummy_unit",
+            "quantity": 1.0,
+            "quantityPerPallet": 1.0
+          }
         }
       ]
     }

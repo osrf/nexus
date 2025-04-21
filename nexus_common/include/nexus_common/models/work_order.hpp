@@ -20,6 +20,7 @@
 
 #include <optional>
 
+#include "item.hpp"
 #include "metadata.hpp"
 #include "../yaml_helpers.hpp"
 
@@ -46,14 +47,24 @@ public: struct Step
       return this->yaml["processParams"];
     }
 
-    std::vector<MetaData> inputs() const
+    std::vector<Item> input_items() const
     {
-      return this->yaml["inputs"].as<std::vector<MetaData>>();
+      if (!this->yaml["inputItems"])
+      {
+        return {};
+      }
+
+      return this->yaml["inputItems"].as<std::vector<Item>>();
     }
 
-    std::vector<MetaData> outputs() const
+    std::vector<Item> output_items() const
     {
-      return this->yaml["outputs"].as<std::vector<MetaData>>();
+      if (!this->yaml["outputItems"])
+      {
+        return {};
+      }
+
+      return this->yaml["outputItems"].as<std::vector<Item>>();
     }
   };
 
