@@ -18,47 +18,15 @@
 #ifndef NEXUS_COMMON__MODELS__WORK_ORDER_HPP
 #define NEXUS_COMMON__MODELS__WORK_ORDER_HPP
 
+#include <optional>
+
+#include "metadata.hpp"
 #include "../yaml_helpers.hpp"
 
 namespace nexus::common {
 
 class WorkOrder
 {
-public: struct Item
-  {
-    YAML::Node yaml;
-
-    Item(YAML::Node yaml)
-    : yaml(std::move(yaml)) {}
-
-    Item() {}
-
-    std::string sku_id() const
-    {
-      return this->yaml["SkuId"].as<std::string>();
-    }
-
-    std::string description() const
-    {
-      return this->yaml["description"].as<std::string>();
-    }
-
-    std::string unit() const
-    {
-      return this->yaml["unit"].as<std::string>();
-    }
-
-    int32_t quantity() const
-    {
-      return this->yaml["quantity"].as<double>();
-    }
-
-    int32_t quantity_per_pallet() const
-    {
-      return this->yaml["quantityPerPallet"].as<double>();
-    }
-  };
-
 public: struct Step
   {
     YAML::Node yaml;
@@ -73,10 +41,11 @@ public: struct Step
       return this->yaml["processId"].as<std::string>();
     }
 
-    std::string name() const
+    YAML::Node process_params() const
     {
-      return this->yaml["name"].as<std::string>();
+      return this->yaml["processParams"];
     }
+
   };
 
 public: YAML::Node yaml;
@@ -91,9 +60,12 @@ public: std::string work_instruction_name() const
     return this->yaml["workInstructionName"].as<std::string>();
   }
 
-public: Item item() const
+public: std::optional<MetaData> metadata() const
   {
-    return this->yaml["item"];
+    if (this->yaml["metadata"]) {
+      return this->yaml["metadata"];
+    };
+    return std::nullopt;
   }
 
 public: std::vector<Step> steps() const
@@ -105,21 +77,6 @@ public: std::vector<Step> steps() const
 }
 
 namespace YAML {
-
-template<>
-struct convert<nexus::common::WorkOrder::Item>
-{
-  static Node encode(const nexus::common::WorkOrder::Item& data)
-  {
-    return data.yaml;
-  }
-
-  static bool decode(const Node& node, nexus::common::WorkOrder::Item& data)
-  {
-    data.yaml = node;
-    return true;
-  }
-};
 
 template<>
 struct convert<nexus::common::WorkOrder::Step>
