@@ -71,9 +71,10 @@ public: WorkOrder(YAML::Node yaml)
 
 public: std::optional<MetaData> metadata() const
   {
-    if (this->yaml["metadata"]) {
+    if (this->yaml["metadata"])
+    {
       return this->yaml["metadata"];
-    };
+    }
     return std::nullopt;
   }
 
