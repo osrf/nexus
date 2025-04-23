@@ -19,6 +19,7 @@
 #define NEXUS_COMMON__MODELS__ITEM_HPP
 
 #include <optional>
+#include <stdexcept>
 
 #include "metadata.hpp"
 #include "../yaml_helpers.hpp"
@@ -64,6 +65,11 @@ struct convert<nexus::common::Item>
 
   static bool decode(const Node& node, nexus::common::Item& data)
   {
+    if (!node["guid"] || node["guid"].as<std::string>().empty())
+    {
+      throw std::invalid_argument("missing required [guid] field");
+    }
+
     data.yaml = node;
     return true;
   }

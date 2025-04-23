@@ -20,6 +20,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <stdexcept>
+
 namespace nexus::common::test {
 
 TEST_CASE("Item serialization with metadata")
@@ -56,6 +58,32 @@ TEST_CASE("Item serialization with metadata")
   raw = (out << YAML::Node{item}).c_str();
   item = YAML::Load(raw).as<Item>();
   check_data(item);
+}
+
+TEST_CASE("Item serialization without guid")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "metadata": {
+          "description": "dummy_sku",
+          "unit": "dummy_unit",
+          "quantity": 1,
+          "quantityPerPallet": 1
+        }
+      }
+  )RAW"};
+
+  bool invalid_argument = false;
+  try
+  {
+    auto item = YAML::Load(raw).as<Item>();
+  }
+  catch (const std::invalid_argument& e)
+  {
+    invalid_argument = true;
+  }
+  CHECK(invalid_argument);
 }
 
 }  // namespace nexus::common::test

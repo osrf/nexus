@@ -21,6 +21,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <unordered_set>
+#include <stdexcept>
 
 namespace nexus::common::test {
 
@@ -232,6 +233,105 @@ TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
   raw = (out << YAML::Node{work_order}).c_str();
   work_order = YAML::Load(raw).as<WorkOrder>();
   check_data(work_order);
+}
+
+TEST_CASE("Step serialization without processId", "[Model][Serialization]")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "processParams": {
+          "param1": 10,
+          "param2": "base_link"
+        }
+      }
+  )RAW"};
+
+  bool invalid_argument = false;
+  try
+  {
+    auto step = YAML::Load(raw).as<WorkOrder::Step>();
+  }
+  catch (const std::invalid_argument& e)
+  {
+    invalid_argument = true;
+  }
+  CHECK(invalid_argument);
+}
+
+TEST_CASE("WorkOrder serialization without workInstructionName",
+  "[Model][Serialization]")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "steps": [
+          {
+            "processId": "pickup"
+          },
+          {
+            "processId": "place"
+          },
+          {
+            "processId": "inspect"
+          }
+        ]
+      }
+  )RAW"};
+
+  bool invalid_argument = false;
+  try
+  {
+    auto work_order = YAML::Load(raw).as<WorkOrder>();
+  }
+  catch (const std::invalid_argument& e)
+  {
+    invalid_argument = true;
+  }
+  CHECK(invalid_argument);
+}
+
+TEST_CASE("WorkOrder serialization without steps", "[Model][Serialization]")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "workInstructionName": "CV-299 (Rev 4)"
+      }
+  )RAW"};
+
+  bool invalid_argument = false;
+  try
+  {
+    auto work_order = YAML::Load(raw).as<WorkOrder>();
+  }
+  catch (const std::invalid_argument& e)
+  {
+    invalid_argument = true;
+  }
+  CHECK(invalid_argument);
+}
+
+TEST_CASE("WorkOrder serialization with empty steps", "[Model][Serialization]")
+{
+  std::string raw{
+    R"RAW(
+      {
+        "workInstructionName": "CV-299 (Rev 4)",
+        "steps": []
+      }
+  )RAW"};
+
+  bool invalid_argument = false;
+  try
+  {
+    auto work_order = YAML::Load(raw).as<WorkOrder>();
+  }
+  catch (const std::invalid_argument& e)
+  {
+    invalid_argument = true;
+  }
+  CHECK(invalid_argument);
 }
 
 }  // namespace nexus::common::test

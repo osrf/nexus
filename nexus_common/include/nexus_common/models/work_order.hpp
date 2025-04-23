@@ -19,6 +19,7 @@
 #define NEXUS_COMMON__MODELS__WORK_ORDER_HPP
 
 #include <optional>
+#include <stdexcept>
 
 #include "item.hpp"
 #include "metadata.hpp"
@@ -110,6 +111,11 @@ struct convert<nexus::common::WorkOrder::Step>
   static bool decode(const Node& node,
     nexus::common::WorkOrder::Step& data)
   {
+    if (!node["processId"] || node["processId"].as<std::string>().empty())
+    {
+      throw std::invalid_argument("missing required [processId] field");
+    }
+
     data.yaml = node;
     return true;
   }
@@ -125,6 +131,18 @@ struct convert<nexus::common::WorkOrder>
 
   static bool decode(const Node& node, nexus::common::WorkOrder& data)
   {
+    if (!node["workInstructionName"] ||
+      node["workInstructionName"].as<std::string>().empty())
+    {
+      throw std::invalid_argument(
+              "missing required [workInstructionName] field");
+    }
+    if (!node["steps"] ||
+      node["steps"].as<std::vector<nexus::common::WorkOrder::Step>>().empty())
+    {
+      throw std::invalid_argument("missing required [steps] field");
+    }
+
     data.yaml = node;
     return true;
   }
