@@ -234,4 +234,4 @@ TEST_CASE("WorkOrder serialization without metadata", "[Model][Serialization]")
   check_data(work_order);
 }
 
-} // namespace nexus::common::test
+}  // namespace nexus::common::test

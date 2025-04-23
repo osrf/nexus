@@ -58,5 +58,4 @@ TEST_CASE("Item serialization with metadata")
   check_data(item);
 }
 
-
-} // namespace nexus::common::test
+}  // namespace nexus::common::test

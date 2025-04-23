@@ -725,7 +725,7 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
       work_order.metadata().has_value() ? work_order.metadata().value() :
       YAML::Node{};
     YAML::Emitter out;
-    out << step.yaml;
+    out << processed_step;
     task.payload = out.c_str();
 
     tasks.emplace_back(task);

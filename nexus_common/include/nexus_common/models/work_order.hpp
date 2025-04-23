@@ -95,7 +95,7 @@ public: std::vector<Step> steps() const
   }
 };
 
-} // namespace nexus::common
+}  // namespace nexus::common
 
 namespace YAML {
 
@@ -130,6 +130,6 @@ struct convert<nexus::common::WorkOrder>
   }
 };
 
-} // namespace YAML
+}  // namespace YAML
 
-#endif // NEXUS_COMMON__MODELS__WORK_ORDER_HPP
+#endif  // NEXUS_COMMON__MODELS__WORK_ORDER_HPP

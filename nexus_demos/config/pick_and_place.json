@@ -7,10 +7,8 @@
         {
           "guid": "productA",
           "metadata": {
-            "description": "productA",
-            "unit": "dummy_unit",
-            "quantity": 1.0,
-            "quantityPerPallet": 1.0
+            "quantity": 1,
+            "state": "state_1"
           }
         }
       ]
@@ -21,10 +19,8 @@
         {
           "guid": "productA",
           "metadata": {
-            "description": "productA",
-            "unit": "dummy_unit",
-            "quantity": 1.0,
-            "quantityPerPallet": 1.0
+            "quantity": 1,
+            "state": "state_1"
           }
         }
       ]
