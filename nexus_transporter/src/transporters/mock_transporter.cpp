@@ -136,18 +136,23 @@ public:
     return _ready;
   }
 
-  std::optional<Itinerary> get_itinerary(
+  void get_itinerary(
     const std::string& id,
-    const std::vector<Destination>& destinations)
+    const std::vector<Destination>& destinations,
+    Transporter::ItineraryQueryCompleted completed_cb)
   {
     if (destinations.empty())
     {
-      return std::nullopt;
+      completed_cb(std::nullopt);
+      return;
     }
     // This transporter can only go to one destination at a time.
     const auto& destination = destinations[0];
     if (_destinations.find(destination.name) == _destinations.end())
-      return std::nullopt;
+    {
+      completed_cb(std::nullopt);
+      return;
+    }
 
     auto n = _node.lock();
     const rclcpp::Time now = n ? n->get_clock()->now() : rclcpp::Clock().now();
@@ -178,13 +183,13 @@ public:
       travel_duration = abs(dest_pose - transporter_location.pose)/_speed;
     }
 
-    return Itinerary{
-      id,
-      destinations,
-      transporter_name,
-      now + rclcpp::Duration::from_seconds(travel_duration),
-      now + rclcpp::Duration::from_seconds(60.0)
-    };
+    completed_cb(Itinerary{
+        id,
+        destinations,
+        transporter_name,
+        now + rclcpp::Duration::from_seconds(travel_duration),
+        now + rclcpp::Duration::from_seconds(60.0)
+      });
   }
 
   void transport_to_destination(

@@ -36,6 +36,8 @@ class Transporter
 {
 public:
 
+  using ItineraryQueryCompleted =
+    std::function<void(std::optional<Itinerary> itinerary)>;
   // TODO(YV): Consider using type adaptation between TransportState.msg
   using TransporterState = nexus_transporter_msgs::msg::TransporterState;
   // A callback to execute to provide updates on the transportation
@@ -58,18 +60,33 @@ public:
   /// Return true if the transporter is configured and ready.
   virtual bool ready() const = 0;
 
-  /// Receive an itinerary for a destination
+  // /// Receive an itinerary for a destination
+  // ///
+  // /// \param[in] job_id
+  // /// An id for this request.
+  // ///
+  // /// \param[in] destinations
+  // /// A list of destinations.
+  // /// \return A nullopt is returned if the destinations is not valid.
+  // // TODO(YV): Consider creating a separate class for destination
+  // virtual std::optional<Itinerary> get_itinerary(
+  //   const std::string& job_id,
+  //   const std::vector<Destination>& destinations) = 0;
+
+  /// Request an itinerary for a list of destinations asynchronously
   ///
   /// \param[in] job_id
   /// An id for this request.
   ///
   /// \param[in] destinations
   /// A list of destinations.
-  /// \return A nullopt is returned if the destinations is not valid.
-  // TODO(YV): Consider creating a separate class for destination
-  virtual std::optional<Itinerary> get_itinerary(
+  ///
+  /// \param[in] completed_cb
+  /// A callback to execute when an itinerary query has been completed.
+  virtual void get_itinerary(
     const std::string& job_id,
-    const std::vector<Destination>& destinations) = 0;
+    const std::vector<Destination>& destinations,
+    ItineraryQueryCompleted completed_cb) = 0;
 
   /// Request the transporter to go to a destination. This call should be
   /// non-blocking.

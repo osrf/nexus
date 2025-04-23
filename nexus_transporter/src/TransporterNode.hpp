@@ -30,6 +30,7 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <future>
 #include <memory>
 #include <optional>
 
@@ -82,6 +83,8 @@ private:
     /// Duration timeout to wait for before reporting connection failures with
     /// System Orchestrator.
     std::chrono::nanoseconds connection_timeout;
+    /// Duration timeout waiting for an itinerary.
+    std::chrono::nanoseconds wait_for_itinerary_timeout;
 
     /// Service server to process IsTransporterAvailable requests.
     rclcpp::Service<IsTransporterAvailable>::SharedPtr availability_srv;
