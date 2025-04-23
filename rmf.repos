@@ -1,9 +1,0 @@
-repositories:
-  thirdparty/rmf/rmf_internal_msgs:
-    type: git
-    url: https://github.com/open-rmf/rmf_internal_msgs.git
-    version: 5b8784b3127586832a2f6a17931b25191ecf410d
-  thirdparty/rmf/rmf_ros2:
-    type: git
-    url: https://github.com/open-rmf/rmf_ros2.git
-    version: e4d1d87f57388d5aa97303d714aa1f460ba4021c

@@ -60,19 +60,6 @@ public:
   /// Return true if the transporter is configured and ready.
   virtual bool ready() const = 0;
 
-  // /// Receive an itinerary for a destination
-  // ///
-  // /// \param[in] job_id
-  // /// An id for this request.
-  // ///
-  // /// \param[in] destinations
-  // /// A list of destinations.
-  // /// \return A nullopt is returned if the destinations is not valid.
-  // // TODO(YV): Consider creating a separate class for destination
-  // virtual std::optional<Itinerary> get_itinerary(
-  //   const std::string& job_id,
-  //   const std::vector<Destination>& destinations) = 0;
-
   /// Request an itinerary for a list of destinations asynchronously
   ///
   /// \param[in] job_id
@@ -83,6 +70,7 @@ public:
   ///
   /// \param[in] completed_cb
   /// A callback to execute when an itinerary query has been completed.
+  // TODO(YV): Consider creating a separate class for destination
   virtual void get_itinerary(
     const std::string& job_id,
     const std::vector<Destination>& destinations,
