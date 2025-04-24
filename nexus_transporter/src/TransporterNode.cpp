@@ -210,7 +210,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received transport goal request from [%s] with id [%s].",
+          "[handle_goal] Received transport goal request from [%s] with id "
+          "[%s].",
           goal->request.requester.c_str(),
           goal->request.id.c_str()
         );
@@ -222,13 +223,21 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_ERROR(
             node->get_logger(),
-            "Unable to accept goal as this TransporterNode is not configured "
-            "with a valid transporter plugin. Rejecting goal..."
+            "[handle_goal] Unable to accept goal as this TransporterNode is "
+            "not configured with a valid transporter plugin. Rejecting goal "
+            "[%s]...",
+            rclcpp_action::to_string(uuid).c_str()
           );
         }
         return rclcpp_action::GoalResponse::REJECT;
       }
 
+      RCLCPP_INFO(
+        node->get_logger(),
+        "[handle_goal] Accepting goal [%s], defering execution until "
+        "itinerary has been received",
+        rclcpp_action::to_string(uuid).c_str()
+      );
       return rclcpp_action::GoalResponse::ACCEPT_AND_DEFER;
     },
     [data = _data](const std::shared_ptr<GoalHandle> goal_handle)
@@ -240,7 +249,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received request to cancel goal"
+          "[handle_cancel] Received request to cancel goal"
         );
       }
       const auto it = data->itineraries.find(goal_handle->get_goal_id());
@@ -250,7 +259,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_WARN(
             node->get_logger(),
-            "Cancellation goal uuid not found. No goal to cancel."
+            "[handle_cancel] Cancellation goal uuid not found. No goal to "
+            "cancel."
           );
         }
         return rclcpp_action::CancelResponse::ACCEPT;
@@ -262,7 +272,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Successfully cancelled transport with id [%s].",
+            "[handle_cancel] Successfully cancelled transport with id [%s].",
             it->second->id().c_str()
           );
         }
@@ -274,7 +284,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Unable to cancel transport with id [%s]",
+            "[handle_cancel] Unable to cancel transport with id [%s]",
             it->second->id().c_str()
           );
         }
@@ -302,30 +312,35 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           {
             RCLCPP_ERROR(
               node->get_logger(),
-              "[handle_accepted] No valid itinerary available. Aborting goal..."
+              "[handle_accepted] No valid itinerary available. Aborting goal "
+              "[%s]...",
+              rclcpp_action::to_string(handle->get_goal_id()).c_str()
             );
             result_msg->success = false;
             handle->abort(result_msg);
             return;
           }
 
-          auto it_pair = data->itineraries.insert(
+          auto it_pair = data->itineraries.insert({
             handle->get_goal_id(),
             std::make_unique<Itinerary>(std::move(itinerary.value()))
-          );
+          });
           if (!it_pair.second)
           {
             RCLCPP_ERROR(
               node->get_logger(),
               "[handle_accepted] Found existing itinerary with the same UUID. "
-              "Aborting goal..."
-            )
+              "This should never happen and could be a major bug or race "
+              "condition. Aborting goal [%s]...",
+              rclcpp_action::to_string(handle->get_goal_id()).c_str()
+            );
           }
 
           handle->execute();
           RCLCPP_INFO(
             node->get_logger(),
-            "Executing transport request..."
+            "[handle_accepted] Executing transport request with goal [%s]...",
+            rclcpp_action::to_string(handle->get_goal_id()).c_str()
           );
 
           data->transporter->transport_to_destination(
@@ -361,7 +376,9 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
                 {
                   RCLCPP_INFO(
                     node->get_logger(),
-                    "Transportation successful!"
+                    "[handle_accepted] Transportation with goal uuid [%s] "
+                    "successful!",
+                    rclcpp_action::to_string(handle->get_goal_id()).c_str()
                   );
                 }
                 handle->succeed(result_msg);
@@ -372,7 +389,9 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
                 {
                   RCLCPP_ERROR(
                     node->get_logger(),
-                    "Transportation unsuccessful!"
+                    "[handle_accepted] Transportation with goal uuid [%s] "
+                    "unsuccessful!",
+                    rclcpp_action::to_string(handle->get_goal_id()).c_str()
                   );
                 }
                 handle->abort(result_msg);
