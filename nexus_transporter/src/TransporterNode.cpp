@@ -112,7 +112,6 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           return;
         }
       );
-      // parameter
       if (future.wait_for(data->wait_for_itinerary_timeout)
       == std::future_status::ready)
       {
@@ -304,7 +303,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           if (!node)
           {
             result_msg->success = false;
-            handle->abort(result_msg);
+            handle->abort(std::move(result_msg));
             return;
           }
 
@@ -317,7 +316,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
               rclcpp_action::to_string(handle->get_goal_id()).c_str()
             );
             result_msg->success = false;
-            handle->abort(result_msg);
+            handle->abort(std::move(result_msg));
             return;
           }
 
@@ -350,7 +349,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
             {
               auto feedback_msg = std::make_shared<ActionType::Feedback>();
               feedback_msg->state = state;
-              handle->publish_feedback(feedback_msg);
+              handle->publish_feedback(std::move(feedback_msg));
 
               // Publish transporter pose to tf
               auto node = data->w_node.lock();
@@ -381,21 +380,20 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
                     rclcpp_action::to_string(handle->get_goal_id()).c_str()
                   );
                 }
-                handle->succeed(result_msg);
+                handle->succeed(std::move(result_msg));
+                return;
               }
-              else
+
+              if (node)
               {
-                if (node)
-                {
-                  RCLCPP_ERROR(
-                    node->get_logger(),
-                    "[handle_accepted] Transportation with goal uuid [%s] "
-                    "unsuccessful!",
-                    rclcpp_action::to_string(handle->get_goal_id()).c_str()
-                  );
-                }
-                handle->abort(result_msg);
+                RCLCPP_ERROR(
+                  node->get_logger(),
+                  "[handle_accepted] Transportation with goal uuid [%s] "
+                  "unsuccessful!",
+                  rclcpp_action::to_string(handle->get_goal_id()).c_str()
+                );
               }
+              handle->abort(std::move(result_msg));
             });
 
           return;
