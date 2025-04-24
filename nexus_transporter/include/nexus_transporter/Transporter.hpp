@@ -88,7 +88,7 @@ public:
   /// \param[in] completed_cb
   ///   A callback to execute to when the transportation has failed or succeeded
   virtual void transport_to_destination(
-    const Itinerary& itinerary,
+    Itinerary itinerary,
     TransportFeedback feedback_cb,
     TransportCompleted completed_cb) = 0;
 
@@ -96,7 +96,7 @@ public:
   /// \param[in] itinerary
   ///   The itinerary of the task to cancel
   /// \return True if the cancellation was successful.
-  virtual bool cancel(const Itinerary& itinerary) = 0;
+  virtual bool cancel(Itinerary itinerary) = 0;
 
   /// Virtual destructor
   virtual ~Transporter() = default;

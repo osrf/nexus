@@ -193,7 +193,7 @@ public:
   }
 
   void transport_to_destination(
-    const Itinerary& itinerary,
+    Itinerary itinerary,
     Transporter::TransportFeedback feedback_cb,
     Transporter::TransportCompleted completed_cb) final
   {
@@ -241,7 +241,7 @@ public:
     // TODO(YV): Capture a data_ptr to avoid reference captures
     _thread = std::thread(
       [this, feedback_cb = feedback_cb, completed_cb = completed_cb](
-        const Itinerary& itinerary)
+        Itinerary itinerary)
       {
         const auto& current_transporter = itinerary.transporter_name();
         {
@@ -326,7 +326,7 @@ public:
       }, itinerary);
   }
 
-  bool cancel(const Itinerary& itinerary) final
+  bool cancel(Itinerary itinerary) final
   {
     std::unique_lock lock(_mutex);
     const auto& transporter = itinerary.transporter_name();

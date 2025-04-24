@@ -30,8 +30,8 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 
-#include <future>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 //==============================================================================
@@ -96,6 +96,9 @@ private:
     // Map itinerary id to GoalData.
     std::unordered_map<rclcpp_action::GoalUUID, std::unique_ptr<Itinerary>>
     itineraries;
+
+    // Mutex for itineraries
+    std::mutex itineraries_mutex;
 
     // TF broadcaster for transporter poses during action feedback.
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;

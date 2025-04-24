@@ -18,6 +18,7 @@
 
 #include "TransporterNode.hpp"
 
+#include <future>
 #include <stdexcept>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -251,6 +252,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           "[handle_cancel] Received request to cancel goal"
         );
       }
+
+      std::lock_guard<std::mutex> lock(data->itineraries_mutex);
       const auto it = data->itineraries.find(goal_handle->get_goal_id());
       if (it == data->itineraries.end())
       {
@@ -320,6 +323,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
             return;
           }
 
+          std::lock_guard<std::mutex> lock(data->itineraries_mutex);
           auto it_pair = data->itineraries.insert({
             handle->get_goal_id(),
             std::make_unique<Itinerary>(std::move(itinerary.value()))
@@ -414,7 +418,10 @@ auto TransporterNode::on_cleanup(const State& /*previous_state*/)
   _data->transporter.reset();
   _data->availability_srv.reset();
   _data->action_srv.reset();
-  _data->itineraries.clear();
+  {
+    std::lock_guard<std::mutex> lock(_data->itineraries_mutex);
+    _data->itineraries.clear();
+  }
   _data->tf_broadcaster.reset();
   RCLCPP_INFO(this->get_logger(), "Successfully cleaned up.");
   return CallbackReturn::SUCCESS;
@@ -442,10 +449,13 @@ auto TransporterNode::on_deactivate(const State& /*previous_state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Deactivating...");
-  for (auto it = _data->itineraries.begin(); it != _data->itineraries.end();
-    ++it)
   {
-    _data->transporter->cancel(*(it->second));
+    std::lock_guard<std::mutex> lock(_data->itineraries_mutex);
+    for (auto it = _data->itineraries.begin(); it != _data->itineraries.end();
+      ++it)
+    {
+      _data->transporter->cancel(*(it->second));
+    }
   }
   RCLCPP_INFO(this->get_logger(), "Successfully deactivated.");
   return CallbackReturn::SUCCESS;
