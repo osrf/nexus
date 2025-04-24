@@ -302,17 +302,26 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           {
             RCLCPP_ERROR(
               node->get_logger(),
-              "[handle_accepted] No valid itinerary available"
+              "[handle_accepted] No valid itinerary available. Aborting goal..."
             );
             result_msg->success = false;
             handle->abort(result_msg);
             return;
           }
 
-          auto it_pair = data->itineraries.insert_or_assign(
+          auto it_pair = data->itineraries.insert(
             handle->get_goal_id(),
             std::make_unique<Itinerary>(std::move(itinerary.value()))
           );
+          if (!it_pair.second)
+          {
+            RCLCPP_ERROR(
+              node->get_logger(),
+              "[handle_accepted] Found existing itinerary with the same UUID. "
+              "Aborting goal..."
+            )
+          }
+
           handle->execute();
           RCLCPP_INFO(
             node->get_logger(),
