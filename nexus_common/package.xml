@@ -28,6 +28,7 @@
   <test_depend>ament_cmake_uncrustify</test_depend>
   <test_depend>example_interfaces</test_depend>
   <test_depend>std_msgs</test_depend>
+  <test_depend>rmw_cyclonedds_cpp</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

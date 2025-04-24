@@ -19,7 +19,9 @@
 #define NEXUS_COMMON__MODELS__WORK_ORDER_HPP
 
 #include <optional>
+#include <stdexcept>
 
+#include "item.hpp"
 #include "metadata.hpp"
 #include "../yaml_helpers.hpp"
 
@@ -46,6 +48,25 @@ public: struct Step
       return this->yaml["processParams"];
     }
 
+    std::vector<Item> input_items() const
+    {
+      if (!this->yaml["inputItems"])
+      {
+        return {};
+      }
+
+      return this->yaml["inputItems"].as<std::vector<Item>>();
+    }
+
+    std::vector<Item> output_items() const
+    {
+      if (!this->yaml["outputItems"])
+      {
+        return {};
+      }
+
+      return this->yaml["outputItems"].as<std::vector<Item>>();
+    }
   };
 
 public: YAML::Node yaml;
@@ -62,9 +83,10 @@ public: std::string work_instruction_name() const
 
 public: std::optional<MetaData> metadata() const
   {
-    if (this->yaml["metadata"]) {
+    if (this->yaml["metadata"])
+    {
       return this->yaml["metadata"];
-    };
+    }
     return std::nullopt;
   }
 
@@ -74,7 +96,7 @@ public: std::vector<Step> steps() const
   }
 };
 
-}
+}  // namespace nexus::common
 
 namespace YAML {
 
@@ -89,6 +111,11 @@ struct convert<nexus::common::WorkOrder::Step>
   static bool decode(const Node& node,
     nexus::common::WorkOrder::Step& data)
   {
+    if (!node["processId"] || node["processId"].as<std::string>().empty())
+    {
+      throw std::invalid_argument("missing required [processId] field");
+    }
+
     data.yaml = node;
     return true;
   }
@@ -104,11 +131,23 @@ struct convert<nexus::common::WorkOrder>
 
   static bool decode(const Node& node, nexus::common::WorkOrder& data)
   {
+    if (!node["workInstructionName"] ||
+      node["workInstructionName"].as<std::string>().empty())
+    {
+      throw std::invalid_argument(
+              "missing required [workInstructionName] field");
+    }
+    if (!node["steps"] ||
+      node["steps"].as<std::vector<nexus::common::WorkOrder::Step>>().empty())
+    {
+      throw std::invalid_argument("missing required [steps] field");
+    }
+
     data.yaml = node;
     return true;
   }
 };
 
-}
+}  // namespace YAML
 
-#endif
+#endif  // NEXUS_COMMON__MODELS__WORK_ORDER_HPP
