@@ -60,7 +60,8 @@ public:
   /// Return true if the transporter is configured and ready.
   virtual bool ready() const = 0;
 
-  /// Request an itinerary for a list of destinations asynchronously
+  /// Request an itinerary for a list of destinations. This call should be
+  /// non-blocking.
   ///
   /// \param[in] job_id
   /// An id for this request.
