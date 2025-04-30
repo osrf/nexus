@@ -71,7 +71,6 @@ public:
   ///
   /// \param[in] completed_cb
   /// A callback to execute when an itinerary query has been completed.
-  // TODO(YV): Consider creating a separate class for destination
   virtual void get_itinerary(
     const std::string& job_id,
     const std::vector<Destination>& destinations,
