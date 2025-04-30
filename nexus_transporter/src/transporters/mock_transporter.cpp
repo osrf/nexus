@@ -136,18 +136,23 @@ public:
     return _ready;
   }
 
-  std::optional<Itinerary> get_itinerary(
+  void get_itinerary(
     const std::string& id,
-    const std::vector<Destination>& destinations)
+    const std::vector<Destination>& destinations,
+    Transporter::ItineraryQueryCompleted completed_cb)
   {
     if (destinations.empty())
     {
-      return std::nullopt;
+      completed_cb(std::nullopt);
+      return;
     }
     // This transporter can only go to one destination at a time.
-    const auto & destination = destinations[0];
+    const auto& destination = destinations[0];
     if (_destinations.find(destination.name) == _destinations.end())
-      return std::nullopt;
+    {
+      completed_cb(std::nullopt);
+      return;
+    }
 
     auto n = _node.lock();
     const rclcpp::Time now = n ? n->get_clock()->now() : rclcpp::Clock().now();
@@ -178,17 +183,17 @@ public:
       travel_duration = abs(dest_pose - transporter_location.pose)/_speed;
     }
 
-    return Itinerary{
-      id,
-      destinations,
-      transporter_name,
-      now + rclcpp::Duration::from_seconds(travel_duration),
-      now + rclcpp::Duration::from_seconds(60.0)
-    };
+    completed_cb(Itinerary{
+        id,
+        destinations,
+        transporter_name,
+        now + rclcpp::Duration::from_seconds(travel_duration),
+        now + rclcpp::Duration::from_seconds(60.0)
+      });
   }
 
   void transport_to_destination(
-    const Itinerary& itinerary,
+    Itinerary itinerary,
     Transporter::TransportFeedback feedback_cb,
     Transporter::TransportCompleted completed_cb) final
   {
@@ -212,13 +217,13 @@ public:
       }
     }
 
-    const auto & destinations = itinerary.destinations();
+    const auto& destinations = itinerary.destinations();
     if (destinations.empty())
     {
       completed_cb(true);
       return;
     }
-    const auto & destination = destinations[0];
+    const auto& destination = destinations[0];
     if (current_location.name.has_value() &&
       destination.name == current_location.name)
     {
@@ -236,7 +241,7 @@ public:
     // TODO(YV): Capture a data_ptr to avoid reference captures
     _thread = std::thread(
       [this, feedback_cb = feedback_cb, completed_cb = completed_cb](
-        const Itinerary& itinerary)
+        Itinerary itinerary)
       {
         const auto& current_transporter = itinerary.transporter_name();
         {
@@ -244,7 +249,7 @@ public:
 
           _transporters.at(current_transporter)->itinerary = itinerary;
         }
-        const auto & destination = itinerary.destinations()[0];
+        const auto& destination = itinerary.destinations()[0];
         const auto& dest_pose =
         _destinations.find(destination.name)->second;
         const auto& current_pose = _transporters.at(
@@ -286,7 +291,8 @@ public:
           state.location.pose.position.x += x_increment;
           dist_traveled += abs(x_increment);
           _transporters.at(
-            current_transporter)->current_location.pose = state.location.pose.position.x;
+            current_transporter)->current_location.pose =
+          state.location.pose.position.x;
           feedback_cb(state);
         }
 
@@ -320,7 +326,7 @@ public:
       }, itinerary);
   }
 
-  bool cancel(const Itinerary& itinerary) final
+  bool cancel(Itinerary itinerary) final
   {
     std::unique_lock lock(_mutex);
     const auto& transporter = itinerary.transporter_name();

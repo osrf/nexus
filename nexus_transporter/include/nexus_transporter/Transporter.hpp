@@ -36,6 +36,8 @@ class Transporter
 {
 public:
 
+  using ItineraryQueryCompleted =
+    std::function<void(std::optional<Itinerary> itinerary)>;
   // TODO(YV): Consider using type adaptation between TransportState.msg
   using TransporterState = nexus_transporter_msgs::msg::TransporterState;
   // A callback to execute to provide updates on the transportation
@@ -58,18 +60,21 @@ public:
   /// Return true if the transporter is configured and ready.
   virtual bool ready() const = 0;
 
-  /// Receive an itinerary for a destination
+  /// Request an itinerary for a list of destinations. This call should be
+  /// non-blocking.
   ///
   /// \param[in] job_id
   /// An id for this request.
   ///
   /// \param[in] destinations
   /// A list of destinations.
-  /// \return A nullopt is returned if the destinations is not valid.
-  // TODO(YV): Consider creating a separate class for destination
-  virtual std::optional<Itinerary> get_itinerary(
+  ///
+  /// \param[in] completed_cb
+  /// A callback to execute when an itinerary query has been completed.
+  virtual void get_itinerary(
     const std::string& job_id,
-    const std::vector<Destination>& destinations) = 0;
+    const std::vector<Destination>& destinations,
+    ItineraryQueryCompleted completed_cb) = 0;
 
   /// Request the transporter to go to a destination. This call should be
   /// non-blocking.
@@ -83,7 +88,7 @@ public:
   /// \param[in] completed_cb
   ///   A callback to execute to when the transportation has failed or succeeded
   virtual void transport_to_destination(
-    const Itinerary& itinerary,
+    Itinerary itinerary,
     TransportFeedback feedback_cb,
     TransportCompleted completed_cb) = 0;
 
@@ -91,7 +96,7 @@ public:
   /// \param[in] itinerary
   ///   The itinerary of the task to cancel
   /// \return True if the cancellation was successful.
-  virtual bool cancel(const Itinerary& itinerary) = 0;
+  virtual bool cancel(Itinerary itinerary) = 0;
 
   /// Virtual destructor
   virtual ~Transporter() = default;

@@ -31,6 +31,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <memory>
+#include <mutex>
 #include <optional>
 
 //==============================================================================
@@ -82,6 +83,8 @@ private:
     /// Duration timeout to wait for before reporting connection failures with
     /// System Orchestrator.
     std::chrono::nanoseconds connection_timeout;
+    /// Duration timeout waiting for an itinerary.
+    std::chrono::nanoseconds wait_for_itinerary_timeout;
 
     /// Service server to process IsTransporterAvailable requests.
     rclcpp::Service<IsTransporterAvailable>::SharedPtr availability_srv;
@@ -93,6 +96,9 @@ private:
     // Map itinerary id to GoalData.
     std::unordered_map<rclcpp_action::GoalUUID, std::unique_ptr<Itinerary>>
     itineraries;
+
+    // Mutex for itineraries
+    std::mutex itineraries_mutex;
 
     // TF broadcaster for transporter poses during action feedback.
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;

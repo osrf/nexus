@@ -18,6 +18,7 @@
 
 #include "TransporterNode.hpp"
 
+#include <future>
 #include <stdexcept>
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -99,24 +100,40 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         return;
       }
 
-      auto itinerary = data->transporter->get_itinerary(
+      auto shared_promise =
+      std::make_shared<std::promise<std::optional<Itinerary>>>();
+      auto future = shared_promise->get_future();
+      data->transporter->get_itinerary(
         request->request.id,
-        request->request.destinations);
-
-      if (!itinerary.has_value())
+        request->request.destinations,
+        [promise = shared_promise](
+          std::optional<Itinerary> itinerary)
+        {
+          promise->set_value(itinerary);
+          return;
+        }
+      );
+      if (future.wait_for(data->wait_for_itinerary_timeout)
+      == std::future_status::ready)
       {
-        RCLCPP_WARN(
-          node->get_logger(),
-          "The transporter is not configured to go to destinations."
-        );
+        const auto itinerary = future.get();
+        if (!itinerary.has_value())
+        {
+          RCLCPP_WARN(
+            node->get_logger(),
+            "The transporter is not configured to go to destinations."
+          );
+          return;
+        }
 
-        return;
+        // Success
+        response->available = true;
+        response->transporter = itinerary->transporter_name();
+        response->estimated_finish_time = itinerary->estimated_finish_time();
       }
 
-      // Success
-      response->available = true;
-      response->transporter = itinerary->transporter_name();
-      response->estimated_finish_time = itinerary->estimated_finish_time();
+      // Timed out
+      return;
     });
 
   // Load transporter plugin
@@ -193,7 +210,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received transport goal request from [%s] with id [%s].",
+          "[handle_goal] Received transport goal request from [%s] with id "
+          "[%s].",
           goal->request.requester.c_str(),
           goal->request.id.c_str()
         );
@@ -205,42 +223,22 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_ERROR(
             node->get_logger(),
-            "Unable to accept goal as this TransporterNode is not configured "
-            "with a valid transporter plugin. Rejecting goal..."
+            "[handle_goal] Unable to accept goal as this TransporterNode is "
+            "not configured with a valid transporter plugin. Rejecting goal "
+            "[%s]...",
+            rclcpp_action::to_string(uuid).c_str()
           );
         }
         return rclcpp_action::GoalResponse::REJECT;
       }
-      // TODO(YV): Book keeping
-      auto itinerary =
-      data->transporter->get_itinerary(
-        goal->request.id,
-        goal->request.destinations);
-      if (!itinerary.has_value())
-      {
-        if (node)
-        {
-          RCLCPP_ERROR(
-            node->get_logger(),
-            "Unable to generate an itinerary for destinations. "
-            "Rejecting goal..."
-          );
-        }
-        return rclcpp_action::GoalResponse::REJECT;
-      }
-      if (node)
-      {
-        RCLCPP_INFO(
-          node->get_logger(),
-          "Successfully generated itinerary with id: %s which is assigned to "
-          "transporter: %s",
-          itinerary->id().c_str(),
-          itinerary->transporter_name().c_str()
-        );
-      }
-      data->itineraries[uuid] =
-      std::make_unique<Itinerary>(std::move(itinerary.value()));
-      return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+
+      RCLCPP_INFO(
+        node->get_logger(),
+        "[handle_goal] Accepting goal [%s], defering execution until "
+        "itinerary has been received",
+        rclcpp_action::to_string(uuid).c_str()
+      );
+      return rclcpp_action::GoalResponse::ACCEPT_AND_DEFER;
     },
     [data = _data](const std::shared_ptr<GoalHandle> goal_handle)
     -> rclcpp_action::CancelResponse
@@ -251,9 +249,11 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       {
         RCLCPP_INFO(
           node->get_logger(),
-          "Received request to cancel goal"
+          "[handle_cancel] Received request to cancel goal"
         );
       }
+
+      std::lock_guard<std::mutex> lock(data->itineraries_mutex);
       const auto it = data->itineraries.find(goal_handle->get_goal_id());
       if (it == data->itineraries.end())
       {
@@ -261,7 +261,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_WARN(
             node->get_logger(),
-            "Cancellation goal uuid not found. No goal to cancel."
+            "[handle_cancel] Cancellation goal uuid not found. No goal to "
+            "cancel."
           );
         }
         return rclcpp_action::CancelResponse::ACCEPT;
@@ -273,7 +274,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Successfully cancelled transport with id [%s].",
+            "[handle_cancel] Successfully cancelled transport with id [%s].",
             it->second->id().c_str()
           );
         }
@@ -285,7 +286,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         {
           RCLCPP_INFO(
             node->get_logger(),
-            "Unable to cancel transport with id [%s]",
+            "[handle_cancel] Unable to cancel transport with id [%s]",
             it->second->id().c_str()
           );
         }
@@ -294,78 +295,114 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
     },
     [data = _data](const std::shared_ptr<GoalHandle> goal_handle)
     {
-      // handle_accepted
-      auto node = data->w_node.lock();
-      auto it = data->itineraries.find(goal_handle->get_goal_id());
-      if (it == data->itineraries.end())
-      {
-        if (node)
+      const auto goal = goal_handle->get_goal();
+      data->transporter->get_itinerary(
+        goal->request.id,
+        goal->request.destinations,
+        [handle = goal_handle, data = data](std::optional<Itinerary> itinerary)
         {
-          RCLCPP_ERROR(
-            node->get_logger(),
-            "[handle_accepted] unable to retrieve itinerary"
-          );
-        }
-        return;
-      }
-      if (node)
-      {
-        RCLCPP_INFO(
-          node->get_logger(),
-          "Executing transport request..."
-        );
-      }
-      data->transporter->transport_to_destination(
-        *(it->second),
-        [handle = goal_handle,
-        data = data](const Transporter::TransporterState& state)
-        {
-          auto feedback_msg = std::make_shared<ActionType::Feedback>();
-          feedback_msg->state = state;
-          handle->publish_feedback(feedback_msg);
-
-          // Publish transporter pose to tf
-          auto node = data->w_node.lock();
-          geometry_msgs::msg::TransformStamped tf_msg;
-          tf_msg.header.stamp =
-          node ? node->get_clock()->now() : rclcpp::Clock().now();
-          tf_msg.header.frame_id = "world";
-          tf_msg.child_frame_id = state.transporter + "_" + state.model;
-          tf_msg.transform.translation.x = state.location.pose.position.x;
-          tf_msg.transform.translation.y = state.location.pose.position.y;
-          tf_msg.transform.translation.z = state.location.pose.position.z;
-          tf_msg.transform.rotation = state.location.pose.orientation;
-          data->tf_broadcaster->sendTransform(tf_msg);
-        },
-        [handle = goal_handle, data = data](bool success)
-        {
-          auto node = data->w_node.lock();
           auto result_msg = std::make_shared<ActionType::Result>();
-          result_msg->success = success;
-          if (success)
+          auto node = data->w_node.lock();
+          if (!node)
           {
-            if (node)
-            {
-              RCLCPP_INFO(
-                node->get_logger(),
-                "Transportation successful!"
-              );
-            }
-            handle->succeed(result_msg);
+            result_msg->success = false;
+            handle->abort(std::move(result_msg));
+            return;
           }
-          else
-          {
-            if (node)
-            {
-              RCLCPP_ERROR(
-                node->get_logger(),
-                "Transportation unsuccessful!"
-              );
-            }
-            handle->abort(result_msg);
-          }
-        });
 
+          if (!itinerary.has_value())
+          {
+            RCLCPP_ERROR(
+              node->get_logger(),
+              "[handle_accepted] No valid itinerary available. Aborting goal "
+              "[%s]...",
+              rclcpp_action::to_string(handle->get_goal_id()).c_str()
+            );
+            result_msg->success = false;
+            handle->abort(std::move(result_msg));
+            return;
+          }
+
+          std::lock_guard<std::mutex> lock(data->itineraries_mutex);
+          auto it_pair = data->itineraries.insert({
+            handle->get_goal_id(),
+            std::make_unique<Itinerary>(std::move(itinerary.value()))
+          });
+          if (!it_pair.second)
+          {
+            RCLCPP_ERROR(
+              node->get_logger(),
+              "[handle_accepted] Found existing itinerary with the same UUID. "
+              "This should never happen and could be a major bug or race "
+              "condition. Aborting goal [%s]...",
+              rclcpp_action::to_string(handle->get_goal_id()).c_str()
+            );
+          }
+
+          handle->execute();
+          RCLCPP_INFO(
+            node->get_logger(),
+            "[handle_accepted] Executing transport request with goal [%s]...",
+            rclcpp_action::to_string(handle->get_goal_id()).c_str()
+          );
+
+          data->transporter->transport_to_destination(
+            *(it_pair.first->second),
+            [handle = handle, data = data](
+              const Transporter::TransporterState& state)
+            {
+              auto feedback_msg = std::make_shared<ActionType::Feedback>();
+              feedback_msg->state = state;
+              handle->publish_feedback(std::move(feedback_msg));
+
+              // Publish transporter pose to tf
+              auto node = data->w_node.lock();
+              geometry_msgs::msg::TransformStamped tf_msg;
+              tf_msg.header.stamp =
+              node ? node->get_clock()->now() : rclcpp::Clock().now();
+              tf_msg.header.frame_id = "world";
+              tf_msg.child_frame_id = state.transporter + "_" + state.model;
+              tf_msg.transform.translation.x = state.location.pose.position.x;
+              tf_msg.transform.translation.y = state.location.pose.position.y;
+              tf_msg.transform.translation.z = state.location.pose.position.z;
+              tf_msg.transform.rotation = state.location.pose.orientation;
+              data->tf_broadcaster->sendTransform(tf_msg);
+            },
+            [handle = handle, data = data](bool success)
+            {
+              auto node = data->w_node.lock();
+              auto result_msg = std::make_shared<ActionType::Result>();
+              result_msg->success = success;
+              if (success)
+              {
+                if (node)
+                {
+                  RCLCPP_INFO(
+                    node->get_logger(),
+                    "[handle_accepted] Transportation with goal uuid [%s] "
+                    "successful!",
+                    rclcpp_action::to_string(handle->get_goal_id()).c_str()
+                  );
+                }
+                handle->succeed(std::move(result_msg));
+                return;
+              }
+
+              if (node)
+              {
+                RCLCPP_ERROR(
+                  node->get_logger(),
+                  "[handle_accepted] Transportation with goal uuid [%s] "
+                  "unsuccessful!",
+                  rclcpp_action::to_string(handle->get_goal_id()).c_str()
+                );
+              }
+              handle->abort(std::move(result_msg));
+            });
+
+          return;
+        }
+      );
     });
 
   RCLCPP_INFO(this->get_logger(), "Successfully configured.");
@@ -381,7 +418,10 @@ auto TransporterNode::on_cleanup(const State& /*previous_state*/)
   _data->transporter.reset();
   _data->availability_srv.reset();
   _data->action_srv.reset();
-  _data->itineraries.clear();
+  {
+    std::lock_guard<std::mutex> lock(_data->itineraries_mutex);
+    _data->itineraries.clear();
+  }
   _data->tf_broadcaster.reset();
   RCLCPP_INFO(this->get_logger(), "Successfully cleaned up.");
   return CallbackReturn::SUCCESS;
@@ -409,10 +449,13 @@ auto TransporterNode::on_deactivate(const State& /*previous_state*/)
 -> CallbackReturn
 {
   RCLCPP_INFO(this->get_logger(), "Deactivating...");
-  for (auto it = _data->itineraries.begin(); it != _data->itineraries.end();
-    ++it)
   {
-    _data->transporter->cancel(*(it->second));
+    std::lock_guard<std::mutex> lock(_data->itineraries_mutex);
+    for (auto it = _data->itineraries.begin(); it != _data->itineraries.end();
+      ++it)
+    {
+      _data->transporter->cancel(*(it->second));
+    }
   }
   RCLCPP_INFO(this->get_logger(), "Successfully deactivated.");
   return CallbackReturn::SUCCESS;
@@ -445,11 +488,21 @@ TransporterNode::TransporterNode(const rclcpp::NodeOptions& options)
 
   const std::size_t timeout_seconds =
     this->declare_parameter("connection_timeout", 5);
-  _data->connection_timeout = std::chrono::seconds(5);
+  _data->connection_timeout = std::chrono::seconds(timeout_seconds);
   RCLCPP_INFO(
     this->get_logger(),
     "Setting parameter connection_timeout to [%zd] seconds",
     timeout_seconds
+  );
+
+  const std::size_t wait_for_itinerary_timeout =
+    this->declare_parameter("wait_for_itinerary_timeout", 5);
+  _data->wait_for_itinerary_timeout =
+    std::chrono::seconds(wait_for_itinerary_timeout);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Setting parameter wait_for_itinerary_timeout to [%zd] seconds",
+    wait_for_itinerary_timeout
   );
 }
 
@@ -506,8 +559,7 @@ void TransporterNode::Data::_register()
       RCLCPP_INFO(node->get_logger(),
         "Successfully registered with system orchestrator");
       this->register_timer->cancel();
-      // TODO(luca) reintroduce once https://github.com/ros2/rclcpp/issues/2652 is fixed and released
-      // this->register_timer.reset();
+      this->register_timer.reset();
     };
 
   if (!this->register_client->wait_for_service(connection_timeout))

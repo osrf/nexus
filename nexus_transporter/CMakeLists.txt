@@ -57,7 +57,7 @@ target_include_directories(nexus_transporter
 target_compile_features(nexus_transporter INTERFACE cxx_std_17)
 
 ament_export_targets(nexus_transporter HAS_LIBRARY_TARGET)
-ament_export_dependencies(rclcpp rclcpp_lifecycle nexus_transporter_msgs rmf_utils)
+ament_export_dependencies(rclcpp rclcpp_lifecycle nexus_transporter_msgs rmf_utils yaml-cpp)
 #===============================================================================
 add_library(nexus_transporter_component SHARED src/TransporterNode.cpp)
 
@@ -124,13 +124,12 @@ if(BUILD_TESTING AND ament_cmake_uncrustify_FOUND AND ament_cmake_catch2_FOUND)
     NAMES "rmf_code_style.cfg"
     PATHS "${rmf_utils_DIR}/../../../../share/rmf_utils/")
 
-  # TODO(luca) Add uncrustify back after formatting
-  #ament_uncrustify(
-  #  ARGN include src test
-  #  CONFIG_FILE ${uncrustify_config_file}
-  #  MAX_LINE_LENGTH 80
-  #  LANGUAGE CPP
-  #)
+  ament_uncrustify(
+    ARGN include src test
+    CONFIG_FILE ${uncrustify_config_file}
+    MAX_LINE_LENGTH 80
+    LANGUAGE CPP
+  )
 
   ament_add_catch2(test_nexus_transporter
     test/main.cpp
