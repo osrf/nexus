@@ -294,7 +294,12 @@ public:
     // TODO(luca) get RMF parameters here
 
     _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
-      n,
+      n->get_node_base_interface(),
+      n->get_node_clock_interface(),
+      n->get_node_logging_interface(),
+      n->get_node_timers_interface(),
+      n->get_node_topics_interface(),
+      n->get_node_parameters_interface(),
       [this](
         const std::string& rmf_task_id,
         const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
