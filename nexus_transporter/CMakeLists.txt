@@ -27,6 +27,7 @@ set(dep_pkgs
   rmf_traffic
   rmf_traffic_ros2
   rmf_utils
+  std_msgs
   tf2_ros
   yaml_cpp_vendor
   yaml-cpp
@@ -141,10 +142,11 @@ target_link_libraries(rmf_transporter
     # rmf_traffic_ros2::rmf_traffic_ros2
     ${rmf_task_msgs_TARGETS}
 )
-target_include_directories(rmf_transporter PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-  # ${pluginlub_INCLUDE_DIRS}
+target_include_directories(rmf_transporter
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${rmf_task_msgs_INCLUDE_DIRS}
 )
 ament_export_libraries(rmf_transporter)
 

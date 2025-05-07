@@ -31,21 +31,23 @@
 // #include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
 // #include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
 // #include <rmf_ingestor_msgs/msg/ingestor_state.hpp>
-// #include <rmf_task_msgs/msg/api_request.hpp>
-// #include <rmf_task_msgs/msg/api_response.hpp>
-// #include <std_msgs/msg/string.hpp>
+#include <rmf_task_msgs/msg/api_request.hpp>
+#include <rmf_task_msgs/msg/api_response.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <rmf_task_ros2/bidding/Auctioneer.hpp>
 #include <rmf_traffic_ros2/Time.hpp>
 
 #include <memory>
+#include <mutex>
 #include <random>
 #include <string>
 #include <unordered_map>
 
 namespace nexus_transporter {
 
-// using ApiRequest = rmf_task_msgs::msg::ApiRequest;
-// using ApiResponse = rmf_task_msgs::msg::ApiResponse;
+using ApiRequest = rmf_task_msgs::msg::ApiRequest;
+using ApiResponse = rmf_task_msgs::msg::ApiResponse;
+using TaskStateUpdate = std_msgs::msg::String;
 
 // using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
 // using DispenserState = rmf_dispenser_msgs::msg::DispenserState;
@@ -53,8 +55,6 @@ namespace nexus_transporter {
 // using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
 // using IngestorState = rmf_ingestor_msgs::msg::IngestorState;
 // using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
-// // Json format
-// using TaskStateUpdate = std_msgs::msg::String;
 
 class RmfTransporter : public Transporter
 {
@@ -72,6 +72,15 @@ public:
       std::nullopt;
   };
 
+  struct OngoingItinerary
+  {
+    Itinerary itinerary;
+
+    Transporter::TransportFeedback feedback_cb;
+
+    Transporter::TransportCompleted completed_cb;
+  };
+
 private:
   rclcpp_lifecycle::LifecycleNode::WeakPtr _node;
 
@@ -84,8 +93,15 @@ private:
 
   std::shared_ptr<rmf_task_ros2::bidding::Auctioneer> _auctioneer = nullptr;
 
+  std::mutex _mutex;
+
   std::unordered_map<std::string, ItineraryQuery>
   _rmf_task_id_to_itinerary_query = {};
+
+  std::unordered_map<std::string, OngoingItinerary>
+  _job_id_to_unconfirmed_itineraries = {};
+  std::unordered_map<std::string, OngoingItinerary>
+  _rmf_task_id_to_ongoing_itinerary = {};
 
   // // Hashmap requested job_id -> actual rmf task id (i.e. for cancellation, tracking)
   // // TODO(luca) remember to cleanup all the maps / sets when the task is finished or cancelled
@@ -102,9 +118,9 @@ private:
   // std::unordered_set<std::string> sent_destination_signals;
 
   // Task interface
-  // rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
-  // rclcpp::Subscription<ApiResponse>::SharedPtr _api_response_sub = nullptr;
-  // rclcpp::Subscription<TaskStateUpdate>::SharedPtr _task_state_sub = nullptr;
+  rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
+  rclcpp::Subscription<ApiResponse>::SharedPtr _api_response_sub = nullptr;
+  rclcpp::Subscription<TaskStateUpdate>::SharedPtr _task_state_sub = nullptr;
 
   // // Dispenser interface
   // rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub = nullptr;
@@ -135,7 +151,6 @@ private:
     auto n = this->_node.lock();
     if (!n)
     {
-      std::cout << "Node not valid!" << std::endl;
       return std::nullopt;
     }
 
@@ -180,6 +195,36 @@ private:
     return r;
   }
 
+  std::optional<ApiRequest> _generate_direct_dispatch_api_message(
+    const Itinerary& itinerary)
+  {
+    auto n = this->_node.lock();
+    if (!n)
+    {
+      return std::nullopt;
+    }
+
+    const auto request_json =
+      _generate_dispatch_task_request_json(itinerary.destinations());
+    if (!request_json.has_value())
+    {
+      return std::nullopt;
+    }
+
+    nlohmann::json j;
+    j["type"] = "robot_task_request";
+    j["fleet"] =
+      _fleet_name_from_transporter_name(itinerary.transporter_name());
+    j["robot"] =
+      _robot_name_from_transporter_name(itinerary.transporter_name());
+    j["request"] = request_json.value();
+
+    ApiRequest msg;
+    msg.json_msg = j.dump();
+    msg.request_id = itinerary.id();
+    return msg;
+  }
+
   std::string _generate_transporter_name(
     const std::string& fleet_name,
     const std::string& robot_name,
@@ -190,6 +235,21 @@ private:
     return ss.str();
   }
 
+  std::string _fleet_name_from_transporter_name(
+    const std::string transporter_name,
+    const std::string& delimiter = "/")
+  {
+    return transporter_name.substr(0, transporter_name.find(delimiter));
+  }
+
+  std::string _robot_name_from_transporter_name(
+    const std::string transporter_name,
+    const std::string& delimiter = "/")
+  {
+    return transporter_name.substr(
+      transporter_name.find(delimiter) + delimiter.length());
+  }
+
   void _conclude_bid(
     const std::string& rmf_task_id,
     const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
@@ -198,10 +258,10 @@ private:
     auto n = this->_node.lock();
     if (!n)
     {
-      std::cout << "Node not valid!" << std::endl;
       return;
     }
 
+    std::lock_guard<std::mutex> lock(_mutex);
     auto it = _rmf_task_id_to_itinerary_query.find(rmf_task_id);
     if (it == _rmf_task_id_to_itinerary_query.end())
     {
@@ -294,12 +354,7 @@ public:
     // TODO(luca) get RMF parameters here
 
     _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
-      n->get_node_base_interface(),
-      n->get_node_clock_interface(),
-      n->get_node_logging_interface(),
-      n->get_node_timers_interface(),
-      n->get_node_topics_interface(),
-      n->get_node_parameters_interface(),
+      rmf_task_ros2::bidding::Auctioneer::AuctioneerNodeInterfaces(*n),
       [this](
         const std::string& rmf_task_id,
         const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
@@ -309,10 +364,131 @@ public:
       },
       std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
 
-    // const auto transient_qos =
-    //   rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
-    // _api_request_pub = n->create_publisher<ApiRequest>(
-    //   "/task_api_requests", transient_qos);
+    const auto transient_qos =
+      rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
+
+    _api_request_pub = n->create_publisher<ApiRequest>(
+      "/task_api_requests",
+      transient_qos);
+
+    _api_response_sub = n->create_subscription<ApiResponse>(
+      "/task_api_responses",
+      transient_qos,
+      [&](ApiResponse::UniquePtr msg)
+      {
+        auto n = _node.lock();
+        if (!n || msg->type != msg->TYPE_RESPONDING)
+        {
+          return;
+        }
+
+        std::lock_guard<std::mutex> lock(_mutex);
+        auto it = _job_id_to_unconfirmed_itineraries.find(msg->request_id);
+        if (it == _job_id_to_unconfirmed_itineraries.end())
+        {
+          // Ignore API responses that are not for this transporter
+          return;
+        }
+
+        auto j = nlohmann::json::parse(msg->json_msg, nullptr, false);
+        // TODO(ac): use schema validation instead
+        if (j.is_discarded() ||
+          !j.contains("success") ||
+          !j.contains("state") ||
+          !j["state"].contains("booking") ||
+          !j["state"]["booking"].contains("id"))
+        {
+          RCLCPP_ERROR(
+            n->get_logger(),
+            "Invalid JSON in API response, itinerary [%s] failed.",
+            it->second.itinerary.id().c_str());
+          it->second.completed_cb(false);
+          _job_id_to_unconfirmed_itineraries.erase(it);
+          return;
+        }
+
+        if (j["success"] == false)
+        {
+          RCLCPP_ERROR(
+            n->get_logger(),
+            "RMF task dispatch request for itinerary [%s] rejected.",
+            it->second.itinerary.id().c_str());
+          it->second.completed_cb(false);
+          _job_id_to_unconfirmed_itineraries.erase(it);
+          return;
+        }
+
+        RCLCPP_INFO(
+          n->get_logger(),
+          "RMF task dispatch request for itinerary [%s] accepted,\n%s",
+          it->second.itinerary.id().c_str(),
+          j.dump(4).c_str());
+
+        std::string rmf_task_id = j["state"]["booking"]["id"];
+        _rmf_task_id_to_ongoing_itinerary.insert(
+          {std::move(rmf_task_id), std::move(it->second)});
+        _job_id_to_unconfirmed_itineraries.erase(it);
+      });
+
+    _task_state_sub = n->create_subscription<TaskStateUpdate>("/task_state_update", transient_qos,
+      [&](TaskStateUpdate::UniquePtr msg)
+      {
+        auto n = _node.lock();
+        if (!n)
+        {
+          return;
+        }
+
+        auto j = nlohmann::json::parse(msg->data, nullptr, false);
+        // TODO(ac): use schema validation instead
+        if (j.is_discarded() ||
+          !j.contains("data") ||
+          !j["data"].contains("status") ||
+          !j["data"].contains("booking") ||
+          !j["data"]["booking"].contains("id"))
+        {
+          RCLCPP_ERROR(
+            n->get_logger(),
+            "Ignoring invalid JSON in task state update\n%s",
+            msg->data.c_str());
+          return;
+        }
+
+        if (j["data"]["status"] == "completed")
+        {
+          // Finished!
+          std::string rmf_task_id = j["data"]["booking"]["id"];
+
+          auto it = _rmf_task_id_to_ongoing_itinerary.find(rmf_task_id);
+          if (it == _rmf_task_id_to_ongoing_itinerary.end())
+          {
+            return;
+          }
+
+          auto job_id_it = rmf_task_id_to_job_id.find(rmf_id);
+          if (job_id_it == rmf_task_id_to_job_id.end())
+          {
+            std::cout << "Job id not found" << std::endl;
+            return;
+          }
+          auto job_id = job_id_it->second;
+          auto completed_cb = job_id_to_completed.find(job_id);
+          if (completed_cb == job_id_to_completed.end())
+          {
+            std::cout << "Completed callback not found" << std::endl;
+            return;
+          }
+          // Signal completion
+          (completed_cb->second)(true);
+          // Bookkeeping
+          // TODO(luca) also cleanup on cancellation successful, and when the above statements fail
+          job_id_to_completed.erase(job_id);
+          job_id_to_rmf_task_id.erase(job_id);
+          job_id_to_signal_source.erase(job_id);
+          job_id_to_signal_destination.erase(job_id);
+          rmf_task_id_to_job_id.erase(rmf_id);
+        }
+      });
 
     return true;
   }
@@ -368,6 +544,7 @@ public:
       .dry_run(true);
     _auctioneer->request_bid(bid_notice);
 
+    std::lock_guard<std::mutex> lock(_mutex);
     _rmf_task_id_to_itinerary_query[rmf_task_id] = ItineraryQuery{
       job_id, destinations, std::move(completed_cb), std::nullopt};
   }
@@ -376,7 +553,24 @@ public:
     Itinerary itinerary,
     Transporter::TransportFeedback feedback_cb,
     Transporter::TransportCompleted completed_cb) final
-  {}
+  {
+    const auto api_request_msg =
+      _generate_direct_dispatch_api_message(itinerary);
+
+    if (!api_request_msg.has_value())
+    {
+      completed_cb(false);
+    }
+    _api_request_pub->publish(api_request_msg.value());
+
+    std::lock_guard<std::mutex> lock(_mutex);
+    std::string itinerary_id = itinerary.id();
+    _job_id_to_unconfirmed_itineraries.insert(
+      {
+        std::move(itinerary_id),
+        {std::move(itinerary), std::move(feedback_cb), std::move(completed_cb)}
+      });
+  }
 
   bool cancel(Itinerary itinerary) final
   {
