@@ -1,0 +1,10 @@
+<root main_tree_to_execute="main">
+  <BehaviorTree ID="main">
+    <ReactiveSequence>
+      <IsPauseTriggered paused="{paused}"/>
+      <ForEachTask task="{task}" workcell="{workcell}">
+        <ExecuteTask task="{task}" workcell="{workcell}"/>
+      </ForEachTask>
+    </ReactiveSequence>
+  </BehaviorTree>
+</root>
