@@ -31,12 +31,14 @@
 // #include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
 // #include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
 // #include <rmf_ingestor_msgs/msg/ingestor_state.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <rmf_task_ros2/bidding/Auctioneer.hpp>
 #include <rmf_traffic_ros2/Time.hpp>
 
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <random>
@@ -75,6 +77,8 @@ public:
   struct OngoingItinerary
   {
     Itinerary itinerary;
+
+    Transporter::TransporterState transporter_state;
 
     Transporter::TransportFeedback feedback_cb;
 
@@ -151,6 +155,9 @@ private:
     auto n = this->_node.lock();
     if (!n)
     {
+      std::cerr
+        << "RmfTransporter::_generate_dispatch_task_request_json - invalid node"
+        << std::endl;
       return std::nullopt;
     }
 
@@ -201,6 +208,10 @@ private:
     auto n = this->_node.lock();
     if (!n)
     {
+      std::cerr
+        << "RmfTransporter::_generate_direct_dispatch_api_message - "
+        << "invalid node"
+        << std::endl;
       return std::nullopt;
     }
 
@@ -208,6 +219,8 @@ private:
       _generate_dispatch_task_request_json(itinerary.destinations());
     if (!request_json.has_value())
     {
+      RCLCPP_ERROR(
+        n->get_logger(), "failed to generate dispatch task request json");
       return std::nullopt;
     }
 
@@ -228,7 +241,7 @@ private:
   std::string _generate_transporter_name(
     const std::string& fleet_name,
     const std::string& robot_name,
-    const std::string& delimiter = "/")
+    const std::string& delimiter = "__")
   {
     std::stringstream ss;
     ss << fleet_name << delimiter << robot_name;
@@ -237,14 +250,14 @@ private:
 
   std::string _fleet_name_from_transporter_name(
     const std::string transporter_name,
-    const std::string& delimiter = "/")
+    const std::string& delimiter = "__")
   {
     return transporter_name.substr(0, transporter_name.find(delimiter));
   }
 
   std::string _robot_name_from_transporter_name(
     const std::string transporter_name,
-    const std::string& delimiter = "/")
+    const std::string& delimiter = "__")
   {
     return transporter_name.substr(
       transporter_name.find(delimiter) + delimiter.length());
@@ -258,6 +271,7 @@ private:
     auto n = this->_node.lock();
     if (!n)
     {
+      std::cerr << "RmfTransporter::_conclude_bid - invalid node" << std::endl;
       return;
     }
 
@@ -348,6 +362,7 @@ public:
     auto n = node.lock();
     if (!n)
     {
+      std::cerr << "RmfTransporter::configure - invalid node" << std::endl;
       return false;
     }
     _node = n;
@@ -377,8 +392,15 @@ public:
       [&](ApiResponse::UniquePtr msg)
       {
         auto n = _node.lock();
-        if (!n || msg->type != msg->TYPE_RESPONDING)
+        if (!n)
         {
+          std::cerr << "RmfTransporter::_api_response_sub - invalid node"
+            << std::endl;
+          return;
+        }
+        if (msg->type != msg->TYPE_RESPONDING)
+        {
+          // Ignore non-responding messages
           return;
         }
 
@@ -436,6 +458,8 @@ public:
         auto n = _node.lock();
         if (!n)
         {
+          std::cerr << "RmfTransporter::_task_state_sub - invalid node"
+            << std::endl;
           return;
         }
 
@@ -454,39 +478,49 @@ public:
           return;
         }
 
-        if (j["data"]["status"] == "completed")
+        const std::string rmf_task_id = j["data"]["booking"]["id"];
+
+        std::lock_guard<std::mutex> lock(_mutex);
+        auto it = _rmf_task_id_to_ongoing_itinerary.find(rmf_task_id);
+        if (it == _rmf_task_id_to_ongoing_itinerary.end())
         {
-          // Finished!
-          std::string rmf_task_id = j["data"]["booking"]["id"];
+          // Ignore task state updates that are not for this transporter
+          return;
+        }
 
-          auto it = _rmf_task_id_to_ongoing_itinerary.find(rmf_task_id);
-          if (it == _rmf_task_id_to_ongoing_itinerary.end())
-          {
-            return;
-          }
-
-          auto job_id_it = rmf_task_id_to_job_id.find(rmf_id);
-          if (job_id_it == rmf_task_id_to_job_id.end())
-          {
-            std::cout << "Job id not found" << std::endl;
-            return;
-          }
-          auto job_id = job_id_it->second;
-          auto completed_cb = job_id_to_completed.find(job_id);
-          if (completed_cb == job_id_to_completed.end())
-          {
-            std::cout << "Completed callback not found" << std::endl;
-            return;
-          }
-          // Signal completion
-          (completed_cb->second)(true);
-          // Bookkeeping
-          // TODO(luca) also cleanup on cancellation successful, and when the above statements fail
-          job_id_to_completed.erase(job_id);
-          job_id_to_rmf_task_id.erase(job_id);
-          job_id_to_signal_source.erase(job_id);
-          job_id_to_signal_destination.erase(job_id);
-          rmf_task_id_to_job_id.erase(rmf_id);
+        const std::string status = j["data"]["status"];
+        if (status == "failed" || status == "canceled" || status == "killed")
+        {
+          RCLCPP_ERROR(
+            n->get_logger(),
+            "RMF task [%s] has status [%s], transporter itinerary [%s] failed.",
+            rmf_task_id.c_str(),
+            status.c_str(),
+            it->second.itinerary.id().c_str());
+          it->second.completed_cb(false);
+          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          return;
+        }
+        else if (status == "completed")
+        {
+          RCLCPP_INFO(
+            n->get_logger(),
+            "RMF task [%s] completed, transporter itinerary [%s] completed.",
+            rmf_task_id.c_str(),
+            it->second.itinerary.id().c_str());
+          it->second.completed_cb(true);
+          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          return;
+        }
+        else
+        {
+          RCLCPP_DEBUG(
+            n->get_logger(),
+            "RMF task [%s] has status [%s].",
+            rmf_task_id.c_str(),
+            status.c_str());
+          // TODO(ac): modify transporter state
+          it->second.feedback_cb(it->second.transporter_state);
         }
       });
 
@@ -506,7 +540,9 @@ public:
     auto n = _node.lock();
     if (!n)
     {
+      std::cerr << "RmfTransporter::get_itinerary - invalid node" << std::endl;
       completed_cb(std::nullopt);
+      return;
     }
 
     std::stringstream ss;
@@ -528,6 +564,7 @@ public:
         n->get_logger(),
         "Failed to generate dispatch task request json");
       completed_cb(std::nullopt);
+      return;
     }
 
     // TODO(ac): set this to debug.
@@ -554,26 +591,47 @@ public:
     Transporter::TransportFeedback feedback_cb,
     Transporter::TransportCompleted completed_cb) final
   {
+    auto n = _node.lock();
+    if (!n)
+    {
+      std::cerr << "RmfTransporter::transport_to_destionation - invalid node"
+        << std::endl;
+      completed_cb(false);
+      return;
+    }
+
     const auto api_request_msg =
       _generate_direct_dispatch_api_message(itinerary);
 
     if (!api_request_msg.has_value())
     {
       completed_cb(false);
+      return;
     }
     _api_request_pub->publish(api_request_msg.value());
+
+    nexus_transporter_msgs::msg::TransporterState transporter_state;
+    transporter_state.transporter = itinerary.transporter_name();
+    transporter_state.state =
+      nexus_transporter_msgs::msg::TransporterState::STATE_UNAVAILABLE;
+    transporter_state.estimated_finish_time =
+      itinerary.estimated_finish_time() - n->get_clock()->now();
 
     std::lock_guard<std::mutex> lock(_mutex);
     std::string itinerary_id = itinerary.id();
     _job_id_to_unconfirmed_itineraries.insert(
       {
         std::move(itinerary_id),
-        {std::move(itinerary), std::move(feedback_cb), std::move(completed_cb)}
+        {
+          std::move(itinerary), std::move(transporter_state),
+          std::move(feedback_cb), std::move(completed_cb)
+        }
       });
   }
 
   bool cancel(Itinerary itinerary) final
   {
+    // TODO
     return true;
   }
 

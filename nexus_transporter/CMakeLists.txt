@@ -140,13 +140,17 @@ target_link_libraries(rmf_transporter
     # rmf_task_ros2::rmf_task_ros2
     # rmf_traffic::rmf_traffic
     # rmf_traffic_ros2::rmf_traffic_ros2
+    ${geometry_msgs_TARGETS}
     ${rmf_task_msgs_TARGETS}
+    ${std_msgs_TARGETS}
 )
 target_include_directories(rmf_transporter
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    ${geometry_msgs_INCLUDE_DIRS}
     ${rmf_task_msgs_INCLUDE_DIRS}
+    ${std_msgs_INCLUDE_DIRS}
 )
 ament_export_libraries(rmf_transporter)
 
