@@ -39,6 +39,7 @@ set(srv_files
   "srv/RegisterWorkcell.srv"
   "srv/RemovePendingTask.srv"
   "srv/SignalWorkcell.srv"
+  "srv/UpdateItemStatus.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

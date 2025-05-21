@@ -24,6 +24,7 @@
 #include <nexus_orchestrator_msgs/srv/register_workcell.hpp>
 #include <nexus_orchestrator_msgs/srv/remove_pending_task.hpp>
 #include <nexus_orchestrator_msgs/srv/signal_workcell.hpp>
+#include <nexus_orchestrator_msgs/srv/update_item_status.hpp>
 #include <nexus_transporter_msgs/action/transport.hpp>
 #include <nexus_transporter_msgs/srv/is_transporter_available.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
@@ -32,7 +33,6 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 
 #include <string>
-
 
 namespace nexus::endpoints {
 
@@ -379,6 +379,46 @@ public:
   template<typename NodePtrT>
   static rclcpp_action::Client<TransportAction::ActionType>::SharedPtr create_client(NodePtrT node, const std::string& transporter_id) {
     return rclcpp_action::create_client<TransportAction::ActionType>(node, TransportAction::action_name(transporter_id));
+  }
+};
+
+class ExecuteTransportAction {
+public:
+  using ActionType = nexus_transporter_msgs::action::Transport;
+
+  static inline std::string action_name() {
+    const std::string name = "/system_orchestrator/execute_transport";
+    return name;
+  }
+
+  template<typename NodePtrT>
+  static rclcpp_action::Server<ExecuteTransportAction::ActionType>::SharedPtr create_server(NodePtrT node, typename rclcpp_action::Server<ExecuteTransportAction::ActionType>::GoalCallback handle_goal, typename rclcpp_action::Server<ExecuteTransportAction::ActionType>::CancelCallback handle_cancel, typename rclcpp_action::Server<ExecuteTransportAction::ActionType>::AcceptedCallback handle_accepted) {
+    return rclcpp_action::create_server<ExecuteTransportAction::ActionType>(node, ExecuteTransportAction::action_name(), handle_goal, handle_cancel, handle_accepted);
+  }
+
+  template<typename NodePtrT>
+  static rclcpp_action::Client<ExecuteTransportAction::ActionType>::SharedPtr create_client(NodePtrT node) {
+    return rclcpp_action::create_client<ExecuteTransportAction::ActionType>(node, ExecuteTransportAction::action_name());
+  }
+};
+
+class UpdateItemTrackingInformation {
+public:
+  using ServiceType = nexus_orchestrator_msgs::srv::UpdateItemStatus;
+
+  static inline std::string service_name() {
+    const std::string name = "/system_orchestrator/update_item_status";
+    return name;
+  }
+
+  template<typename NodePtrT, typename CallbackT>
+  static rclcpp::Service<UpdateItemTrackingInformation::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
+    return node->template create_service<UpdateItemTrackingInformation::ServiceType>(UpdateItemTrackingInformation::service_name(), std::forward<CallbackT>(callback));
+  }
+
+  template<typename NodePtrT>
+  static rclcpp::Client<UpdateItemTrackingInformation::ServiceType>::SharedPtr create_client(NodePtrT node) {
+    return node->template create_client<UpdateItemTrackingInformation::ServiceType>(UpdateItemTrackingInformation::service_name());
   }
 };
 
