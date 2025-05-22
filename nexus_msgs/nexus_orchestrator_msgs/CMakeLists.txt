@@ -18,6 +18,7 @@ set(action_files
 )
 
 set(msg_files
+  "msg/ItemStatus.msg"
   "msg/TaskProgress.msg"
   "msg/TaskState.msg"
   "msg/WorkcellDescription.msg"

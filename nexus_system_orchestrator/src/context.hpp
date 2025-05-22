@@ -23,6 +23,7 @@
 #include <nexus_common/task_remapper.hpp>
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_endpoints.hpp>
+#include <nexus_orchestrator_msgs/msg/item_status.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -41,6 +42,7 @@ namespace nexus::system_orchestrator {
 class Context
 {
 public:
+  using ItemStatus = nexus_orchestrator_msgs::msg::ItemStatus;
   using WorkOrder = common::WorkOrder;
   using WorkOrderGoalHandle =
     rclcpp_action::ServerGoalHandle<nexus::endpoints::WorkOrderAction::ActionType>;
@@ -125,6 +127,13 @@ public:
   std::optional<std::vector<std::string>> get_task_queued_signals(
     const std::string& task_id) const;
 
+  Context& set_item_status(
+    const std::string& item_guid, const ItemStatus& status);
+
+  // Clean up after a work order
+  // get based on transporter and item guid
+  //
+
 private:
   // using reference to prevent circular references
   rclcpp_lifecycle::LifecycleNode& _node;
@@ -159,6 +168,11 @@ private:
    * Map of workcell task ids and their queued signals.
    */
   std::unordered_map<std::string, std::vector<std::string>> _queued_signals;
+
+  /**
+   * Map of items and their statuses.
+   */
+  std::unordered_map<std::string, ItemStatus> _tracked_items;
 
   mutable std::mutex _mutex;
 };

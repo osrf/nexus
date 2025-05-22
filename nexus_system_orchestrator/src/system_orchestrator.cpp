@@ -287,6 +287,9 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       this->_handle_register_transporter(req, resp);
     });
 
+  // create transporter request action
+
+
   if (!this->_lifecycle_mgr->changeStateForAllNodes(
       Transition::TRANSITION_CONFIGURE))
   {
