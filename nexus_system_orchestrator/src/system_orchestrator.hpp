@@ -29,6 +29,8 @@
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
+#include <nexus_transporter/Itinerary.hpp>
+#include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -79,6 +81,7 @@ private:
   rclcpp::Service<endpoints::ListTransporterService::ServiceType>::SharedPtr
     _list_transporters_srv;
   rclcpp::ServiceBase::SharedPtr _register_transporter_srv;
+  rclcpp::ServiceBase::SharedPtr _propose_transporter_srv;
   bool _paused;
   rclcpp::ServiceBase::SharedPtr _pause_system_srv;
   rclcpp::Publisher<endpoints::WorkOrderStatesTopic::MessageType>::SharedPtr
@@ -142,6 +145,9 @@ private:
   void _handle_register_transporter(
     endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr req,
     endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr resp);
+
+  std::optional<nexus_transporter::Itinerary> _propose_itinerary(
+    const nexus_transporter_msgs::msg::TransportationRequest& request);
 
   /**
    * Halt and fail a job from the job list.

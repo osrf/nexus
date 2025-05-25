@@ -279,8 +279,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
     endpoints::RegisterTransporterService::service_name(),
     [this](
       endpoints::RegisterTransporterService::ServiceType::Request::
-      ConstSharedPtr
-      req,
+      ConstSharedPtr req,
       endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr
       resp)
     {
@@ -294,6 +293,29 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       this->get_logger(), "Lifecycle Manager failed to configure all nodes");
     return CallbackReturn::FAILURE;
   }
+
+  // create transporter bidding request service
+  this->_propose_transporter_srv =
+    this->create_service<endpoints::ProposeTransporterService::ServiceType>(
+      endpoints::ProposeTransporterService::service_name(),
+      [this](
+        endpoints::ProposeTransporterService::ServiceType::Request::
+        ConstSharedPtr req,
+        endpoints::ProposeTransporterService::ServiceType::Response::SharedPtr
+        resp)
+      {
+        const auto itinerary = this->_propose_itinerary(req->request);
+        if (itinerary.has_value())
+        {
+          resp->available = true;
+          resp->transporter = itinerary->transporter_name();
+          resp->estimated_finish_time = itinerary->estimated_finish_time();
+        }
+        else
+        {
+          resp->available = false;
+        }
+      });
 
   // subscribe to estop
   this->_estop_sub =
@@ -516,20 +538,6 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     {
       return std::make_unique<AssignTransporterWorkcell>(name, config,
         this->shared_from_this(), ctx);
-    });
-
-  bt_factory->registerBuilder<BidTransporter>("BidTransporter",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<BidTransporter>(name, config,
-      this->shared_from_this(), ctx);
-    });
-
-  bt_factory->registerBuilder<TransporterRequest>(
-    "TransporterRequest",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<TransporterRequest>(name, config, *this, ctx);
     });
 
   bt_factory->registerBuilder<ForEachTask>("ForEachTask",
@@ -855,6 +863,75 @@ void SystemOrchestrator::_handle_register_transporter(
 
   RCLCPP_INFO(this->get_logger(), "Registered transporter %s",
     transporter_id.c_str());
+}
+
+std::optional<nexus_transporter::Itinerary>
+SystemOrchestrator::_propose_itinerary(
+  const nexus_transporter_msgs::msg::TransportationRequest& request)
+{
+  auto req =
+    std::make_shared<
+    endpoints::IsTransporterAvailableService::ServiceType::Request>();
+  req->request = request;
+  // TODO(aaronchongth): once we start keeping track of item's whereabouts,
+  // we can narrow down which transporters we send out requests to.
+
+  using OngoingRequest = std::pair<
+  rclcpp::Client<IsTransporterAvailableService::ServiceType>::SharedPtr,
+  rclcpp::Client<IsTransporterAvailableService::ServiceType>::FutureAndRequestId
+  >;
+  std::unordered_map<std::string, OngoingRequest> ongoing_requests;
+
+  for (auto& [transporter_id, session] : this->_transporter_sessions)
+  {
+    auto fut = session->available_client->async_send_request(req);
+    ongoing_requests.emplace(
+      transporter_id,
+      {session->available_client, std::move(fut)});
+  }
+
+  const auto start_time = std::chrono::steady_clock::now();
+  const auto timeout = std::chrono::milliseconds{this->_bid_request_timeout};
+
+  rclcpp::Time fastest_finishing_time = rclcpp::Time::max();
+  std::optional<std::string> fastest_finishing_transporter = std::nullopt;
+  do
+  {
+    for (auto it = ongoing_requests.begin(); it != ongoing_requests.end();)
+    {
+      if (it->second.second.wait_for(std::chrono::seconds{0}) ==
+        std::future_status::ready)
+      {
+        auto resp = it->second.second.get();
+        if (resp->available &&
+          resp->estimated_finish_time < fastest_finishing_time)
+        {
+          fastest_finishing_time = resp->estimated_finish_time;
+          fastest_finishing_transporter = resp->transporter;
+        }
+        it = ongoing_requests.erase(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  while (std::chrono::steady_clock::now() - start_time < timeout &&
+    !ongoing_requests.empty());
+
+  if (fastest_finishing_transporter.has_value())
+  {
+    return nexus_transporter::Itinerary(
+      request.id,
+      request.destinations,
+      fastest_finishing_transporter.value(),
+      fastest_finishing_time,
+      fastest_finishing_time);
+  }
+  return std::nullopt;
 }
 
 void SystemOrchestrator::_halt_job(const std::string& job_id)

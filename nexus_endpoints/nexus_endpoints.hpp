@@ -19,6 +19,7 @@
 #include <nexus_orchestrator_msgs/srv/list_workcells.hpp>
 #include <nexus_orchestrator_msgs/srv/pause_system.hpp>
 #include <nexus_orchestrator_msgs/srv/pause_workcell.hpp>
+#include <nexus_orchestrator_msgs/srv/propose_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/queue_workcell_task.hpp>
 #include <nexus_orchestrator_msgs/srv/register_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/register_workcell.hpp>
@@ -32,7 +33,6 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 
 #include <string>
-
 
 namespace nexus::endpoints {
 
@@ -339,6 +339,26 @@ public:
   template<typename NodePtrT>
   static rclcpp::Client<ListTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
     return node->template create_client<ListTransporterService::ServiceType>(ListTransporterService::service_name());
+  }
+};
+
+class ProposeTransporterService {
+public:
+  using ServiceType = nexus_orchestrator_msgs::srv::ProposeTransporter;
+
+  static inline std::string service_name() {
+    const std::string name = "/propose_transporter";
+    return name;
+  }
+
+  template<typename NodePtrT, typename CallbackT>
+  static rclcpp::Service<ProposeTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
+    return node->template create_service<ProposeTransporterService::ServiceType>(ProposeTransporterService::service_name(), std::forward<CallbackT>(callback));
+  }
+
+  template<typename NodePtrT>
+  static rclcpp::Client<ProposeTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
+    return node->template create_client<ProposeTransporterService::ServiceType>(ProposeTransporterService::service_name());
   }
 };
 

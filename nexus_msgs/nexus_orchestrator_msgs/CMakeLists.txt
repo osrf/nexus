@@ -10,6 +10,7 @@ find_package(action_msgs REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nexus_transporter_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(action_files
@@ -34,6 +35,7 @@ set(srv_files
   "srv/ListWorkcells.srv"
   "srv/PauseSystem.srv"
   "srv/PauseWorkcell.srv"
+  "srv/ProposeTransporter.srv"
   "srv/QueueWorkcellTask.srv"
   "srv/RegisterTransporter.srv"
   "srv/RegisterWorkcell.srv"
@@ -49,6 +51,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     action_msgs
     builtin_interfaces
     geometry_msgs
+    nexus_transporter_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)

@@ -13,19 +13,18 @@ find_package(nexus_cmake REQUIRED)
 find_package(nexus_common REQUIRED)
 find_package(nexus_endpoints REQUIRED)
 find_package(nexus_lifecycle_manager REQUIRED)
+find_package(nexus_transporter REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
 add_library(${PROJECT_NAME}_plugin SHARED
-  src/bid_transporter.cpp
   src/assign_transporter_workcell.cpp
   src/execute_task.cpp
   src/for_each_task.cpp
   src/send_signal.cpp
   src/system_orchestrator.cpp
-  src/transporter_request.cpp
   src/workcell_request.cpp
   src/context.cpp
 )
@@ -36,6 +35,7 @@ target_link_libraries(${PROJECT_NAME}_plugin PUBLIC
   nexus_common::nexus_common
   nexus_endpoints::nexus_endpoints
   nexus_lifecycle_manager::nexus_lifecycle_manager_core
+  nexus_transporter::nexus_transporter
   BT::behaviortree_cpp_v3
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action

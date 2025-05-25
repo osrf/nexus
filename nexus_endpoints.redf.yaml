@@ -1,6 +1,6 @@
 title: NEXUS Endpoints
 description: NEXUS
-version: 0.0.1
+version: 0.1.1
 maintainers:
   - name: Teo Koon Peng
     email: koonpeng@openrobotics.org
@@ -82,6 +82,11 @@ endpoints:
     type: service
     service_name: /list_transporters
     service_type: nexus_orchestrator_msgs/srv/ListTransporters
+  - title: Propose Transporter Service
+    description: Proposes a suitable transporter for the request
+    type: service
+    service_name: /propose_transporter
+    service_type: nexus_orchestrator_msgs/srv/ProposeTransporter
   - title: Is Transporter Available Service
     description: Query a transporter to check if it can fulfil a request
     type: service
