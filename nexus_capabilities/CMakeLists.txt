@@ -121,6 +121,8 @@ ament_export_include_directories(include)
 # builtin capabilities
 #===============================================================================
 add_library(nexus_builtin_capabilities SHARED
+  src/capabilities/bid_transporter.cpp
+  src/capabilities/bid_transporter_capability.cpp
   src/capabilities/detection.cpp
   src/capabilities/detection_capability.cpp
   src/capabilities/dispense_item_capability.cpp

@@ -1,4 +1,8 @@
 <library path="nexus_builtin_capabilities">
+  <class type="nexus::capabilities::BidTransporterCapability" base_class_type="nexus::Capability">
+    <description>Bid transporter capability.</description>
+  </class>
+
   <class type="nexus::capabilities::DetectionCapability" base_class_type="nexus::Capability">
     <description>Detection capability.</description>
   </class>
