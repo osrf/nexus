@@ -61,12 +61,8 @@ BidTransporter::make_request()
     std::make_shared<endpoints::BidTransporterService::ServiceType::Request>();
 
   req->request.requester = node->get_name();
-  // TODO(aaronchong): use more sophisticated request ID
-  req->request.id = node->get_name();
-  for (const auto& dest : *maybe_destinations)
-  {
-    req->request.destinations.push_back(dest);
-  }
+  req->request.id = this->_ctx_mgr->current_context()->task.task_id;
+  req->request.destinations = *maybe_destinations;
   return req;
 }
 

@@ -18,6 +18,7 @@
 #ifndef SRC__CAPABILITIES__BID_TRANSPORTER_HPP
 #define SRC__CAPABILITIES__BID_TRANSPORTER_HPP
 
+#include <nexus_capabilities/context_manager.hpp>
 #include <nexus_common/service_client_bt_node.hpp>
 #include <nexus_endpoints.hpp>
 
@@ -33,10 +34,12 @@ public: static BT::PortsList providedPorts();
 public: inline BidTransporter(
   const std::string& name,
   const BT::NodeConfiguration& config,
+  std::shared_ptr<const ContextManager> ctx_mgr,
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::chrono::milliseconds bid_transporter_timeout
 ) : ServiceClientBtNode<endpoints::BidTransporterService::ServiceType>(
-  name, config, node->get_logger(), bid_transporter_timeout), _w_node(node) {}
+  name, config, node->get_logger(), bid_transporter_timeout),
+  _ctx_mgr(std::move(ctx_mgr)), _w_node(node) {}
 
 protected: rclcpp::Client<endpoints::BidTransporterService::ServiceType>::
   SharedPtr client() override;
@@ -48,6 +51,7 @@ protected: bool on_response(
   rclcpp::Client<endpoints::BidTransporterService::ServiceType>::
   SharedResponse resp) override;
 
+private: std::shared_ptr<const ContextManager> _ctx_mgr;
 private: rclcpp_lifecycle::LifecycleNode::WeakPtr _w_node;
 };
 
