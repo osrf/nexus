@@ -15,6 +15,8 @@
  *
  */
 
+#include <nexus_transporter_msgs/msg/destination.hpp>
+
 #include "bid_transporter.hpp"
 
 namespace nexus::capabilities {
@@ -23,7 +25,8 @@ namespace nexus::capabilities {
 BT::PortsList BidTransporter::providedPorts()
 {
   return {
-    BT::InputPort<std::vector<std::string>>("destinations"),
+    BT::InputPort<std::vector<nexus_transporter_msgs::msg::Destination>>(
+      "destinations"),
     BT::OutputPort<std::string>("result")
   };
 }
@@ -44,7 +47,8 @@ BidTransporter::make_request()
   auto node = this->_w_node.lock();
 
   auto maybe_destinations =
-    this->getInput<std::vector<std::string>>("destinations");
+    this->getInput<std::vector<nexus_transporter_msgs::msg::Destination>>(
+      "destinations");
   if (!maybe_destinations)
   {
     RCLCPP_ERROR(
@@ -59,7 +63,10 @@ BidTransporter::make_request()
   req->request.requester = node->get_name();
   // TODO(aaronchong): use more sophisticated request ID
   req->request.id = node->get_name();
-  req->request.destinations = maybe_destinations;
+  for (const auto& dest : *maybe_destinations)
+  {
+    req->request.destinations.push_back(dest);
+  }
   return req;
 }
 

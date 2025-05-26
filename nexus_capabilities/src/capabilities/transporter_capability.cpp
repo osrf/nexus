@@ -17,7 +17,7 @@
 
 
 #include "bid_transporter.hpp"
-#include "bid_transporter_capability.hpp"
+#include "transporter_capability.hpp"
 
 #include <nexus_capabilities/exceptions.hpp>
 
@@ -28,7 +28,7 @@ namespace nexus::capabilities {
 using rcl_interfaces::msg::ParameterDescriptor;
 
 //==============================================================================
-void BidTransporterCapability::declare_params(
+void TransporterCapability::declare_params(
   rclcpp_lifecycle::LifecycleNode& node)
 {
   {
@@ -41,7 +41,7 @@ void BidTransporterCapability::declare_params(
 }
 
 //==============================================================================
-void BidTransporterCapability::configure(
+void TransporterCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> /* ctx_mgr */,
   BT::BehaviorTreeFactory& bt_factory)
@@ -50,7 +50,7 @@ void BidTransporterCapability::configure(
     node->get_parameter("bid_transporter_timeout").as_int();
 
   bt_factory.registerBuilder<BidTransporter>(
-    "bid_transporter.BidTransporter",
+    "transporter.BidTransporter",
     [this, w_node = std::weak_ptr{node}, bid_transporter_timeout](
       const std::string& name,
       const BT::NodeConfiguration& config)
@@ -66,6 +66,6 @@ void BidTransporterCapability::configure(
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  nexus::capabilities::BidTransporterCapability,
+  nexus::capabilities::TransporterCapability,
   nexus::Capability
 )

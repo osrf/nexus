@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef SRC__CAPABILITIES__BID_TRANSPORTER_CAPABILITY_HPP
-#define SRC__CAPABILITIES__BID_TRANSPORTER_CAPABILITY_HPP
+#ifndef SRC__CAPABILITIES__TRANSPORTER_CAPABILITY_HPP
+#define SRC__CAPABILITIES__TRANSPORTER_CAPABILITY_HPP
 
 #include <nexus_capabilities/capability.hpp>
 #include <nexus_capabilities/context_manager.hpp>
@@ -32,9 +32,9 @@
 namespace nexus::capabilities {
 
 /**
- * Capability to bid for a transporter.
+ * Capability to interact with transporters.
  */
-class BidTransporterCapability : public Capability
+class TransporterCapability : public Capability
 {
   /**
    * @copydoc Capability::declare_params
@@ -62,4 +62,4 @@ public: void deactivate() final {}
 
 }  // namespace nexus::capabilities
 
-#endif  // SRC__CAPABILITIES__BID_TRANSPORTER_CAPABILITY_HPP
+#endif  // SRC__CAPABILITIES__TRANSPORTER_CAPABILITY_HPP
