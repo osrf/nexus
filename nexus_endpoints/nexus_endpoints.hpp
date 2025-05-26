@@ -13,13 +13,13 @@
 #include <nexus_orchestrator_msgs/action/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_state.hpp>
+#include <nexus_orchestrator_msgs/srv/bid_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/get_work_order_state.hpp>
 #include <nexus_orchestrator_msgs/srv/is_task_doable.hpp>
 #include <nexus_orchestrator_msgs/srv/list_transporters.hpp>
 #include <nexus_orchestrator_msgs/srv/list_workcells.hpp>
 #include <nexus_orchestrator_msgs/srv/pause_system.hpp>
 #include <nexus_orchestrator_msgs/srv/pause_workcell.hpp>
-#include <nexus_orchestrator_msgs/srv/propose_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/queue_workcell_task.hpp>
 #include <nexus_orchestrator_msgs/srv/register_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/register_workcell.hpp>
@@ -342,23 +342,23 @@ public:
   }
 };
 
-class ProposeTransporterService {
+class BidTransporterService {
 public:
-  using ServiceType = nexus_orchestrator_msgs::srv::ProposeTransporter;
+  using ServiceType = nexus_orchestrator_msgs::srv::BidTransporter;
 
   static inline std::string service_name() {
-    const std::string name = "/propose_transporter";
+    const std::string name = "/bid_transporter";
     return name;
   }
 
   template<typename NodePtrT, typename CallbackT>
-  static rclcpp::Service<ProposeTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
-    return node->template create_service<ProposeTransporterService::ServiceType>(ProposeTransporterService::service_name(), std::forward<CallbackT>(callback));
+  static rclcpp::Service<BidTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
+    return node->template create_service<BidTransporterService::ServiceType>(BidTransporterService::service_name(), std::forward<CallbackT>(callback));
   }
 
   template<typename NodePtrT>
-  static rclcpp::Client<ProposeTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
-    return node->template create_client<ProposeTransporterService::ServiceType>(ProposeTransporterService::service_name());
+  static rclcpp::Client<BidTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
+    return node->template create_client<BidTransporterService::ServiceType>(BidTransporterService::service_name());
   }
 };
 

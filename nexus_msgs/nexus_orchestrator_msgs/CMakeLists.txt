@@ -29,13 +29,13 @@ set(msg_files
 )
 
 set(srv_files
+  "srv/BidTransporter.srv"
   "srv/GetWorkOrderState.srv"
   "srv/IsTaskDoable.srv"
   "srv/ListTransporters.srv"
   "srv/ListWorkcells.srv"
   "srv/PauseSystem.srv"
   "srv/PauseWorkcell.srv"
-  "srv/ProposeTransporter.srv"
   "srv/QueueWorkcellTask.srv"
   "srv/RegisterTransporter.srv"
   "srv/RegisterWorkcell.srv"

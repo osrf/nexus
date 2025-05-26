@@ -81,7 +81,7 @@ private:
   rclcpp::Service<endpoints::ListTransporterService::ServiceType>::SharedPtr
     _list_transporters_srv;
   rclcpp::ServiceBase::SharedPtr _register_transporter_srv;
-  rclcpp::ServiceBase::SharedPtr _propose_transporter_srv;
+  rclcpp::ServiceBase::SharedPtr _bid_transporter_srv;
   bool _paused;
   rclcpp::ServiceBase::SharedPtr _pause_system_srv;
   rclcpp::Publisher<endpoints::WorkOrderStatesTopic::MessageType>::SharedPtr
@@ -146,7 +146,15 @@ private:
     endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr req,
     endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr resp);
 
-  std::optional<nexus_transporter::Itinerary> _propose_itinerary(
+  struct OngoingTransporterServiceRequest
+  {
+    rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
+    SharedPtr client;
+    rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
+    FutureAndRequestId fut;
+  };
+
+  std::optional<nexus_transporter::Itinerary> _bid_for_transporter_itinerary(
     const nexus_transporter_msgs::msg::TransportationRequest& request);
 
   /**

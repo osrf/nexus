@@ -295,16 +295,17 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
   }
 
   // create transporter bidding request service
-  this->_propose_transporter_srv =
-    this->create_service<endpoints::ProposeTransporterService::ServiceType>(
-      endpoints::ProposeTransporterService::service_name(),
+  this->_bid_transporter_srv =
+    this->create_service<endpoints::BidTransporterService::ServiceType>(
+      endpoints::BidTransporterService::service_name(),
       [this](
-        endpoints::ProposeTransporterService::ServiceType::Request::
-        ConstSharedPtr req,
-        endpoints::ProposeTransporterService::ServiceType::Response::SharedPtr
+        endpoints::BidTransporterService::ServiceType::Request::ConstSharedPtr
+        req,
+        endpoints::BidTransporterService::ServiceType::Response::SharedPtr
         resp)
       {
-        const auto itinerary = this->_propose_itinerary(req->request);
+        const auto itinerary =
+          this->_bid_for_transporter_itinerary(req->request);
         if (itinerary.has_value())
         {
           resp->available = true;
@@ -866,7 +867,7 @@ void SystemOrchestrator::_handle_register_transporter(
 }
 
 std::optional<nexus_transporter::Itinerary>
-SystemOrchestrator::_propose_itinerary(
+SystemOrchestrator::_bid_for_transporter_itinerary(
   const nexus_transporter_msgs::msg::TransportationRequest& request)
 {
   auto req =
@@ -876,18 +877,16 @@ SystemOrchestrator::_propose_itinerary(
   // TODO(aaronchongth): once we start keeping track of item's whereabouts,
   // we can narrow down which transporters we send out requests to.
 
-  using OngoingRequest = std::pair<
-  rclcpp::Client<IsTransporterAvailableService::ServiceType>::SharedPtr,
-  rclcpp::Client<IsTransporterAvailableService::ServiceType>::FutureAndRequestId
-  >;
-  std::unordered_map<std::string, OngoingRequest> ongoing_requests;
+  std::unordered_map<std::string, OngoingTransporterServiceRequest>
+  ongoing_requests;
 
   for (auto& [transporter_id, session] : this->_transporter_sessions)
   {
     auto fut = session->available_client->async_send_request(req);
     ongoing_requests.emplace(
       transporter_id,
-      {session->available_client, std::move(fut)});
+      OngoingTransporterServiceRequest{
+        session->available_client, std::move(fut)});
   }
 
   const auto start_time = std::chrono::steady_clock::now();
@@ -899,12 +898,12 @@ SystemOrchestrator::_propose_itinerary(
   {
     for (auto it = ongoing_requests.begin(); it != ongoing_requests.end();)
     {
-      if (it->second.second.wait_for(std::chrono::seconds{0}) ==
+      if (it->second.fut.wait_for(std::chrono::seconds{0}) ==
         std::future_status::ready)
       {
-        auto resp = it->second.second.get();
+        auto resp = it->second.fut.get();
         if (resp->available &&
-          resp->estimated_finish_time < fastest_finishing_time)
+          rclcpp::Time(resp->estimated_finish_time) < fastest_finishing_time)
         {
           fastest_finishing_time = resp->estimated_finish_time;
           fastest_finishing_transporter = resp->transporter;

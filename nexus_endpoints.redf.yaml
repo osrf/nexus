@@ -82,11 +82,11 @@ endpoints:
     type: service
     service_name: /list_transporters
     service_type: nexus_orchestrator_msgs/srv/ListTransporters
-  - title: Propose Transporter Service
-    description: Proposes a suitable transporter for the request
+  - title: Bid Transporter Service
+    description: Bids for a suitable transporter for the request
     type: service
-    service_name: /propose_transporter
-    service_type: nexus_orchestrator_msgs/srv/ProposeTransporter
+    service_name: /bid_transporter
+    service_type: nexus_orchestrator_msgs/srv/BidTransporter
   - title: Is Transporter Available Service
     description: Query a transporter to check if it can fulfil a request
     type: service
