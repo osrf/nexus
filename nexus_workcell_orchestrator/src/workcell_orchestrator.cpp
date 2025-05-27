@@ -20,6 +20,7 @@
 #include "exceptions.hpp"
 #include "get_joint_constraints.hpp"
 #include "get_result.hpp"
+#include "make_destinations.hpp"
 #include "make_transform.hpp"
 #include "serialization.hpp"
 #include "set_result.hpp"
@@ -608,6 +609,14 @@ auto WorkcellOrchestrator::_configure(
     [this](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<GetResult>(name, config, this->_ctx_mgr, *this);
+    });
+
+  this->_bt_factory->registerBuilder<MakeDropoffDestinations>(
+    "MakeDropoffDestinations",
+    [this](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<MakeDropoffDestinations>(
+        name, config, this->_ctx_mgr, *this);
     });
 
   this->_bt_factory->registerNodeType<MakeTransform>("MakeTransform");

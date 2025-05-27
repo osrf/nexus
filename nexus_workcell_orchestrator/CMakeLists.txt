@@ -31,6 +31,7 @@ endif()
 add_library(${PROJECT_NAME}_plugin SHARED
   src/get_result.cpp
   src/get_joint_constraints.cpp
+  src/make_destinations.cpp
   src/make_transform.cpp
   src/serialization.cpp
   src/set_result.cpp
