@@ -25,6 +25,7 @@
 namespace nexus::workcell_orchestrator
 {
 
+//==============================================================================
 BT::PortsList MakeDropoffDestinations::providedPorts()
 {
   return {
@@ -34,6 +35,7 @@ BT::PortsList MakeDropoffDestinations::providedPorts()
   };
 }
 
+//==============================================================================
 BT::NodeStatus MakeDropoffDestinations::tick()
 {
   auto destination_names = this->getInput<std::vector<std::string>>(
@@ -54,6 +56,44 @@ BT::NodeStatus MakeDropoffDestinations::tick()
       nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
         .name(name)
         .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
+        .params(""));
+  }
+  this->setOutput("destinations", destinations);
+
+  return BT::NodeStatus::SUCCESS;
+}
+
+//==============================================================================
+BT::PortsList MakePickupDestinations::providedPorts()
+{
+  return {
+    BT::InputPort<std::vector<std::string>>("destination_names"),
+    BT::OutputPort<std::vector<nexus_transporter_msgs::msg::Destination>>(
+      "destinations")
+  };
+}
+
+//==============================================================================
+BT::NodeStatus MakePickupDestinations::tick()
+{
+  auto destination_names = this->getInput<std::vector<std::string>>(
+    "destination_names");
+  if (!destination_names)
+  {
+    RCLCPP_ERROR(
+      this->_node.get_logger(), "%s: port [destination_names] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  std::vector<nexus_transporter_msgs::msg::Destination> destinations;
+  for (const auto & name : *destination_names)
+  {
+    // TODO(aaronchong): Set up params based on workcell task inputs
+    destinations.emplace_back(
+      nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
+        .name(name)
+        .action(nexus_transporter_msgs::msg::Destination::ACTION_PICKUP)
         .params(""));
   }
   this->setOutput("destinations", destinations);

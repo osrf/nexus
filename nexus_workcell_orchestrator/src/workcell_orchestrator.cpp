@@ -618,6 +618,13 @@ auto WorkcellOrchestrator::_configure(
       return std::make_unique<MakeDropoffDestinations>(
         name, config, this->_ctx_mgr, *this);
     });
+  this->_bt_factory->registerBuilder<MakePickupDestinations>(
+    "MakePickupDestinations",
+    [this](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<MakePickupDestinations>(
+        name, config, this->_ctx_mgr, *this);
+    });
 
   this->_bt_factory->registerNodeType<MakeTransform>("MakeTransform");
   this->_bt_factory->registerBuilder<ApplyTransform>(
