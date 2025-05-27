@@ -1,7 +1,16 @@
 <?xml version='1.0'?>
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
-    <Parallel success_threshold="-1">
+
+    <Sequence name="transporter_sequence">
+      <StringToVector string="workcell_1," delimiter="," strings="{destination_names}"/>
+      <MakePickupDestinations name="make_pickup_destinations" destination_names="{destination_names}" destinations="{destinations}"/>
+      <transporter.BidTransporter name="bid_transporter" destinations="{destinations}" result="{transporter}"/>
+      <transporter.RequestTransporter name="request_transporter" transporter="{transporter}" destinations="{destinations}"/>
+      <SetSignal signal="transporter_done"/>
+    </Sequence>
+
+    <!-- <Parallel success_threshold="-1">
       <Sequence name="transporter_sequence">
         <StringToVector string="workcell_1," delimiter="," strings="{destination_names}"/>
         <MakePickupDestinations name="make_pickup_destinations" destination_names="{destination_names}" destinations="{destinations}"/>
@@ -33,6 +42,6 @@
         <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
 
       </Sequence>
-    </Parallel>
+    </Parallel> -->
   </BehaviorTree>
 </root>

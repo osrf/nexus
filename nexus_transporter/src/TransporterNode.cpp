@@ -100,21 +100,18 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         return;
       }
 
-      auto shared_promise =
-      std::make_shared<std::promise<std::optional<Itinerary>>>();
-      auto future = shared_promise->get_future();
+      std::promise<std::optional<Itinerary>> promise;
+      auto future = promise.get_future();
       data->transporter->get_itinerary(
         request->request.id,
         request->request.destinations,
-        [promise = shared_promise](
-          std::optional<Itinerary> itinerary)
+        [&promise](std::optional<Itinerary> itinerary)
         {
-          promise->set_value(itinerary);
-          return;
-        }
-      );
+          promise.set_value(itinerary);
+        });
+
       if (future.wait_for(data->wait_for_itinerary_timeout)
-      == std::future_status::ready)
+        == std::future_status::ready)
       {
         const auto itinerary = future.get();
         if (!itinerary.has_value())
@@ -130,6 +127,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         response->available = true;
         response->transporter = itinerary->transporter_name();
         response->estimated_finish_time = itinerary->estimated_finish_time();
+        return;
       }
 
       // Timed out

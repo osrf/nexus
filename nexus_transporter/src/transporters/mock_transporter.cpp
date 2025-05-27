@@ -141,8 +141,18 @@ public:
     const std::vector<Destination>& destinations,
     Transporter::ItineraryQueryCompleted completed_cb)
   {
+    auto n = _node.lock();
+
+    RCLCPP_INFO(
+      n->get_logger(),
+      "in get_itinerary"
+    );
     if (destinations.empty())
     {
+      RCLCPP_INFO(
+        n->get_logger(),
+        "destinations empty"
+      );
       completed_cb(std::nullopt);
       return;
     }
@@ -150,11 +160,14 @@ public:
     const auto& destination = destinations[0];
     if (_destinations.find(destination.name) == _destinations.end())
     {
+      RCLCPP_INFO(
+        n->get_logger(),
+        "can't find destination"
+      );
       completed_cb(std::nullopt);
       return;
     }
-
-    auto n = _node.lock();
+    
     const rclcpp::Time now = n ? n->get_clock()->now() : rclcpp::Clock().now();
 
     // Assign transporter
@@ -162,6 +175,10 @@ public:
     auto it = _transporters.insert({transporter_name, nullptr});
     if (it.second)
     {
+      RCLCPP_INFO(
+        n->get_logger(),
+        "new insertion"
+      );
       // New insertion
       it.first->second = std::make_shared<MockTransporter3000>(
         transporter_name,
@@ -183,6 +200,10 @@ public:
       travel_duration = abs(dest_pose - transporter_location.pose)/_speed;
     }
 
+    RCLCPP_INFO(
+      n->get_logger(),
+      "before calling completed_cb"
+    );
     completed_cb(Itinerary{
         id,
         destinations,

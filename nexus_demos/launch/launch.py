@@ -90,7 +90,7 @@ def launch_setup(context, *args, **kwargs):
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }"""
     rviz_config_filename = "nexus_panel.rviz"
-    max_jobs = "2"
+    max_jobs = "3"
     max_workcell_jobs = "1"
     if (use_rmf_transporter.perform(context).lower() == "true"):
         remap_task_types = """{
