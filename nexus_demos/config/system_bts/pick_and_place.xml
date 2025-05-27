@@ -2,14 +2,15 @@
   <BehaviorTree ID="pick_and_place">
     <ReactiveSequence>
       <IsPauseTriggered paused="{paused}"/>
-      <Parallel success_threshold="-1">
+      <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+      <!-- <Parallel success_threshold="-1">
         <Sequence>
           <BidTransporter name="bid_transporterasdasd" destination="{workcell}" result="{transporter}"/>
           <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}"/>
           <SendSignal task="{task}" signal="transporter_done"/>
         </Sequence>
         <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
-      </Parallel>
+      </Parallel> -->
     </ReactiveSequence>
   </BehaviorTree>
 </root>
