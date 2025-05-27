@@ -3,7 +3,8 @@
   <BehaviorTree ID="PickAndPlace">
     <Parallel success_threshold="-1">
       <Sequence name="transporter_sequence">
-        <MakeDropoffDestinations name="make_dropoff_destinations" destination_names="workcell_2" destinations="{destinations}"/>
+        <StringToVector string="workcell_2," delimiter="," strings="{destination_names}"/>
+        <MakeDropoffDestinations name="make_dropoff_destinations" destination_names="{destination_names}" destinations="{destinations}"/>
         <transporter.BidTransporter name="bid_transporter" destinations="{destinations}" result="{transporter}"/>
         <transporter.RequestTransporter name="request_transporter" transporter="{transporter}" destinations="{destinations}"/>
         <SetSignal signal="transporter_done"/>
