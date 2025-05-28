@@ -82,11 +82,11 @@ endpoints:
     type: service
     service_name: /list_transporters
     service_type: nexus_orchestrator_msgs/srv/ListTransporters
-  - title: Bid Transporter Service
+  - title: Bid Transporter Action
     description: Bids for a suitable transporter for the request
-    type: service
-    service_name: /bid_transporter
-    service_type: nexus_orchestrator_msgs/srv/BidTransporter
+    type: action
+    action_name: /bid_transporter
+    action_type: nexus_orchestrator_msgs/action/BidTransporter
   - title: Is Transporter Available Service
     description: Query a transporter to check if it can fulfil a request
     type: service

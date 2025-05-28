@@ -100,18 +100,22 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         return;
       }
 
-      std::promise<std::optional<Itinerary>> promise;
-      auto future = promise.get_future();
+      auto shared_promise =
+      std::make_shared<std::promise<std::optional<Itinerary>>>();
+      auto future = shared_promise->get_future();
       data->transporter->get_itinerary(
         request->request.id,
         request->request.destinations,
-        [&promise](std::optional<Itinerary> itinerary)
+        [promise = shared_promise](
+          std::optional<Itinerary> itinerary)
         {
-          promise.set_value(itinerary);
-        });
+          promise->set_value(itinerary);
+          return;
+        }
+      );
 
       if (future.wait_for(data->wait_for_itinerary_timeout)
-        == std::future_status::ready)
+      == std::future_status::ready)
       {
         const auto itinerary = future.get();
         if (!itinerary.has_value())

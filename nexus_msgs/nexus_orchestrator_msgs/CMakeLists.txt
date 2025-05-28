@@ -14,6 +14,7 @@ find_package(nexus_transporter_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(action_files
+  "action/BidTransporter.action"
   "action/WorkcellTask.action"
   "action/ExecuteWorkOrder.action"
 )
@@ -29,7 +30,6 @@ set(msg_files
 )
 
 set(srv_files
-  "srv/BidTransporter.srv"
   "srv/GetWorkOrderState.srv"
   "srv/IsTaskDoable.srv"
   "srv/ListTransporters.srv"

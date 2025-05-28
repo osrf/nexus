@@ -51,6 +51,10 @@ class SystemOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
 public:
+  using BidTransporterAction = nexus::endpoints::BidTransporterAction;
+  using BidTransporterActionType = BidTransporterAction::ActionType;
+  using BidTransporterGoalHandle =
+    rclcpp_action::ServerGoalHandle<BidTransporterActionType>;
   using WorkOrderAction = nexus::endpoints::WorkOrderAction;
   using WorkOrderActionType = WorkOrderAction::ActionType;
   using WorkOrderGoalHandle =
@@ -81,7 +85,8 @@ private:
   rclcpp::Service<endpoints::ListTransporterService::ServiceType>::SharedPtr
     _list_transporters_srv;
   rclcpp::ServiceBase::SharedPtr _register_transporter_srv;
-  rclcpp::ServiceBase::SharedPtr _bid_transporter_srv;
+  rclcpp_action::Server<BidTransporterActionType>::SharedPtr
+  _bid_transporter_srv;
   bool _paused;
   rclcpp::ServiceBase::SharedPtr _pause_system_srv;
   rclcpp::Publisher<endpoints::WorkOrderStatesTopic::MessageType>::SharedPtr
@@ -97,6 +102,8 @@ private:
     std::shared_ptr<WorkcellSession>> _workcell_sessions;
   std::unordered_map<std::string,
     std::shared_ptr<TransporterSession>> _transporter_sessions;
+  std::unordered_map<rclcpp_action::GoalUUID,
+  std::shared_ptr<BidTransporterGoalHandle>> _ongoing_transporter_bids;
   std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{nullptr};
   rclcpp::TimerBase::SharedPtr _pre_configure_timer;
   rclcpp::SubscriptionBase::SharedPtr _estop_sub;
@@ -125,6 +132,13 @@ private:
    */
   void _init_job(const std::shared_ptr<WorkOrderGoalHandle> goal_handle);
 
+  /**
+   * Starts transporter bidding process with all registered transporters,
+   * succeeds or aborts the goals based on the bidding results.
+   */
+  void _start_transporter_bidding(
+    std::shared_ptr<BidTransporterGoalHandle> goal_handle);
+
   std::string _generate_task_id(
     const std::string& work_order_id,
     const std::string& process_id,
@@ -145,17 +159,6 @@ private:
   void _handle_register_transporter(
     endpoints::RegisterTransporterService::ServiceType::Request::ConstSharedPtr req,
     endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr resp);
-
-  struct OngoingTransporterServiceRequest
-  {
-    rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
-    SharedPtr client;
-    rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
-    FutureAndRequestId fut;
-  };
-
-  std::optional<nexus_transporter::Itinerary> _bid_for_transporter_itinerary(
-    const nexus_transporter_msgs::msg::TransportationRequest& request);
 
   /**
    * Halt and fail a job from the job list.

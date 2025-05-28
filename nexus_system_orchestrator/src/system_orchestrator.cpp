@@ -294,31 +294,53 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
     return CallbackReturn::FAILURE;
   }
 
-  // create transporter bidding request service
+  // create action server for bidding for transporters
   this->_bid_transporter_srv =
-    this->create_service<endpoints::BidTransporterService::ServiceType>(
-      endpoints::BidTransporterService::service_name(),
-      [this](
-        endpoints::BidTransporterService::ServiceType::Request::ConstSharedPtr
-        req,
-        endpoints::BidTransporterService::ServiceType::Response::SharedPtr
-        resp)
+    rclcpp_action::create_server<BidTransporterActionType>(
+      this->get_node_base_interface(),
+      this->get_node_clock_interface(),
+      this->get_node_logging_interface(),
+      this->get_node_waitables_interface(),
+      BidTransporterAction::action_name(),
+      [this](const rclcpp_action::GoalUUID& uuid,
+        std::shared_ptr<const BidTransporterActionType::Goal> goal)
+        -> rclcpp_action::GoalResponse
       {
-        const auto itinerary =
-          this->_bid_for_transporter_itinerary(req->request);
-        if (itinerary.has_value())
+        if (this->_ongoing_transporter_bids.find(uuid) !=
+          this->_ongoing_transporter_bids.end())
         {
-          RCLCPP_INFO(this->get_logger(), "valid itinerary, responding to workcell");
-          resp->available = true;
-          resp->transporter = itinerary->transporter_name();
-          resp->estimated_finish_time = itinerary->estimated_finish_time();
+          RCLCPP_ERROR(this->get_logger(),
+            "Received duplicate bid transporter action request, rejecting...");
+          return rclcpp_action::GoalResponse::REJECT;
         }
-        else
+        RCLCPP_INFO(this->get_logger(),
+          "Received bid transporter action request");
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+      },
+      [this](const std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+      -> rclcpp_action::CancelResponse
+      {
+        auto it =
+          this->_ongoing_transporter_bids.find(goal_handle->get_goal_id());
+        if (it == this->_ongoing_transporter_bids.end())
         {
-          RCLCPP_INFO(this->get_logger(), "invalid itinerary, responding to workcell");
-          resp->available = false;
+          RCLCPP_WARN(this->get_logger(),
+            "Ongoing transporter bid not found, cancellation consider accepted "
+            "anyway...");
+          return rclcpp_action::CancelResponse::ACCEPT;
         }
-      });
+        RCLCPP_INFO(this->get_logger(), "Bid request cancelled");
+        return rclcpp_action::CancelResponse::ACCEPT;
+      },
+      [this](const std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+      {
+        this->_ongoing_transporter_bids.emplace(
+          goal_handle->get_goal_id(),
+          std::move(goal_handle));
+        RCLCPP_INFO(this->get_logger(), "Bid request added to ongoing bids");
+        this->_start_transporter_bidding(goal_handle);
+      }
+    );
 
   // subscribe to estop
   this->_estop_sub =
@@ -706,6 +728,81 @@ void SystemOrchestrator::_init_job(
   }
 }
 
+void SystemOrchestrator::_start_transporter_bidding(
+    std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+{
+  using IsTransporterAvailableService =
+    endpoints::IsTransporterAvailableService::ServiceType;
+  RCLCPP_INFO(this->get_logger(), "Starting transporter bidding");
+  std::unordered_map<std::string,
+  common::BatchServiceReq<IsTransporterAvailableService>> batch;
+  auto req = std::make_shared<IsTransporterAvailableService::Request>();
+  req->request = goal_handle->get_goal()->request;
+  for (auto& [transporter_id, session] : this->_transporter_sessions)
+  {
+    batch.emplace(transporter_id,
+      common::BatchServiceReq<IsTransporterAvailableService>{
+        session->available_client, req});
+  }
+
+  common::batch_service_call(this, batch,
+    std::chrono::milliseconds{this->_bid_request_timeout},
+    [this, goal_handle](const std::unordered_map<std::string,
+    common::BatchServiceResult<IsTransporterAvailableService>>& results)
+    {
+      // Note, `transporter_id` is not the same as the `transporter` field in
+      // the response.
+      IsTransporterAvailableService::Response::SharedPtr
+      resp_of_fastest_transporter = nullptr;
+      std::string id_of_fastest_transporter;
+
+      for (const auto& [transporter_id, result] : results)
+      {
+        if (!result.success || !result.resp->available)
+        {
+          continue;
+        }
+
+        if (!resp_of_fastest_transporter)
+        {
+          resp_of_fastest_transporter = result.resp;
+          id_of_fastest_transporter = transporter_id;
+          continue;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "before comparing time");
+        if (rclcpp::Time(result.resp->estimated_finish_time) <
+          rclcpp::Time(resp_of_fastest_transporter->estimated_finish_time))
+        {
+          resp_of_fastest_transporter = result.resp;
+          id_of_fastest_transporter = transporter_id;
+        }
+      }
+
+      auto action_result = std::make_shared<BidTransporterActionType::Result>();
+      const auto request_id = goal_handle->get_goal()->request.id;
+      if (!resp_of_fastest_transporter)
+      {
+        action_result->available = false;
+        RCLCPP_ERROR(this->get_logger(),
+          "No transporter available to perform request [%s]",
+          request_id.c_str());
+        goal_handle->abort(action_result);
+      }
+
+      action_result->available = true;
+      action_result->transporter = id_of_fastest_transporter;
+      action_result->estimated_finish_time =
+        resp_of_fastest_transporter->estimated_finish_time;
+      RCLCPP_INFO(this->get_logger(),
+        "Transporter bidding successful, [%s] is available to perform request "
+        "[%s]",
+        action_result->transporter.c_str(),
+        request_id.c_str());
+      goal_handle->succeed(action_result);
+    });
+}
+
 std::string SystemOrchestrator::_generate_task_id(
   const std::string& work_order_id,
   const std::string& process_id,
@@ -867,129 +964,6 @@ void SystemOrchestrator::_handle_register_transporter(
 
   RCLCPP_INFO(this->get_logger(), "Registered transporter %s",
     transporter_id.c_str());
-}
-
-std::optional<nexus_transporter::Itinerary>
-SystemOrchestrator::_bid_for_transporter_itinerary(
-  const nexus_transporter_msgs::msg::TransportationRequest& request)
-{
-  auto req =
-    std::make_shared<
-    endpoints::IsTransporterAvailableService::ServiceType::Request>();
-  req->request = request;
-  // TODO(aaronchongth): once we start keeping track of item's whereabouts,
-  // we can narrow down which transporters we send out requests to.
-
-  const auto tns = this->_transporter_sessions["transporter_node"];
-  RCLCPP_INFO(this->get_logger(), "didn't crash, yay!");
-  auto fut = tns->available_client->async_send_request(req);
-
-  RCLCPP_INFO(this->get_logger(), "start waiting forever");
-  auto resp = fut.get();
-  if (resp->available)
-  {
-    RCLCPP_INFO(this->get_logger(), "bid available, returning itinerary");
-    return nexus_transporter::Itinerary(
-      request.id,
-      request.destinations,
-      resp->transporter,
-      resp->estimated_finish_time,
-      resp->estimated_finish_time);
-  }
-
-  RCLCPP_INFO(this->get_logger(), "bid unavailable, returning nullopt");
-  return std::nullopt;
-
-  // if (fut.wait_for(std::chrono::seconds{5}) == std::future_status::ready)
-  // {
-  //   RCLCPP_INFO(this->get_logger(), "got a ready future!");
-  //   auto resp = fut.get();
-  //   if (resp->available)
-  //   {
-  //     RCLCPP_INFO(this->get_logger(), "bid available, returning itinerary");
-  //     return nexus_transporter::Itinerary(
-  //       request.id,
-  //       request.destinations,
-  //       resp->transporter,
-  //       resp->estimated_finish_time,
-  //       resp->estimated_finish_time);
-  //   }
-  //   else
-  //   {
-  //     RCLCPP_INFO(this->get_logger(), "bid unavailable, returning nullopt");
-  //     return std::nullopt;
-  //   }
-  // }
-
-  // RCLCPP_INFO(this->get_logger(), "future timeout, returning nullopt");
-  // return std::nullopt;
-
-  // std::unordered_map<std::string, OngoingTransporterServiceRequest>
-  // ongoing_requests;
-
-  // for (auto& [transporter_id, session] : this->_transporter_sessions)
-  // {
-  //   auto fut = session->available_client->async_send_request(req);
-  //   ongoing_requests.emplace(
-  //     transporter_id,
-  //     OngoingTransporterServiceRequest{
-  //       session->available_client, std::move(fut)});
-  // }
-
-  // const auto start_time = std::chrono::steady_clock::now();
-  // const auto timeout = std::chrono::milliseconds{this->_bid_request_timeout};
-
-  // rclcpp::Time fastest_finishing_time = rclcpp::Time::max();
-  // std::optional<std::string> fastest_finishing_transporter = std::nullopt;
-  // do
-  // {
-  //   RCLCPP_INFO(this->get_logger(), "ongoing requests: %d", ongoing_requests.size());
-  //   for (auto it = ongoing_requests.begin(); it != ongoing_requests.end();)
-  //   {
-  //     if (it->second.fut.wait_for(std::chrono::seconds{0}) ==
-  //       std::future_status::ready)
-  //     {
-  //       RCLCPP_INFO(this->get_logger(), "Found a ready future");
-  //       auto resp = it->second.fut.get();
-  //       if (resp->available &&
-  //         rclcpp::Time(resp->estimated_finish_time) < fastest_finishing_time)
-  //       {
-  //         fastest_finishing_time = resp->estimated_finish_time;
-  //         fastest_finishing_transporter = resp->transporter;
-  //         RCLCPP_INFO(this->get_logger(), "setting finishing time and transporter");
-  //       }
-  //       else if (resp->available &&
-  //         rclcpp::Time(resp->estimated_finish_time) >= fastest_finishing_time)
-  //       {
-  //         RCLCPP_INFO(this->get_logger(), "response available but it somehow ends later");
-  //       }
-
-  //       RCLCPP_INFO(this->get_logger(), "erasing iterator");
-  //       it = ongoing_requests.erase(it);
-  //     }
-  //     else
-  //     {
-  //       RCLCPP_INFO(this->get_logger(), "incrementing iterator");
-  //       ++it;
-  //     }
-  //   }
-
-  //   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  // }
-  // while (std::chrono::steady_clock::now() - start_time < timeout &&
-  //   !ongoing_requests.empty());
-
-  // if (fastest_finishing_transporter.has_value())
-  // {
-  //   RCLCPP_INFO(this->get_logger(), "found fast transporter, creating and returning itinerary");
-  //   return nexus_transporter::Itinerary(
-  //     request.id,
-  //     request.destinations,
-  //     fastest_finishing_transporter.value(),
-  //     fastest_finishing_time,
-  //     fastest_finishing_time);
-  // }
-  // return std::nullopt;
 }
 
 void SystemOrchestrator::_halt_job(const std::string& job_id)

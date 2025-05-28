@@ -45,13 +45,13 @@ public: using ActionType = endpoints::TransportAction::ActionType;
 public: static BT::PortsList providedPorts();
 
 public: inline RequestTransporter(
-  const std::string& name,
-  const BT::NodeConfiguration& config,
-  std::shared_ptr<const ContextManager> ctx_mgr,
-  rclcpp_lifecycle::LifecycleNode& node)
-: common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
-  endpoints::TransportAction::ActionType>(name, config, &node),
-  _ctx_mgr(std::move(ctx_mgr)) {}
+    const std::string& name,
+    const BT::NodeConfiguration& config,
+    std::shared_ptr<const ContextManager> ctx_mgr,
+    rclcpp_lifecycle::LifecycleNode& node)
+  : common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
+    endpoints::TransportAction::ActionType>(name, config, &node),
+    _ctx_mgr(std::move(ctx_mgr)) {}
 
 public: BT::NodeStatus onStart() override;
 

@@ -19,40 +19,40 @@
 #define SRC__CAPABILITIES__BID_TRANSPORTER_HPP
 
 #include <nexus_capabilities/context_manager.hpp>
-#include <nexus_common/service_client_bt_node.hpp>
+#include <nexus_common/action_client_bt_node.hpp>
 #include <nexus_endpoints.hpp>
 
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 namespace nexus::capabilities {
 
-class BidTransporter : public nexus::common::
-  ServiceClientBtNode<endpoints::BidTransporterService::ServiceType>
+class BidTransporter : public common::ActionClientBtNode<
+  rclcpp_lifecycle::LifecycleNode*, endpoints::BidTransporterAction::ActionType>
 {
 public: static BT::PortsList providedPorts();
 
 public: inline BidTransporter(
-  const std::string& name,
-  const BT::NodeConfiguration& config,
-  std::shared_ptr<const ContextManager> ctx_mgr,
-  rclcpp_lifecycle::LifecycleNode::SharedPtr node,
-  std::chrono::milliseconds bid_transporter_timeout
-) : ServiceClientBtNode<endpoints::BidTransporterService::ServiceType>(
-  name, config, node->get_logger(), bid_transporter_timeout),
-  _ctx_mgr(std::move(ctx_mgr)), _w_node(node) {}
+    const std::string& name,
+    const BT::NodeConfiguration& config,
+    std::shared_ptr<const ContextManager> ctx_mgr,
+    rclcpp_lifecycle::LifecycleNode& node)
+  : common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
+    endpoints::BidTransporterAction::ActionType>(name, config, &node),
+    _ctx_mgr(std::move(ctx_mgr)) {}
 
-protected: rclcpp::Client<endpoints::BidTransporterService::ServiceType>::
-  SharedPtr client() override;
+public: BT::NodeStatus onStart() override;
 
-protected: endpoints::BidTransporterService::ServiceType::Request::SharedPtr
-  make_request() override;
+protected: std::string get_action_name() const override;
 
-protected: bool on_response(
-  rclcpp::Client<endpoints::BidTransporterService::ServiceType>::
-  SharedResponse resp) override;
+protected: std::optional<endpoints::BidTransporterAction::ActionType::Goal>
+  make_goal() override;
+
+protected: bool on_result(
+  const rclcpp_action::ClientGoalHandle<
+  endpoints::BidTransporterAction::ActionType>::WrappedResult& result) override;
 
 private: std::shared_ptr<const ContextManager> _ctx_mgr;
-private: rclcpp_lifecycle::LifecycleNode::WeakPtr _w_node;
+private: std::vector<nexus_transporter_msgs::msg::Destination> _destinations;
 };
 
 }  // namespace nexus::capabilities

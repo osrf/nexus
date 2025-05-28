@@ -9,11 +9,11 @@
 #include <nexus_detector_msgs/srv/detect.hpp>
 #include <nexus_dispenser_msgs/srv/dispense_item.hpp>
 #include <nexus_motion_planner_msgs/srv/get_motion_plan.hpp>
+#include <nexus_orchestrator_msgs/action/bid_transporter.hpp>
 #include <nexus_orchestrator_msgs/action/execute_work_order.hpp>
 #include <nexus_orchestrator_msgs/action/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_state.hpp>
-#include <nexus_orchestrator_msgs/srv/bid_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/get_work_order_state.hpp>
 #include <nexus_orchestrator_msgs/srv/is_task_doable.hpp>
 #include <nexus_orchestrator_msgs/srv/list_transporters.hpp>
@@ -342,23 +342,23 @@ public:
   }
 };
 
-class BidTransporterService {
+class BidTransporterAction {
 public:
-  using ServiceType = nexus_orchestrator_msgs::srv::BidTransporter;
+  using ActionType = nexus_orchestrator_msgs::action::BidTransporter;
 
-  static inline std::string service_name() {
+  static inline std::string action_name() {
     const std::string name = "/bid_transporter";
     return name;
   }
 
-  template<typename NodePtrT, typename CallbackT>
-  static rclcpp::Service<BidTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, CallbackT&& callback) {
-    return node->template create_service<BidTransporterService::ServiceType>(BidTransporterService::service_name(), std::forward<CallbackT>(callback));
+  template<typename NodePtrT>
+  static rclcpp_action::Server<BidTransporterAction::ActionType>::SharedPtr create_server(NodePtrT node, typename rclcpp_action::Server<BidTransporterAction::ActionType>::GoalCallback handle_goal, typename rclcpp_action::Server<BidTransporterAction::ActionType>::CancelCallback handle_cancel, typename rclcpp_action::Server<BidTransporterAction::ActionType>::AcceptedCallback handle_accepted) {
+    return rclcpp_action::create_server<BidTransporterAction::ActionType>(node, BidTransporterAction::action_name(), handle_goal, handle_cancel, handle_accepted);
   }
 
   template<typename NodePtrT>
-  static rclcpp::Client<BidTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
-    return node->template create_client<BidTransporterService::ServiceType>(BidTransporterService::service_name());
+  static rclcpp_action::Client<BidTransporterAction::ActionType>::SharedPtr create_client(NodePtrT node) {
+    return rclcpp_action::create_client<BidTransporterAction::ActionType>(node, BidTransporterAction::action_name());
   }
 };
 

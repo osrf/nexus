@@ -29,17 +29,8 @@ namespace nexus::capabilities {
 using rcl_interfaces::msg::ParameterDescriptor;
 
 //==============================================================================
-void TransporterCapability::declare_params(
-  rclcpp_lifecycle::LifecycleNode& node)
-{
-  {
-    ParameterDescriptor desc;
-    desc.read_only = true;
-    desc.description =
-      "Bid transporter timeout in milliseconds.";
-    node.declare_parameter("bid_transporter_timeout", 5000, desc);
-  }
-}
+void TransporterCapability::declare_params(rclcpp_lifecycle::LifecycleNode&)
+{}
 
 //==============================================================================
 void TransporterCapability::configure(
@@ -47,24 +38,20 @@ void TransporterCapability::configure(
   std::shared_ptr<const ContextManager> ctx_mgr,
   BT::BehaviorTreeFactory& bt_factory)
 {
-  auto bid_transporter_timeout =
-    node->get_parameter("bid_transporter_timeout").as_int();
-
   bt_factory.registerBuilder<BidTransporter>(
     "transporter.BidTransporter",
-    [this, ctx_mgr, w_node = std::weak_ptr{node}, bid_transporter_timeout](
+    [ctx_mgr, node](
       const std::string& name,
       const BT::NodeConfiguration& config)
     {
-      auto node = w_node.lock();
       return std::make_unique<BidTransporter>(
-        name, config, ctx_mgr, node,
-        std::chrono::milliseconds{bid_transporter_timeout});
+        name, config, ctx_mgr, *node);
     });
 
   bt_factory.registerBuilder<RequestTransporter>(
     "transporter.RequestTransporter",
-    [this, ctx_mgr, node](const std::string& name,
+    [ctx_mgr, node](
+      const std::string& name,
       const BT::NodeConfiguration& config)
     {
       return std::make_unique<RequestTransporter>(

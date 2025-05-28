@@ -1,0 +1,21 @@
+nexus_transporter_msgs/TransportationRequest request
+
+# TODO(aaronchongth): add constraints/parameters for filtering or parameterization
+
+---
+
+# Result
+
+# True if the request can be fulfilled
+bool available
+
+# The name of the transporter that can fulfil this request
+string transporter
+
+# An estimate of when the transportation will complete. This may be used to
+# decide which transporter to award the job to if multiple exist
+builtin_interfaces/Time estimated_finish_time
+
+---
+
+# No feedback
