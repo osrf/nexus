@@ -75,11 +75,9 @@
   <!-- Simulator launch -->
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />
-  <let name="world_path" value="$(var gz_world_file)" />
-  <let name="model_path" value="$(var gz_model_path)" />
 
-  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both">
-    <env name="GZ_SIM_RESOURCE_PATH" value="$(env GZ_SIM_RESOURCE_PATH):$(env HOME)/.gazebo/models:$(var model_path)" />
+  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var gz_world_file) -z $(var sim_update_rate)" output="both">
+    <env name="GZ_SIM_RESOURCE_PATH" value="$(env GZ_SIM_RESOURCE_PATH):$(env HOME)/.gazebo/models:$(var gz_model_path)" />
     <env name="GZ_SIM_SYSTEM_PLUGIN_PATH" value="$(find-pkg-prefix rmf_robot_sim_gz_plugins)/lib/rmf_robot_sim_gz_plugins"/>
   </executable>
 
