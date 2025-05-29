@@ -17,7 +17,6 @@
 
 #include "system_orchestrator.hpp"
 
-#include "bid_transporter.hpp"
 #include "context.hpp"
 #include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
@@ -25,7 +24,6 @@
 #include "for_each_task.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
-#include "transporter_request.hpp"
 #include "workcell_request.hpp"
 
 #include <nexus_common/batch_service_call.hpp>
