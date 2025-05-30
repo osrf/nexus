@@ -10,9 +10,11 @@ find_package(action_msgs REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nexus_transporter_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(action_files
+  "action/BidTransporter.action"
   "action/WorkcellTask.action"
   "action/ExecuteWorkOrder.action"
 )
@@ -49,6 +51,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     action_msgs
     builtin_interfaces
     geometry_msgs
+    nexus_transporter_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)

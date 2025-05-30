@@ -90,7 +90,7 @@ def launch_setup(context, *args, **kwargs):
                         pick_and_place: [place_on_conveyor, pick_from_conveyor],
                     }"""
     rviz_config_filename = "nexus_panel.rviz"
-    max_jobs = "2"
+    max_jobs = "3"
     max_workcell_jobs = "1"
     if (use_rmf_transporter.perform(context).lower() == "true"):
         remap_task_types = """{
@@ -102,6 +102,8 @@ def launch_setup(context, *args, **kwargs):
         max_workcell_jobs = "10"
         if len(workcell_1_remap_task_types.perform(context)) == 0:
             workcell_1_remap_task_types = "\"place_on_amr: [place_on_conveyor]\""
+        if len(workcell_2_remap_task_types.perform(context)) == 0:
+            workcell_2_remap_task_types = "\"pick_from_amr: [pick_from_conveyor]\""
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(

@@ -9,6 +9,7 @@
 #include <nexus_detector_msgs/srv/detect.hpp>
 #include <nexus_dispenser_msgs/srv/dispense_item.hpp>
 #include <nexus_motion_planner_msgs/srv/get_motion_plan.hpp>
+#include <nexus_orchestrator_msgs/action/bid_transporter.hpp>
 #include <nexus_orchestrator_msgs/action/execute_work_order.hpp>
 #include <nexus_orchestrator_msgs/action/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
@@ -32,7 +33,6 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 
 #include <string>
-
 
 namespace nexus::endpoints {
 
@@ -339,6 +339,26 @@ public:
   template<typename NodePtrT>
   static rclcpp::Client<ListTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node) {
     return node->template create_client<ListTransporterService::ServiceType>(ListTransporterService::service_name());
+  }
+};
+
+class BidTransporterAction {
+public:
+  using ActionType = nexus_orchestrator_msgs::action::BidTransporter;
+
+  static inline std::string action_name() {
+    const std::string name = "/bid_transporter";
+    return name;
+  }
+
+  template<typename NodePtrT>
+  static rclcpp_action::Server<BidTransporterAction::ActionType>::SharedPtr create_server(NodePtrT node, typename rclcpp_action::Server<BidTransporterAction::ActionType>::GoalCallback handle_goal, typename rclcpp_action::Server<BidTransporterAction::ActionType>::CancelCallback handle_cancel, typename rclcpp_action::Server<BidTransporterAction::ActionType>::AcceptedCallback handle_accepted) {
+    return rclcpp_action::create_server<BidTransporterAction::ActionType>(node, BidTransporterAction::action_name(), handle_goal, handle_cancel, handle_accepted);
+  }
+
+  template<typename NodePtrT>
+  static rclcpp_action::Client<BidTransporterAction::ActionType>::SharedPtr create_client(NodePtrT node) {
+    return rclcpp_action::create_client<BidTransporterAction::ActionType>(node, BidTransporterAction::action_name());
   }
 };
 
