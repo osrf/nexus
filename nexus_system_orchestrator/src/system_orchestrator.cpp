@@ -334,9 +334,9 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       {
         this->_ongoing_transporter_bids.emplace(
           goal_handle->get_goal_id(),
-          std::move(goal_handle));
+          goal_handle);
         RCLCPP_INFO(this->get_logger(), "Bid request added to ongoing bids");
-        this->_start_transporter_bidding(goal_handle);
+        this->_start_transporter_bidding(std::move(goal_handle));
       }
     );
 
@@ -727,7 +727,7 @@ void SystemOrchestrator::_init_job(
 }
 
 void SystemOrchestrator::_start_transporter_bidding(
-    std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+  std::shared_ptr<BidTransporterGoalHandle> goal_handle)
 {
   using IsTransporterAvailableService =
     endpoints::IsTransporterAvailableService::ServiceType;
