@@ -119,16 +119,45 @@ void DispatchRequest::api_response_cb(const ApiResponse& msg)
   if (!j.contains("state"))
     return;
   this->rmf_task_id = j["state"]["booking"]["id"];
+  RCLCPP_INFO(
+    this->_node->get_logger(),
+    "[DispatchRequest::api_response_cb] Received task response with rmf_task_id %s.",
+    rmf_task_id.value().c_str()
+  );
 }
 
 BT::NodeStatus DispatchRequest::onRunning()
 {
-  if (rmf_task_id.has_value())
+  if (this->rmf_task_id.has_value())
   {
     this->setOutput("rmf_task_id", *rmf_task_id);
     return BT::NodeStatus::SUCCESS;
   }
   return BT::NodeStatus::RUNNING;
+}
+
+void DispatchRequest::onHalted()
+{
+  // Cancel any on-going RMF task.
+  if (!rmf_task_id.has_value())
+  {
+    return;
+  }
+  RCLCPP_ERROR(
+    this->_node->get_logger(),
+    "[DispatchRequest::onHalted] Cancelling rmf_task with task_id %s.",
+    this->rmf_task_id.value().c_str()
+  );
+  nlohmann::json cancel_json;
+  cancel_json["type"] = "cancel_task_request";
+  cancel_json["task_id"] = this->rmf_task_id.value();
+
+  ApiRequest msg;
+  // Time since epoch as a unique id.
+  auto now = std::chrono::steady_clock::now().time_since_epoch();
+  msg.request_id = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+  msg.json_msg = cancel_json.dump();
+  this->_api_request_pub->publish(std::move(msg));
 }
 
 BT::NodeStatus ExtractDestinations::tick()

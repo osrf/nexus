@@ -75,7 +75,7 @@ public: BT::NodeStatus onStart() override;
 
 public: BT::NodeStatus onRunning() override;
 
-public: void onHalted() override {}
+public: void onHalted() override;
 
 private: void submit_itinerary(const std::deque<Destination>& destinations);
 
