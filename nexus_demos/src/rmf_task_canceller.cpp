@@ -26,7 +26,6 @@
 #include <rmf_task_msgs/msg/api_response.hpp>
 
 namespace nexus_demos {
-
 //==============================================================================
 RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
 : Node("rmf_workcell_task_canceller"),

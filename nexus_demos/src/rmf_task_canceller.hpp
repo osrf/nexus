@@ -52,8 +52,6 @@ private:
   // The state of the RMF workcell.
   WorkcellState::ConstSharedPtr rmf_workcell_state_;
 };
-
 }  // namespace nexus_demos
-
 
 #endif  // SRC__RMF_TASK_CANCELLER_HPP_
