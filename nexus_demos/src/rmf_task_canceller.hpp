@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SRC__RMF_TASK_CANCELLER_HPP_
-#define SRC__RMF_TASK_CANCELLER_HPP_
+#ifndef NEXUS_DEMOS__SRC__RMF_TASK_CANCELLER_HPP
+#define NEXUS_DEMOS__SRC__RMF_TASK_CANCELLER_HPP
 
 #include <nexus_orchestrator_msgs/msg/workcell_state.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
@@ -54,4 +54,4 @@ private:
 };
 }  // namespace nexus_demos
 
-#endif  // SRC__RMF_TASK_CANCELLER_HPP_
+#endif  // NEXUS_DEMOS__SRC__RMF_TASK_CANCELLER_HPP
