@@ -68,8 +68,9 @@ public: static BT::PortsList providedPorts()
 
 public: DispatchRequest(const std::string& name,
     const BT::NodeConfiguration& config,
+    std::shared_ptr<const ContextManager> ctx_mgr,
     rclcpp_lifecycle::LifecycleNode::SharedPtr node)
-  : BT::StatefulActionNode(name, config), _node(std::move(node)) {}
+  : BT::StatefulActionNode(name, config), _node(std::move(node)), _ctx_mgr(ctx_mgr) {}
 
 public: BT::NodeStatus onStart() override;
 
@@ -82,6 +83,7 @@ private: void submit_itinerary(const std::deque<Destination>& destinations);
 private: void api_response_cb(const ApiResponse& msg);
 
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
+private: std::shared_ptr<const ContextManager> _ctx_mgr;
 
 private: rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub;
 private: rclcpp::Subscription<ApiResponse>::SharedPtr _api_response_sub;
