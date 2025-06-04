@@ -59,6 +59,12 @@ public: BT::NodeStatus onRunning() override;
 
 public: void onHalted() override;
 
+  /**
+   * A user overridable callback that will be triggered when the BT node is halted.
+   * The default implementation is a no-op.
+   */
+protected: void cancel_cb();
+
 protected: rclcpp::Logger _logger;
 
 /**
@@ -168,8 +174,18 @@ BT::NodeStatus ServiceClientBtNode<ServiceType>::onRunning()
 }
 
 template<typename ServiceType>
+void ServiceClientBtNode<ServiceType>::cancel_cb()
+{
+  // Default no-op
+  return;
+}
+
+template<typename ServiceType>
 void ServiceClientBtNode<ServiceType>::onHalted()
 {
+  // First execute the cancel_cb.
+  this->cancel_cb();
+
   RCLCPP_INFO(this->_logger, "%s: Halting", this->name().c_str());
   this->_cleanup();
 }
