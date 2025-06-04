@@ -63,11 +63,7 @@ RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
         return;
       }
 
-      if (msg->request_guid != rmf_workcell_state_->task_id)
-      {
-        return;
-      }
-
+      // Check if the AMR is processing a cancelled work order.
       auto wo_it = cancelled_wo_.find(rmf_workcell_state_->work_order_id);
       if (wo_it == cancelled_wo_.end())
       {
