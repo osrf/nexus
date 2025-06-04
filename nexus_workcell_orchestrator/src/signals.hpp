@@ -49,7 +49,7 @@ public: BT::NodeStatus onStart() override;
 
 public: BT::NodeStatus onRunning() override;
 
-public: void onHalted() override {}
+public: void onHalted() override {};
 
 private: std::shared_ptr<const ContextManager> _ctx_mgr;
 };

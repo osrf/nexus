@@ -137,7 +137,7 @@ private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 
 // TODO(luca) consider implementing ingestors as well, will need a new input for action type
 // Sends a DispenserResult to the AMR to signal that the workcell is done
-class SignalAmr : public BT::SyncActionNode
+class SignalAmr : public BT::StatefulActionNode
 {
 public: using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
 public: static BT::PortsList providedPorts()
@@ -151,12 +151,18 @@ public: static BT::PortsList providedPorts()
 public: SignalAmr(const std::string& name,
     const BT::NodeConfiguration& config,
     rclcpp_lifecycle::LifecycleNode::SharedPtr node)
-  : BT::SyncActionNode(name, config), _node(node) {}
+  : BT::StatefulActionNode(name, config), _node(node) {}
 
-public: BT::NodeStatus tick() override;
+public: BT::NodeStatus onStart() override;
+
+public: BT::NodeStatus onRunning() override;
+
+public: void onHalted() override;
 
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub;
+private: std::string _workcell;
+private: std::string _rmf_task_id;
 };
 
 // Loops over destinations to extract them

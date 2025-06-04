@@ -202,7 +202,7 @@ BT::NodeStatus UnpackDestinationData::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
-BT::NodeStatus SignalAmr::tick()
+BT::NodeStatus SignalAmr::onStart()
 {
   const auto workcell = this->getInput<std::string>("workcell");
   if (!workcell)
@@ -220,14 +220,30 @@ BT::NodeStatus SignalAmr::tick()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
-  this->_dispenser_result_pub = this->_node->create_publisher<DispenserResult>("/dispenser_results", 10);
 
+  this->_workcell = *workcell;
+  this->_rmf_task_id = *rmf_task_id;
+  this->_dispenser_result_pub = this->_node->create_publisher<DispenserResult>("/dispenser_results", 10);
+  return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus SignalAmr::onRunning()
+{
   DispenserResult msg;
-  msg.request_guid = *rmf_task_id;
-  msg.source_guid = *workcell;
+  msg.request_guid = _rmf_task_id;
+  msg.source_guid = _workcell;
   msg.status = DispenserResult::SUCCESS;
   this->_dispenser_result_pub->publish(msg);
   return BT::NodeStatus::SUCCESS;
+}
+
+void SignalAmr::onHalted()
+{
+  DispenserResult msg;
+  msg.request_guid = _rmf_task_id;
+  msg.source_guid = _workcell;
+  msg.status = DispenserResult::FAILED;
+  this->_dispenser_result_pub->publish(msg);
 }
 
 BT::NodeStatus LoopDestinations::tick()
