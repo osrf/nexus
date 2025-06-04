@@ -119,6 +119,13 @@ void DispatchRequest::api_response_cb(const ApiResponse& msg)
   if (!j.contains("state"))
     return;
   this->rmf_task_id = j["state"]["booking"]["id"];
+  // Also update the task_id with rmf_task_id to help with cancellation.
+  // The task_id before this is the work_order_id which is not ideal but
+  // the only option given we inject the RMF Workcell Task into the SO's assignments.
+  // See https://github.com/osrf/nexus/blob/702d76f70d0feeaf8f829fc2b8be1831a65a4b2c/nexus_system_orchestrator/src/assign_transporter_workcell.cpp#L70
+  auto context = _ctx_mgr->current_context();
+  context->task.task_id = *this->rmf_task_id;
+
 }
 
 BT::NodeStatus DispatchRequest::onRunning()
