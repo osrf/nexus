@@ -75,6 +75,16 @@ RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
         return;
       }
 
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Received DispenserRequest message from %s for request_guid %s and target_guid %s "
+        "while the work order %s for this task has been cancelled. Cancelling RMF task...",
+        msg->transporter_type.c_str(),
+        msg->request_guid.c_str(),
+        msg->target_guid.c_str(),
+        wo_it->first.c_str()
+      );
+
       DispenserResult dispenser_result_msg;
       dispenser_result_msg.request_guid = msg->request_guid;
       dispenser_result_msg.source_guid = msg->target_guid;
@@ -91,6 +101,8 @@ RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
       cancel_request.request_id = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
       cancel_request.json_msg = cancel_json.dump();
       this->rmf_api_request_pub_->publish(std::move(cancel_request));
+
+      cancelled_wo_.erase(wo_it);
     }
   );
 
@@ -104,6 +116,12 @@ RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
         return;
       }
       this->rmf_workcell_state_ = msg;
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Updated state of RMF Workcell with work_order_id %s and task_id %s.",
+        msg->work_order_id.c_str(),
+        msg->task_id.c_str()
+      );
     }
   );
 
@@ -112,10 +130,19 @@ RMFTaskCanceller::RMFTaskCanceller(const rclcpp::NodeOptions & options)
     reliable_qos,
     [this](WorkOrderState::ConstSharedPtr msg)
     {
+      if (msg->id.empty())
+      {
+        return;
+      }
       if (msg->state == WorkOrderState::STATE_CANCELLED ||
         msg->state == WorkOrderState::STATE_FAILED)
       {
         cancelled_wo_[msg->id] = msg;
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Adding work_order with id %s to cancelled list.",
+          msg->id.c_str()
+        );
       }
     }
   );
