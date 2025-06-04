@@ -7,7 +7,7 @@ enable_rest_api: true
 
 # TODO(aaronchongth): To separate transporters to use their own domain ID, zenoh
 # bridge and configuration file.
-system_orchestrators_and_transporters:
+system_orchestrators:
   - namespace: system_orchestrator_and_transporters # ROS Namespace of the endpoints
     # ROS Domain ID
     domain_id: 0

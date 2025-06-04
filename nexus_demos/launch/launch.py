@@ -124,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "ros_domain_id": str(inter_workcell_domain_id),
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
+                    "zenoh_config_filename": "config/zenoh/system_orchestrator_and_transporters.json5",
                     "use_rmf_transporter": use_rmf_transporter,
                     "transporter_plugin": "nexus_transporter::MockTransporter",
                     "activate_system_orchestrator": headless,
