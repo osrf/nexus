@@ -17,7 +17,6 @@
 
 #include "system_orchestrator.hpp"
 
-#include "bid_transporter.hpp"
 #include "context.hpp"
 #include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
@@ -25,7 +24,6 @@
 #include "for_each_task.hpp"
 #include "job.hpp"
 #include "send_signal.hpp"
-#include "transporter_request.hpp"
 #include "workcell_request.hpp"
 
 #include <nexus_common/batch_service_call.hpp>
@@ -279,8 +277,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
     endpoints::RegisterTransporterService::service_name(),
     [this](
       endpoints::RegisterTransporterService::ServiceType::Request::
-      ConstSharedPtr
-      req,
+      ConstSharedPtr req,
       endpoints::RegisterTransporterService::ServiceType::Response::SharedPtr
       resp)
     {
@@ -294,6 +291,54 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
       this->get_logger(), "Lifecycle Manager failed to configure all nodes");
     return CallbackReturn::FAILURE;
   }
+
+  // create action server for bidding for transporters
+  this->_bid_transporter_srv =
+    rclcpp_action::create_server<BidTransporterActionType>(
+      this->get_node_base_interface(),
+      this->get_node_clock_interface(),
+      this->get_node_logging_interface(),
+      this->get_node_waitables_interface(),
+      BidTransporterAction::action_name(),
+      [this](const rclcpp_action::GoalUUID& uuid,
+        std::shared_ptr<const BidTransporterActionType::Goal> goal)
+        -> rclcpp_action::GoalResponse
+      {
+        if (this->_ongoing_transporter_bids.find(uuid) !=
+          this->_ongoing_transporter_bids.end())
+        {
+          RCLCPP_ERROR(this->get_logger(),
+            "Received duplicate bid transporter action request, rejecting...");
+          return rclcpp_action::GoalResponse::REJECT;
+        }
+        RCLCPP_INFO(this->get_logger(),
+          "Received bid transporter action request");
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+      },
+      [this](const std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+      -> rclcpp_action::CancelResponse
+      {
+        auto it =
+          this->_ongoing_transporter_bids.find(goal_handle->get_goal_id());
+        if (it == this->_ongoing_transporter_bids.end())
+        {
+          RCLCPP_WARN(this->get_logger(),
+            "Ongoing transporter bid not found, cancellation consider accepted "
+            "anyway...");
+          return rclcpp_action::CancelResponse::ACCEPT;
+        }
+        RCLCPP_INFO(this->get_logger(), "Bid request cancelled");
+        return rclcpp_action::CancelResponse::ACCEPT;
+      },
+      [this](const std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+      {
+        this->_ongoing_transporter_bids.emplace(
+          goal_handle->get_goal_id(),
+          goal_handle);
+        RCLCPP_INFO(this->get_logger(), "Bid request added to ongoing bids");
+        this->_start_transporter_bidding(std::move(goal_handle));
+      }
+    );
 
   // subscribe to estop
   this->_estop_sub =
@@ -463,6 +508,7 @@ auto SystemOrchestrator::on_cleanup(const rclcpp_lifecycle::State& previous)
   this->_estop_sub.reset();
 
   this->_register_transporter_srv.reset();
+  this->_bid_transporter_srv.reset();
   this->_list_transporters_srv.reset();
   this->_register_workcell_srv.reset();
   this->_work_order_srv.reset();
@@ -516,20 +562,6 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     {
       return std::make_unique<AssignTransporterWorkcell>(name, config,
         this->shared_from_this(), ctx);
-    });
-
-  bt_factory->registerBuilder<BidTransporter>("BidTransporter",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<BidTransporter>(name, config,
-      this->shared_from_this(), ctx);
-    });
-
-  bt_factory->registerBuilder<TransporterRequest>(
-    "TransporterRequest",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<TransporterRequest>(name, config, *this, ctx);
     });
 
   bt_factory->registerBuilder<ForEachTask>("ForEachTask",
@@ -692,6 +724,81 @@ void SystemOrchestrator::_init_job(
     this->_jobs.erase(work_order_id);
     return;
   }
+}
+
+void SystemOrchestrator::_start_transporter_bidding(
+  std::shared_ptr<BidTransporterGoalHandle> goal_handle)
+{
+  using IsTransporterAvailableService =
+    endpoints::IsTransporterAvailableService::ServiceType;
+  RCLCPP_INFO(this->get_logger(), "Starting transporter bidding");
+  std::unordered_map<std::string,
+  common::BatchServiceReq<IsTransporterAvailableService>> batch;
+  auto req = std::make_shared<IsTransporterAvailableService::Request>();
+  req->request = goal_handle->get_goal()->request;
+  for (auto& [transporter_id, session] : this->_transporter_sessions)
+  {
+    batch.emplace(transporter_id,
+      common::BatchServiceReq<IsTransporterAvailableService>{
+        session->available_client, req});
+  }
+
+  common::batch_service_call(this, batch,
+    std::chrono::milliseconds{this->_bid_request_timeout},
+    [this, goal_handle](const std::unordered_map<std::string,
+    common::BatchServiceResult<IsTransporterAvailableService>>& results)
+    {
+      // Note, `transporter_id` is not the same as the `transporter` field in
+      // the response.
+      IsTransporterAvailableService::Response::SharedPtr
+      resp_of_fastest_transporter = nullptr;
+      std::string id_of_fastest_transporter;
+
+      for (const auto& [transporter_id, result] : results)
+      {
+        if (!result.success || !result.resp->available)
+        {
+          continue;
+        }
+
+        if (!resp_of_fastest_transporter)
+        {
+          resp_of_fastest_transporter = result.resp;
+          id_of_fastest_transporter = transporter_id;
+          continue;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "before comparing time");
+        if (rclcpp::Time(result.resp->estimated_finish_time) <
+          rclcpp::Time(resp_of_fastest_transporter->estimated_finish_time))
+        {
+          resp_of_fastest_transporter = result.resp;
+          id_of_fastest_transporter = transporter_id;
+        }
+      }
+
+      auto action_result = std::make_shared<BidTransporterActionType::Result>();
+      const auto request_id = goal_handle->get_goal()->request.id;
+      if (!resp_of_fastest_transporter)
+      {
+        action_result->available = false;
+        RCLCPP_ERROR(this->get_logger(),
+          "No transporter available to perform request [%s]",
+          request_id.c_str());
+        goal_handle->abort(action_result);
+      }
+
+      action_result->available = true;
+      action_result->transporter = id_of_fastest_transporter;
+      action_result->estimated_finish_time =
+        resp_of_fastest_transporter->estimated_finish_time;
+      RCLCPP_INFO(this->get_logger(),
+        "Transporter bidding successful, [%s] is available to perform request "
+        "[%s]",
+        action_result->transporter.c_str(),
+        request_id.c_str());
+      goal_handle->succeed(action_result);
+    });
 }
 
 std::string SystemOrchestrator::_generate_task_id(

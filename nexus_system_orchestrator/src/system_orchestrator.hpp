@@ -29,6 +29,8 @@
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
+#include <nexus_transporter/Itinerary.hpp>
+#include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
@@ -49,6 +51,10 @@ class SystemOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
 public:
+  using BidTransporterAction = nexus::endpoints::BidTransporterAction;
+  using BidTransporterActionType = BidTransporterAction::ActionType;
+  using BidTransporterGoalHandle =
+    rclcpp_action::ServerGoalHandle<BidTransporterActionType>;
   using WorkOrderAction = nexus::endpoints::WorkOrderAction;
   using WorkOrderActionType = WorkOrderAction::ActionType;
   using WorkOrderGoalHandle =
@@ -79,6 +85,8 @@ private:
   rclcpp::Service<endpoints::ListTransporterService::ServiceType>::SharedPtr
     _list_transporters_srv;
   rclcpp::ServiceBase::SharedPtr _register_transporter_srv;
+  rclcpp_action::Server<BidTransporterActionType>::SharedPtr
+  _bid_transporter_srv;
   bool _paused;
   rclcpp::ServiceBase::SharedPtr _pause_system_srv;
   rclcpp::Publisher<endpoints::WorkOrderStatesTopic::MessageType>::SharedPtr
@@ -94,6 +102,8 @@ private:
     std::shared_ptr<WorkcellSession>> _workcell_sessions;
   std::unordered_map<std::string,
     std::shared_ptr<TransporterSession>> _transporter_sessions;
+  std::unordered_map<rclcpp_action::GoalUUID,
+  std::shared_ptr<BidTransporterGoalHandle>> _ongoing_transporter_bids;
   std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{nullptr};
   rclcpp::TimerBase::SharedPtr _pre_configure_timer;
   rclcpp::SubscriptionBase::SharedPtr _estop_sub;
@@ -121,6 +131,13 @@ private:
    * an appropriate error.
    */
   void _init_job(const std::shared_ptr<WorkOrderGoalHandle> goal_handle);
+
+  /**
+   * Starts transporter bidding process with all registered transporters,
+   * succeeds or aborts the goals based on the bidding results.
+   */
+  void _start_transporter_bidding(
+    std::shared_ptr<BidTransporterGoalHandle> goal_handle);
 
   std::string _generate_task_id(
     const std::string& work_order_id,

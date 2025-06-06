@@ -102,7 +102,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             name="zenoh_config_filename",
-            default_value="config/zenoh/system_orchestrator.json5",
+            default_value="config/zenoh/system_orchestrator_and_transporters.json5",
             description="Zenoh DDS bridge configuration filepath",
         )
     )

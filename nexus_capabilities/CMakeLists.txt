@@ -121,6 +121,7 @@ ament_export_include_directories(include)
 # builtin capabilities
 #===============================================================================
 add_library(nexus_builtin_capabilities SHARED
+  src/capabilities/bid_transporter.cpp
   src/capabilities/detection.cpp
   src/capabilities/detection_capability.cpp
   src/capabilities/dispense_item_capability.cpp
@@ -131,8 +132,10 @@ add_library(nexus_builtin_capabilities SHARED
   src/capabilities/gripper_control.cpp
   src/capabilities/plan_motion_capability.cpp
   src/capabilities/plan_motion.cpp
+  src/capabilities/request_transporter.cpp
   src/capabilities/rmf_request.cpp
   src/capabilities/rmf_request_capability.cpp
+  src/capabilities/transporter_capability.cpp
 )
 
 target_compile_options(nexus_builtin_capabilities PUBLIC INTERFACE cxx_std_17)
