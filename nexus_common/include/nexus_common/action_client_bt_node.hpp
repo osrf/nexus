@@ -68,6 +68,12 @@ protected: NodePtrT _node;
 protected: virtual std::string get_action_name() const = 0;
 
   /**
+   * A user overridable callback that will be triggered when the BT node is halted.
+   * The default implementation is a no-op.
+   */
+protected: void cancel_cb();
+
+  /**
    * Returns the goal to send to the server.
    */
 protected: virtual std::optional<typename ActionT::Goal> make_goal() = 0;
@@ -211,8 +217,18 @@ BT::NodeStatus ActionClientBtNode<NodePtrT, ActionT>::onRunning()
 }
 
 template<typename NodePtrT, typename ActionT>
+void ActionClientBtNode<NodePtrT, ActionT>::cancel_cb()
+{
+  // Default no-op
+  return;
+}
+
+template<typename NodePtrT, typename ActionT>
 void ActionClientBtNode<NodePtrT, ActionT>::onHalted()
 {
+  // First execute the cancel_cb.
+  this->cancel_cb();
+
   if (this->_goal_handle)
   {
     RCLCPP_INFO(this->_node->get_logger(), "%s: Cancelling goal",

@@ -3,6 +3,12 @@
 <launch>
   <arg name="bidding_time_window" description="Time window in seconds for task bidding process" default="2.0"/>
   <arg name="building_map_name" default="depot" description="Name of the map to launch for simulation"/>
+  <arg name="building_map_prefix_path" default="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)" description="Absolute path to the map"/>
+  <arg name="building_map_file" default="$(var building_map_prefix_path)/$(var building_map_name).building.yaml" description="Absolute path to the building yaml file."/>
+  <arg name="nav_graph_file" default="$(var building_map_prefix_path)/nav_graphs/0.yaml" description="Absolute path to the navigation graph for the first fleet."/>
+  <arg name="gz_world_file" default="$(var building_map_prefix_path)/$(var building_map_name).world" description="Absolute path to the Gz world file."/>
+  <arg name="gz_model_path" default="$(var building_map_prefix_path)/models" description="Absolute path to additional SDF models."/>
+
   <arg name="initial_map" default="L1" description="Initial map name for the visualizer"/>
   <arg name="server_uri" default="" description="The URI of the api server to transmit state and task information."/>
   <arg name="sim_update_rate" default='100'/>
@@ -22,7 +28,7 @@
 
   <!-- Building Map  -->
   <group>
-    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).building.yaml">
+    <node pkg="rmf_building_map_tools" exec="building_map_server" args="$(var building_map_file)">
       <param name="use_sim_time" value="$(var use_simulator)"/>
     </node>
   </group>
@@ -55,7 +61,7 @@
   <group>
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_simulator)"/>
-      <arg name="nav_graph_file" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/nav_graphs/0.yaml" />
+      <arg name="nav_graph_file" value="$(var nav_graph_file)" />
       <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/rmf/deliveryRobot_config.yaml"/>
     </include>
   </group>
@@ -66,14 +72,17 @@
     <param name="max_jobs" value="10"/>
   </node>
 
+  <!-- Temporary node to cancel RMF tasks if a workcell task fail -->
+  <node pkg="nexus_demos" exec="rmf_task_canceller" name="rmf_task_canceller" output="both">
+    <param name="rmf_workcell_name" value="rmf_nexus_transporter"/>
+  </node>
+
   <!-- Simulator launch -->
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />
-  <let name="world_path" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/$(var building_map_name).world" />
-  <let name="model_path" value="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)/models" />
 
-  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var world_path) -z $(var sim_update_rate)" output="both">
-    <env name="GZ_SIM_RESOURCE_PATH" value="$(var model_path):$(var world_path)" />
+  <executable if="$(var use_simulator)" cmd="gz sim $(var gz_headless) -r -v 3 $(var gz_world_file) -z $(var sim_update_rate)" output="both">
+    <env name="GZ_SIM_RESOURCE_PATH" value="$(env GZ_SIM_RESOURCE_PATH):$(env HOME)/.gazebo/models:$(var gz_model_path)" />
     <env name="GZ_SIM_SYSTEM_PLUGIN_PATH" value="$(find-pkg-prefix rmf_robot_sim_gz_plugins)/lib/rmf_robot_sim_gz_plugins"/>
   </executable>
 
