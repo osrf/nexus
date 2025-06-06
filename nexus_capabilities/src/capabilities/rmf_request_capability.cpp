@@ -30,10 +30,10 @@ void RMFRequestCapability::configure(
   BT::BehaviorTreeFactory& bt_factory)
 {
   bt_factory.registerBuilder<DispatchRequest>("rmf_request.DispatchRequest",
-    [this, node, ctx_mgr](const std::string& name,
+    [this, node](const std::string& name,
     const BT::NodeConfiguration& config)
     {
-      return std::make_unique<DispatchRequest>(name, config, ctx_mgr, node);
+      return std::make_unique<DispatchRequest>(name, config, node);
     });
 
   bt_factory.registerBuilder<ExtractDestinations>("rmf_request.ExtractDestinations",
