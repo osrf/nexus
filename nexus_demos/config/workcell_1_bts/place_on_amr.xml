@@ -2,6 +2,11 @@
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
+      <!-- place on amr to be similar to place_on_conveyor, but need more capabilities to listen
+      to dispenser or ingestor requests, then sets signal -->
+      <!-- this same capability will wait for another signal from workcell to send out 
+      dispenser or ingestor results -->
+    
       <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
 
       <dispense_item.DispenseItem name="dispense_item" item="productA" />
