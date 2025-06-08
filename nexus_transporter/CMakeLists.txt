@@ -11,15 +11,23 @@ include(GNUInstallDirs)
 find_package(ament_cmake REQUIRED)
 set(dep_pkgs
   backward_ros
+  builtin_interfaces
   nexus_endpoints
   nexus_transporter_msgs
   geometry_msgs
+  nlohmann_json
   pluginlib
   rclcpp
   rclcpp_action
   rclcpp_components
   rclcpp_lifecycle
+  rmf_api_msgs
+  rmf_task_msgs
+  rmf_task_ros2
+  rmf_traffic
+  rmf_traffic_ros2
   rmf_utils
+  std_msgs
   tf2_ros
   yaml_cpp_vendor
   yaml-cpp
@@ -98,6 +106,8 @@ rclcpp_components_register_node(nexus_transporter_component
 
 
 #===============================================================================
+# Builtin transporter plugins
+
 # Mock transporter plugin.
 add_library(mock_transporter SHARED src/transporters/mock_transporter.cpp)
 target_include_directories(mock_transporter PUBLIC
@@ -110,10 +120,41 @@ target_link_libraries(mock_transporter
     nexus_transporter
     pluginlib::pluginlib
 )
+ament_export_libraries(mock_transporter)
+
+# RMF transporter plugin.
+add_library(rmf_transporter SHARED src/transporters/rmf_transporter.cpp)
+ament_target_dependencies(rmf_transporter
+  PUBLIC
+    builtin_interfaces
+    rmf_task_ros2
+    rmf_traffic
+    rmf_traffic_ros2
+)
+target_link_libraries(rmf_transporter
+  PUBLIC
+    nexus_transporter
+    nlohmann_json
+    pluginlib::pluginlib
+    rmf_api_msgs::rmf_api_msgs
+    # rmf_task_ros2::rmf_task_ros2
+    # rmf_traffic::rmf_traffic
+    # rmf_traffic_ros2::rmf_traffic_ros2
+    ${geometry_msgs_TARGETS}
+    ${rmf_task_msgs_TARGETS}
+    ${std_msgs_TARGETS}
+)
+target_include_directories(rmf_transporter
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${geometry_msgs_INCLUDE_DIRS}
+    ${rmf_task_msgs_INCLUDE_DIRS}
+    ${std_msgs_INCLUDE_DIRS}
+)
+ament_export_libraries(rmf_transporter)
 
 pluginlib_export_plugin_description_file(nexus_transporter src/transporters/plugins.xml)
-
-ament_export_libraries(mock_transporter)
 
 #===============================================================================
 find_package(ament_cmake_uncrustify QUIET)

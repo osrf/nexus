@@ -13,13 +13,20 @@
   <depend>nexus_transporter_msgs</depend>
 
   <depend>backward_ros</depend>
+  <depend>builtin_interfaces</depend>
   <depend>geometry_msgs</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
   <depend>rclcpp_lifecycle</depend>
+  <depend>rmf_api_msgs</depend>
+  <depend>rmf_task_msgs</depend>
+  <depend>rmf_task_ros2</depend>
+  <depend>rmf_traffic</depend>
+  <depend>rmf_traffic_ros2</depend>
   <depend>rmf_utils</depend>
+  <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
   <depend>yaml_cpp_vendor</depend>
