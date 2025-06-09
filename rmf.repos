@@ -1,0 +1,9 @@
+repositories:
+  rmf/rmf_internal_msgs:
+    type: git
+    url: https://github.com/open-rmf/rmf_internal_msgs.git
+    version: c0f72ce5e2129411d2868414b25f6fab1460fcdb
+  rmf/rmf_ros2:
+    type: git
+    url: https://github.com/open-rmf/rmf_ros2.git
+    version: ac/auctioneer
