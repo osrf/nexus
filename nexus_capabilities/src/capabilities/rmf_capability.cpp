@@ -15,19 +15,28 @@
  *
  */
 
+#include "rmf_capability.hpp"
+#include "rmf_wait_for_dispenser_request.hpp"
 
-#include "bid_transporter.hpp"
-#include "request_transporter.hpp"
-#include "transporter_capability.hpp"
+#include <nexus_capabilities/exceptions.hpp>
 
 namespace nexus::capabilities {
 
-//==============================================================================
-void TransporterCapability::declare_params(rclcpp_lifecycle::LifecycleNode&)
-{}
+using rcl_interfaces::msg::ParameterDescriptor;
 
 //==============================================================================
-void TransporterCapability::configure(
+void RMFCapability::declare_params(rclcpp_lifecycle::LifecycleNode&)
+{
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description = "Waiting timeout in milliseconds.";
+    node.declare_parameter("wait_timeout", 5000, desc);
+  }
+}
+
+//==============================================================================
+void RMFCapability::configure(
   rclcpp_lifecycle::LifecycleNode::SharedPtr node,
   std::shared_ptr<const ContextManager> ctx_mgr,
   BT::BehaviorTreeFactory& bt_factory)
@@ -58,6 +67,6 @@ void TransporterCapability::configure(
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  nexus::capabilities::TransporterCapability,
+  nexus::capabilities::RMFCapability,
   nexus::Capability
 )
