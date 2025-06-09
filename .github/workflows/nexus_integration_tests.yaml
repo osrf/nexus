@@ -43,4 +43,4 @@ jobs:
         timeout_minutes: 20
         max_attempts: 3
         retry_on: error
-        command: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner nexus_demos --event-handlers console_direct+ --parallel-workers 1
+        command: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner nexus_demos --event-handlers console_direct+ --parallel-workers 1 --return-code-on-test-failure
