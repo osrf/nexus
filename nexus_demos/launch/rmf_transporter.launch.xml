@@ -5,6 +5,7 @@
   <arg name="building_map_name" default="depot" description="Name of the map to launch for simulation"/>
   <arg name="building_map_prefix_path" default="$(find-pkg-share nexus_demos)/config/rmf/maps/$(var building_map_name)" description="Absolute path to the map"/>
   <arg name="building_map_file" default="$(var building_map_prefix_path)/$(var building_map_name).building.yaml" description="Absolute path to the building yaml file."/>
+  <arg name="fleet_adapter_config_file" default="$(find-pkg-share nexus_demos)/config/rmf/deliveryRobot_config.yaml" description="Absolute path to the Fleet Adapter's configuration file."/>
   <arg name="nav_graph_file" default="$(var building_map_prefix_path)/nav_graphs/0.yaml" description="Absolute path to the navigation graph for the first fleet."/>
   <arg name="gz_world_file" default="$(var building_map_prefix_path)/$(var building_map_name).world" description="Absolute path to the Gz world file."/>
   <arg name="gz_model_path" default="$(var building_map_prefix_path)/models" description="Absolute path to additional SDF models."/>
@@ -62,7 +63,7 @@
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_simulator)"/>
       <arg name="nav_graph_file" value="$(var nav_graph_file)" />
-      <arg name="config_file" value="$(find-pkg-share nexus_demos)/config/rmf/deliveryRobot_config.yaml"/>
+      <arg name="config_file" value="$(var fleet_adapter_config_file)"/>
     </include>
   </group>
 
