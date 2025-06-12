@@ -93,10 +93,10 @@ def launch_setup(context, *args, **kwargs):
     max_jobs = "2"
     max_workcell_jobs = "1"
     if (use_rmf_transporter.perform(context).lower() == "true"):
-        remap_task_types = """{
-                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
-                        }"""
-        main_bt_filename = "main_rmf.xml"
+        # remap_task_types = """{
+        #                     pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
+        #                 }"""
+        # main_bt_filename = "main_rmf.xml"
         rviz_config_filename = "nexus_panel_rmf.rviz"
         max_jobs = "10"
         max_workcell_jobs = "10"
