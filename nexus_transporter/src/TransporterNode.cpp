@@ -113,6 +113,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           return;
         }
       );
+
       if (future.wait_for(data->wait_for_itinerary_timeout)
       == std::future_status::ready)
       {
