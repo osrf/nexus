@@ -325,6 +325,7 @@ auto SystemOrchestrator::on_configure(const rclcpp_lifecycle::State& previous)
           RCLCPP_WARN(this->get_logger(),
             "Ongoing transporter bid not found, cancellation consider accepted "
             "anyway...");
+          this->_ongoing_transporter_bids.erase(it);
           return rclcpp_action::CancelResponse::ACCEPT;
         }
         RCLCPP_INFO(this->get_logger(), "Bid request cancelled");
@@ -516,6 +517,7 @@ auto SystemOrchestrator::on_cleanup(const rclcpp_lifecycle::State& previous)
   this->_list_workcells_srv.reset();
 
   this->_jobs.clear();
+  this->_ongoing_transporter_bids.clear();
 
   RCLCPP_INFO(this->get_logger(), "Cleaned up");
 
@@ -731,7 +733,15 @@ void SystemOrchestrator::_start_transporter_bidding(
 {
   using IsTransporterAvailableService =
     endpoints::IsTransporterAvailableService::ServiceType;
-  RCLCPP_INFO(this->get_logger(), "Starting transporter bidding");
+  std::stringstream ss;
+  for (const auto& destination : goal_handle->get_goal()->request.destinations)
+  {
+    ss << destination.name << ", ";
+  }
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Starting transporter bidding with destinations: [%s]",
+    ss.str().c_str());
   std::unordered_map<std::string,
   common::BatchServiceReq<IsTransporterAvailableService>> batch;
   auto req = std::make_shared<IsTransporterAvailableService::Request>();
@@ -768,7 +778,6 @@ void SystemOrchestrator::_start_transporter_bidding(
           continue;
         }
 
-        RCLCPP_INFO(this->get_logger(), "before comparing time");
         if (rclcpp::Time(result.resp->estimated_finish_time) <
           rclcpp::Time(resp_of_fastest_transporter->estimated_finish_time))
         {
@@ -786,6 +795,8 @@ void SystemOrchestrator::_start_transporter_bidding(
           "No transporter available to perform request [%s]",
           request_id.c_str());
         goal_handle->abort(action_result);
+        this->_ongoing_transporter_bids.erase(goal_handle->get_goal_id());
+        return;
       }
 
       action_result->available = true;
@@ -798,6 +809,7 @@ void SystemOrchestrator::_start_transporter_bidding(
         action_result->transporter.c_str(),
         request_id.c_str());
       goal_handle->succeed(action_result);
+      this->_ongoing_transporter_bids.erase(goal_handle->get_goal_id());
     });
 }
 

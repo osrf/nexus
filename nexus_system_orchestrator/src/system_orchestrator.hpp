@@ -29,7 +29,6 @@
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
-#include <nexus_transporter/Itinerary.hpp>
 #include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>

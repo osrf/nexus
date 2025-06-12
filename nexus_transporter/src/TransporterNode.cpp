@@ -131,7 +131,6 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
         response->available = true;
         response->transporter = itinerary->transporter_name();
         response->estimated_finish_time = itinerary->estimated_finish_time();
-        return;
       }
 
       // Timed out
