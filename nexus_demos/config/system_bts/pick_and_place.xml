@@ -4,8 +4,10 @@
       <IsPauseTriggered paused="{paused}"/>
       <Parallel success_threshold="-1">
         <Sequence>
-          <BidTransporter name="bid_transporterasdasd" destination="{workcell}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}"/>
+          <!-- Create transport task, return success but a nullopt if it's not necessary -->
+          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{transport_task}"/>
+          <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
           <SendSignal task="{task}" signal="transporter_done"/>
         </Sequence>
         <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
