@@ -20,6 +20,7 @@ set(dep_pkgs
   rclcpp
   rclcpp_lifecycle
   rmf_dispenser_msgs
+  rmf_ingestor_msgs
   rmf_task_msgs
   yaml_cpp_vendor
   yaml-cpp
@@ -147,6 +148,7 @@ target_link_libraries(nexus_builtin_capabilities
     tf2::tf2
     tf2_ros::tf2_ros
     ${rmf_dispenser_msgs_TARGETS}
+    ${rmf_ingestor_msgs_TARGETS}
     ${rmf_task_msgs_TARGETS}
     yaml-cpp
 )

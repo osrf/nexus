@@ -26,6 +26,8 @@
 
 #include <rmf_dispenser_msgs/msg/dispenser_request.hpp>
 #include <rmf_dispenser_msgs/msg/dispenser_result.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 
@@ -135,16 +137,17 @@ public: BT::NodeStatus tick() override;
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 };
 
-// TODO(luca) consider implementing ingestors as well, will need a new input for action type
-// Sends a DispenserResult to the AMR to signal that the workcell is done
+// Sends a DispenserResult or IngestorResult to the AMR to signal that the workcell is done
 class SignalAmr : public BT::SyncActionNode
 {
 public: using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
+public: using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
 public: static BT::PortsList providedPorts()
   {
     return {
       BT::InputPort<std::string>("workcell"),
       BT::InputPort<std::string>("rmf_task_id"),
+      BT::InputPort<std::string>("action_type"),
     };
   }
 
@@ -157,6 +160,7 @@ public: BT::NodeStatus tick() override;
 
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 private: rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub;
+private: rclcpp::Publisher<IngestorResult>::SharedPtr _ingestor_result_pub;
 };
 
 // Loops over destinations to extract them
@@ -194,11 +198,14 @@ class WaitForAmr: public BT::StatefulActionNode
 {
 // RMF interfaces
 public: using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
+public: using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
 
 public: static BT::PortsList providedPorts()
   {
-    return { BT::InputPort<std::string>("rmf_task_id"),
-      BT::InputPort<std::string>("workcell")
+    return {
+      BT::InputPort<std::string>("rmf_task_id"),
+      BT::InputPort<std::string>("workcell"),
+      BT::InputPort<std::string>("action_type"),
     };
   }
 
@@ -215,9 +222,13 @@ public: void onHalted() override {}
 
 private: void dispenser_request_cb(const DispenserRequest& msg);
 
+private: void ingestor_request_cb(const IngestorRequest& msg);
+
 private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
 
 private: rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub;
+
+private: rclcpp::Subscription<IngestorRequest>::SharedPtr _ingestor_request_sub;
 
 private: std::string _rmf_task_id;
 private: std::string _workcell;

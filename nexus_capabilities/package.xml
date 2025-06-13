@@ -19,6 +19,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>rmf_dispenser_msgs</depend>
+  <depend>rmf_ingestor_msgs</depend>
   <depend>rmf_task_msgs</depend>
   <depend>rmf_utils</depend>
   <depend>tf2</depend>
