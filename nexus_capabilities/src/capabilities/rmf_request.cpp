@@ -191,13 +191,44 @@ BT::NodeStatus SignalAmr::tick()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
-  this->_dispenser_result_pub = this->_node->create_publisher<DispenserResult>("/dispenser_results", 10);
+  const auto action_type = this->getInput<std::string>("action_type");
+  if (!action_type)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: [action_type] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
 
-  DispenserResult msg;
-  msg.request_guid = *rmf_task_id;
-  msg.source_guid = *workcell;
-  msg.status = DispenserResult::SUCCESS;
-  this->_dispenser_result_pub->publish(msg);
+  if (action_type == "pickup")
+  {
+    this->_dispenser_result_pub =
+      this->_node->create_publisher<DispenserResult>("/dispenser_results", 10);
+    DispenserResult msg;
+    msg.request_guid = *rmf_task_id;
+    msg.source_guid = *workcell;
+    msg.status = DispenserResult::SUCCESS;
+    this->_dispenser_result_pub->publish(msg);
+  }
+  else if (action_type == "dropoff")
+  {
+    this->_ingestor_result_pub =
+      this->_node->create_publisher<IngestorResult>("/ingestor_results", 10);
+    IngestorResult msg;
+    msg.request_guid = *rmf_task_id;
+    msg.source_guid = *workcell;
+    msg.status = DispenserResult::SUCCESS;
+    this->_ingestor_result_pub->publish(msg);
+  }
+  else
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(),
+      "%s: [action_type] port only accepts \"pickup\" or \"dropoff\"",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
   return BT::NodeStatus::SUCCESS;
 }
 
@@ -268,20 +299,63 @@ BT::NodeStatus WaitForAmr::onStart()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
+  const auto action_type = this->getInput<std::string>("action_type");
+  if (!action_type)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: [action_type] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
 
   this->_workcell = *workcell;
   this->_rmf_task_id = *rmf_task_id;
   this->_amr_ready = false;
 
-  this->_dispenser_request_sub = this->_node->create_subscription<DispenserRequest>("/dispenser_requests", 10,
-      [&](DispenserRequest::UniquePtr msg)
-      {
-        this->dispenser_request_cb(*msg);
-      });
+  if (action_type == "pickup")
+  {
+    this->_dispenser_request_sub =
+      this->_node->create_subscription<DispenserRequest>(
+        "/dispenser_requests",
+        10,
+        [&](DispenserRequest::UniquePtr msg)
+        {
+          this->dispenser_request_cb(*msg);
+        });
+  }
+  else if (action_type == "dropoff")
+  {
+    this->_ingestor_request_sub =
+      this->_node->create_subscription<IngestorRequest>(
+        "/ingestor_requests",
+        10,
+        [&](IngestorRequest::UniquePtr msg)
+        {
+          this->ingestor_request_cb(*msg);
+        });
+  }
+  else
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(),
+      "%s: [action_type] port only accepts \"pickup\" or \"dropoff\"",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
   return BT::NodeStatus::RUNNING;
 }
 
 void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
+{
+  if (msg.request_guid == this->_rmf_task_id &&
+      msg.target_guid == this->_workcell)
+  {
+    this->_amr_ready = true;
+  }
+}
+
+void WaitForAmr::ingestor_request_cb(const IngestorRequest& msg)
 {
   if (msg.request_guid == this->_rmf_task_id &&
       msg.target_guid == this->_workcell)
