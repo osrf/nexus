@@ -22,16 +22,31 @@
 
 namespace nexus::system_orchestrator {
 
-using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
-
 BT::PortsList TransporterRequest::providedPorts()
 {
-  return { BT::InputPort<std::string>("transporter"),
-    BT::InputPort<std::string>("destination") };
+  return { BT::InputPort<std::shared_ptr<TransportationRequest>>("transport_task"),
+    BT::InputPort<std::string>("transporter") };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
 {
+  auto maybe_task = this->getInput<std::shared_ptr<TransportationRequest>>("transport_task");
+  if (!maybe_task)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: [transport_task] param is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  const auto& task = maybe_task.value();
+  if (!task)
+  {
+    // We don't need to transport
+    return BT::NodeStatus::SUCCESS;
+  }
+  this->_request = *task;
+
   auto maybe_transporter = this->getInput<std::string>("transporter");
   if (!maybe_transporter)
   {
@@ -41,16 +56,6 @@ BT::NodeStatus TransporterRequest::onStart()
     return BT::NodeStatus::FAILURE;
   }
   this->_transporter = maybe_transporter.value();
-
-  auto maybe_destination = this->getInput<std::string>("destination");
-  if (!maybe_destination)
-  {
-    RCLCPP_ERROR(
-      this->_node->get_logger(), "%s: [destination] param is required",
-      this->name().c_str());
-    return BT::NodeStatus::FAILURE;
-  }
-  this->_destination = maybe_destination.value();
 
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
       endpoints::TransportAction::ActionType>::
@@ -66,16 +71,7 @@ std::optional<endpoints::TransportAction::ActionType::Goal> TransporterRequest::
 make_goal()
 {
   endpoints::TransportAction::ActionType::Goal goal;
-  goal.request.id = this->_ctx->get_job_id();
-  goal.request.requester = this->_node->get_name();
-  // TODO(Yadunund): Parse work order and assign action type and params.
-  // See https://github.com/osrf/nexus/issues/68.
-  goal.request.destinations.emplace_back(
-    nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
-      .name(this->_destination)
-      .action(nexus_transporter_msgs::msg::Destination::ACTION_PICKUP)
-      .params("")
-  );
+  goal.request = this->_request;
   return goal;
 }
 

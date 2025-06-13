@@ -7,12 +7,14 @@
           <ForEachTask task="{task}" workcell="{workcell}">
             <ExecuteTask task="{task}" workcell="{workcell}"/>
           </ForEachTask>
-          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
+          <CreateTransporterTask workcell_task="{task}" destination="unloading" result="{transport_task}"/>
+          <BidTransporter name="bid_transporter" transport_task="{transport_task}" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
         </PausableSequence>
         <PausableSequence pause="{paused}">
-          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
+          <CreateTransporterTask workcell_task="{task}" destination="unloading" result="{transport_task}"/>
+          <BidTransporter name="bid_transporter" transport_task="{transport_task}" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
           <AlwaysFailure/>
         </PausableSequence>
       </Fallback>
