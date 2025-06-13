@@ -45,6 +45,7 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
   // Create a list of destination from the current context tasks
   YAML::Node orders;
   std::vector<std::string> locations;
+  std::optional<std::string> prev_output_station = std::nullopt;
 
   for (const auto& task : this->_ctx->get_tasks())
   {
@@ -57,6 +58,14 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
         this->name().c_str(), task.task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
+
+    const auto step =
+      YAML::Load(task.payload).as<nexus::common::WorkOrder::Step>();
+    // get input and outputs
+    // check if previous output matches next input
+    // throw error if it doesn't match
+    // get the name of the station
+
     // Multipickup task
     // TODO(luca) Consider encoding where is a pickup and where a dropoff
     // TODO(luca) remove consecutive duplicates (multiple tasks to same workcell that don't need transportation)
