@@ -51,13 +51,6 @@ using ApiRequest = rmf_task_msgs::msg::ApiRequest;
 using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 using TaskStateUpdate = std_msgs::msg::String;
 
-// using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
-// using DispenserState = rmf_dispenser_msgs::msg::DispenserState;
-// using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
-// using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
-// using IngestorState = rmf_ingestor_msgs::msg::IngestorState;
-// using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
-
 class RmfTransporter : public Transporter
 {
 public:
@@ -99,41 +92,24 @@ private:
 
   std::mutex _mutex;
 
+  // Used for bidding only
   std::unordered_map<std::string, ItineraryQuery>
   _rmf_task_id_to_itinerary_query = {};
 
+  // Used for transportation requests
   std::unordered_map<std::string, OngoingItinerary>
-  _job_id_to_unconfirmed_itineraries = {};
+  _itinerary_id_to_unconfirmed_itineraries = {};
   std::unordered_map<std::string, OngoingItinerary>
   _rmf_task_id_to_ongoing_itinerary = {};
 
-  // // Hashmap requested job_id -> actual rmf task id (i.e. for cancellation, tracking)
-  // // TODO(luca) remember to cleanup all the maps / sets when the task is finished or cancelled
-  // std::unordered_map<std::string, std::string> rmf_task_id_to_job_id;
-  // // TODO(luca) submit progress through feedback callback
-  // // Store the completed callback
-  // std::unordered_map<std::string, TransportCompleted> job_id_to_completed;
-  // // Store the signals
-  // std::unordered_map<std::string, WorkcellSession> job_id_to_signal_source;
-  // std::unordered_map<std::string, WorkcellSession> job_id_to_signal_destination;
-
-  // // TODO(luca) actually use this
-  // std::unordered_set<std::string> sent_source_signals;
-  // std::unordered_set<std::string> sent_destination_signals;
+  // Used for cancellation only
+  std::unordered_map<std::string, std::string>
+    _cancellation_rmf_id_to_itinerary_id = {};
 
   // Task interface
   rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
   rclcpp::Subscription<ApiResponse>::SharedPtr _api_response_sub = nullptr;
   rclcpp::Subscription<TaskStateUpdate>::SharedPtr _task_state_sub = nullptr;
-
-  // // Dispenser interface
-  // rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub = nullptr;
-  // rclcpp::Publisher<DispenserState>::SharedPtr _dispenser_state_pub = nullptr;
-  // rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub = nullptr;
-  // // Ingestor interface
-  // rclcpp::Publisher<IngestorResult>::SharedPtr _ingestor_result_pub = nullptr;
-  // rclcpp::Publisher<IngestorState>::SharedPtr _ingestor_state_pub = nullptr;
-  // rclcpp::Subscription<IngestorRequest>::SharedPtr _ingestor_request_sub = nullptr;
 
   // TODO(ac): support ACTION_TRANSIT with a basic go-to-place.
   std::optional<std::string> _action_to_activity_category(uint8_t action)
@@ -275,6 +251,17 @@ private:
       return;
     }
 
+    if (!errors.empty())
+    {
+      RCLCPP_ERROR(
+        n->get_logger(),
+        "Errors occurred during auctioneer bidding:");
+      for (const auto& e : errors)
+      {
+        RCLCPP_ERROR(n->get_logger(), e.c_str());
+      }
+    }
+
     std::lock_guard<std::mutex> lock(_mutex);
     auto it = _rmf_task_id_to_itinerary_query.find(rmf_task_id);
     if (it == _rmf_task_id_to_itinerary_query.end())
@@ -368,8 +355,13 @@ public:
     _node = n;
     // TODO(luca) get RMF parameters here
 
-    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
-      rmf_task_ros2::bidding::Auctioneer::AuctioneerNodeInterfaces(*n),
+    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make_with_node_interfaces(
+      n->get_node_base_interface(),
+      n->get_node_clock_interface(),
+      n->get_node_logging_interface(),
+      n->get_node_timers_interface(),
+      n->get_node_topics_interface(),
+      n->get_node_parameters_interface(),
       [this](
         const std::string& rmf_task_id,
         const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
@@ -404,9 +396,63 @@ public:
           return;
         }
 
+        // Check for task cancellation first
+        auto cancellation_it =
+          _cancellation_rmf_id_to_itinerary_id.find(msg->request_id);
+        if (cancellation_it != _cancellation_rmf_id_to_itinerary_id.end())
+        {
+          auto c = nlohmann::json::parse(msg->json_msg, nullptr, false);
+          if (c.is_discarded() || !c.contains("success"))
+          {
+            RCLCPP_ERROR(
+              n->get_logger(),
+              "Invalid JSON in cancellation API response, RMF cancellation "
+              "[%s] for itinerary [%s] failed",
+              msg->request_id.c_str(),
+              cancellation_it->second.c_str());
+            // Note(ac): assume that some form of manual intervention or manual
+            // cancellation is required if cancellation from API fails, and
+            // there is nothing Nexus can do about it.
+            return;
+          }
+
+          if (c["success"] == false)
+          {
+            // Note(ac): Same assumption as the note above regarding manual
+            // cancellation or intervention.
+            RCLCPP_ERROR(
+              n->get_logger(),
+              "RMF cancellation [%s] for itinerary [%s] failed",
+              msg->request_id.c_str(),
+              cancellation_it->second.c_str());
+            return;
+          }
+
+          // Cancellation was successful
+          _cancellation_rmf_id_to_itinerary_id.erase(cancellation_it);
+          return;
+        }
+
+        // Warning about pending or failed cancellations
+        if (!_cancellation_rmf_id_to_itinerary_id.empty())
+        {
+          std::stringstream ss;
+          for (auto it = _cancellation_rmf_id_to_itinerary_id.begin();
+            it != _cancellation_rmf_id_to_itinerary_id.end(); it++)
+          {
+            ss << "itinerary: [" << it->second << "], RMF: [" << it->first
+              << "]," << std::endl;
+          }
+          RCLCPP_WARN(
+            n->get_logger(),
+            "Pending or failed transporter cancellations: \n%s\n",
+            ss.str().c_str());
+        }
+
         std::lock_guard<std::mutex> lock(_mutex);
-        auto it = _job_id_to_unconfirmed_itineraries.find(msg->request_id);
-        if (it == _job_id_to_unconfirmed_itineraries.end())
+        auto it =
+          _itinerary_id_to_unconfirmed_itineraries.find(msg->request_id);
+        if (it == _itinerary_id_to_unconfirmed_itineraries.end())
         {
           // Ignore API responses that are not for this transporter
           return;
@@ -425,7 +471,7 @@ public:
             "Invalid JSON in API response, itinerary [%s] failed.",
             it->second.itinerary.id().c_str());
           it->second.completed_cb(false);
-          _job_id_to_unconfirmed_itineraries.erase(it);
+          _itinerary_id_to_unconfirmed_itineraries.erase(it);
           return;
         }
 
@@ -436,7 +482,7 @@ public:
             "RMF task dispatch request for itinerary [%s] rejected.",
             it->second.itinerary.id().c_str());
           it->second.completed_cb(false);
-          _job_id_to_unconfirmed_itineraries.erase(it);
+          _itinerary_id_to_unconfirmed_itineraries.erase(it);
           return;
         }
 
@@ -449,7 +495,7 @@ public:
         std::string rmf_task_id = j["state"]["booking"]["id"];
         _rmf_task_id_to_ongoing_itinerary.insert(
           {std::move(rmf_task_id), std::move(it->second)});
-        _job_id_to_unconfirmed_itineraries.erase(it);
+        _itinerary_id_to_unconfirmed_itineraries.erase(it);
       });
 
     _task_state_sub = n->create_subscription<TaskStateUpdate>(
@@ -621,7 +667,7 @@ public:
 
     std::lock_guard<std::mutex> lock(_mutex);
     std::string itinerary_id = itinerary.id();
-    _job_id_to_unconfirmed_itineraries.insert(
+    _itinerary_id_to_unconfirmed_itineraries.insert(
       {
         std::move(itinerary_id),
         {
@@ -635,8 +681,42 @@ public:
 
   bool cancel(Itinerary itinerary) final
   {
-    // TODO
-    return true;
+    auto n = _node.lock();
+    if (!n)
+    {
+      std::cerr << "RmfTransporter::cancel - invalid node" << std::endl;
+      return false;
+    }
+
+    auto it = _rmf_task_id_to_ongoing_itinerary.begin();
+    for (; it != _rmf_task_id_to_ongoing_itinerary.end(); it++)
+    {
+      if (it->second.itinerary.id() != itinerary.id())
+      {
+        continue;
+      }
+
+      nlohmann::json c;
+      c["type"] = "cancel_task_request";
+      c["task_id"] = it->first;
+
+      std::stringstream ss;
+      ss << "cancellation.nexus-" << itinerary.id() << "-" << it->first;
+
+      _cancellation_rmf_id_to_itinerary_id.insert({ss.str(), itinerary.id()});
+
+      ApiRequest msg;
+      msg.json_msg = c.dump();
+      msg.request_id = ss.str();
+      _api_request_pub->publish(msg);
+      return true;
+    }
+
+    RCLCPP_ERROR(
+      n->get_logger(),
+      "No ongoing RMF task for itinerary [%s] found",
+      itinerary.id().c_str());
+    return false;
   }
 
   ~RmfTransporter() = default;
