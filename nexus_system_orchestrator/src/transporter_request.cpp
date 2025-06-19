@@ -24,13 +24,13 @@ namespace nexus::system_orchestrator {
 
 BT::PortsList TransporterRequest::providedPorts()
 {
-  return { BT::InputPort<std::shared_ptr<TransportationRequest>>("transport_task"),
+  return { BT::InputPort<TransportationRequest>("transport_task"),
     BT::InputPort<std::string>("transporter") };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
 {
-  auto maybe_task = this->getInput<std::shared_ptr<TransportationRequest>>("transport_task");
+  auto maybe_task = this->getInput<TransportationRequest>("transport_task");
   if (!maybe_task)
   {
     RCLCPP_ERROR(
@@ -39,13 +39,7 @@ BT::NodeStatus TransporterRequest::onStart()
     return BT::NodeStatus::FAILURE;
   }
 
-  const auto& task = maybe_task.value();
-  if (!task)
-  {
-    // We don't need to transport
-    return BT::NodeStatus::SUCCESS;
-  }
-  this->_request = *task;
+  this->_request = maybe_task.value();
 
   auto maybe_transporter = this->getInput<std::string>("transporter");
   if (!maybe_transporter)

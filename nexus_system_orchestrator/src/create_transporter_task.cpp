@@ -97,4 +97,32 @@ BT::NodeStatus CreateTransporterTask::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+BT::NodeStatus UnpackTransporterTask::tick()
+{
+  const auto node = this->_w_node.lock();
+  if (!node)
+  {
+    std::cerr <<
+      "FATAL ERROR!!! NODE IS DESTROYED WHILE THERE ARE STILL REFERENCES" <<
+      std::endl;
+    std::terminate();
+  }
+
+  const auto maybe_request = this->getInput<std::shared_ptr<TransportationRequest>>("input");
+  if (!maybe_request)
+  {
+    RCLCPP_ERROR(
+      node->get_logger(), "%s: [input] param is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  if (!maybe_request.value())
+  {
+    return BT::NodeStatus::FAILURE;
+  }
+  this->setOutput("output", maybe_request.value());
+  return BT::NodeStatus::SUCCESS;
+}
+
 }

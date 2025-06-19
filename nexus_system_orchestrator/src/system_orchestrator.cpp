@@ -519,6 +519,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
         this->shared_from_this(), ctx);
     });
 
+  bt_factory->registerBuilder<UnpackTransporterTask>("UnpackTransporterTask",
+    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<UnpackTransporterTask>(name, config,
+        this->shared_from_this());
+    });
+
   bt_factory->registerBuilder<AssignTransporterWorkcell>("AssignTransporterWorkcell",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {

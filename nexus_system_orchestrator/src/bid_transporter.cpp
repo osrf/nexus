@@ -23,7 +23,7 @@ namespace nexus::system_orchestrator {
 
 BT::PortsList BidTransporter::providedPorts()
 {
-  return { BT::InputPort<std::shared_ptr<TransportationRequest>>("transport_task"),
+  return { BT::InputPort<TransportationRequest>("transport_task"),
     BT::OutputPort<std::string>("result") };
 }
 
@@ -38,7 +38,7 @@ BT::NodeStatus BidTransporter::onStart()
     std::terminate();
   }
 
-  const auto maybe_task = this->getInput<std::shared_ptr<TransportationRequest>>("transport_task");
+  const auto maybe_task = this->getInput<TransportationRequest>("transport_task");
   if (!maybe_task)
   {
     RCLCPP_ERROR(
@@ -47,17 +47,12 @@ BT::NodeStatus BidTransporter::onStart()
     return BT::NodeStatus::FAILURE;
   }
   const auto& task = maybe_task.value();
-  if (!task)
-  {
-    // We don't need to transport
-    return BT::NodeStatus::SUCCESS;
-  }
 
   // send request to all transporters in parallel
   for (auto& [transporter_id, session] : this->_ctx->get_transporter_sessions())
   {
     auto req = std::make_shared<IsTransporterAvailableService::ServiceType::Request>();
-    req->request = *task;
+    req->request = task;
     auto fut = session->available_client->async_send_request(req);
     this->_ongoing_requests.emplace(transporter_id,
       OngoingRequest{session->available_client, std::move(fut)});

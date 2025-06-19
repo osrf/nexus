@@ -71,6 +71,36 @@ private: rclcpp_lifecycle::LifecycleNode::WeakPtr _w_node;
 private: std::shared_ptr<Context> _ctx;
 };
 
+/**
+ * Unpacks the optional transporter task as an input, returning SUCCESS and the content if present
+ * or FAILURE if not present.
+ *
+ * Input Ports:
+ *   input |std::optional<TransportationRequest>| The task that the node will unpack
+ */
+class UnpackTransporterTask : public BT::SyncActionNode
+{
+public: using TransportationRequest = nexus_transporter_msgs::msg::TransportationRequest;
+public: static BT::PortsList providedPorts()
+  {
+    return {
+      BT::InputPort<std::shared_ptr<TransportationRequest>>(
+         "input", "An optional TransportationRequest"),
+      BT::OutputPort<TransportationRequest>(
+         "output", "The contained TransportationRequest, if available") };
+  }
+
+public: inline UnpackTransporterTask(const std::string& name,
+    const BT::NodeConfiguration& config,
+    rclcpp_lifecycle::LifecycleNode::WeakPtr w_node)
+  : BT::SyncActionNode(name, config),
+    _w_node(w_node) {}
+
+public: BT::NodeStatus tick() override;
+
+private: rclcpp_lifecycle::LifecycleNode::WeakPtr _w_node;
+};
+
 }
 
 #endif

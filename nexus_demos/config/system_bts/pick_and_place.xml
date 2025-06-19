@@ -5,9 +5,16 @@
       <Parallel success_threshold="-1">
         <Sequence>
           <!-- Create transport task, return success but a nullopt if it's not necessary -->
-          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{transport_task}"/>
-          <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{maybe_transport_task}"/>
+          <IfThenElse>
+            <!-- Return SUCCESS and populate transport task if transportation is necessary, FAILURE if not necessary -->
+            <UnpackTransporterTask input="{maybe_transport_task}" output="{transport_task}" />
+            <Sequence>
+              <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
+              <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+            </Sequence>
+            <AlwaysSuccess />
+          </IfThenElse>
           <SendSignal task="{task}" signal="transporter_done"/>
         </Sequence>
         <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>

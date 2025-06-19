@@ -7,14 +7,30 @@
           <ForEachTask task="{task}" workcell="{workcell}">
             <ExecuteTask task="{task}" workcell="{workcell}"/>
           </ForEachTask>
-          <CreateTransporterTask workcell_task="{task}" destination="unloading" result="{transport_task}"/>
-          <BidTransporter name="bid_transporter" transport_task="{transport_task}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{maybe_transport_task}"/>
+          <IfThenElse>
+            <!-- Return SUCCESS and populate transport task if transportation is necessary, FAILURE if not necessary -->
+            <UnpackTransporterTask input="{maybe_transport_task}" output="{transport_task}" />
+            <Sequence>
+              <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
+              <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+            </Sequence>
+            <AlwaysSuccess />
+          </IfThenElse>
+          <SendSignal task="{task}" signal="transporter_done"/>
         </PausableSequence>
         <PausableSequence pause="{paused}">
-          <CreateTransporterTask workcell_task="{task}" destination="unloading" result="{transport_task}"/>
-          <BidTransporter name="bid_transporter" transport_task="{transport_task}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{maybe_transport_task}"/>
+          <IfThenElse>
+            <!-- Return SUCCESS and populate transport task if transportation is necessary, FAILURE if not necessary -->
+            <UnpackTransporterTask input="{maybe_transport_task}" output="{transport_task}" />
+            <Sequence>
+              <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
+              <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}"/>
+            </Sequence>
+            <AlwaysSuccess />
+          </IfThenElse>
+          <SendSignal task="{task}" signal="transporter_done"/>
           <AlwaysFailure/>
         </PausableSequence>
       </Fallback>
