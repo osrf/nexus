@@ -152,8 +152,8 @@ target_include_directories(rmf_transporter
     ${rmf_task_msgs_INCLUDE_DIRS}
     ${std_msgs_INCLUDE_DIRS}
 )
-ament_export_libraries(rmf_transporter)
 
+ament_export_libraries(rmf_transporter)
 pluginlib_export_plugin_description_file(nexus_transporter src/transporters/plugins.xml)
 
 #===============================================================================
@@ -195,6 +195,7 @@ install(
 install(
   TARGETS
     mock_transporter
+    rmf_transporter
     nexus_transporter
     nexus_transporter_component
   EXPORT nexus_transporter

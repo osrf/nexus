@@ -20,17 +20,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
-// #include <nexus_endpoints.hpp>
 #include <nexus_transporter/Itinerary.hpp>
 #include <nexus_transporter/Transporter.hpp>
 
 #include <builtin_interfaces/msg/duration.hpp>
-// #include <rmf_dispenser_msgs/msg/dispenser_result.hpp>
-// #include <rmf_dispenser_msgs/msg/dispenser_request.hpp>
-// #include <rmf_dispenser_msgs/msg/dispenser_state.hpp>
-// #include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
-// #include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
-// #include <rmf_ingestor_msgs/msg/ingestor_state.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
@@ -493,6 +486,7 @@ public:
           j.dump(4).c_str());
 
         std::string rmf_task_id = j["state"]["booking"]["id"];
+        it->second.transporter_state.task_id = rmf_task_id;
         _rmf_task_id_to_ongoing_itinerary.insert(
           {std::move(rmf_task_id), std::move(it->second)});
         _itinerary_id_to_unconfirmed_itineraries.erase(it);

@@ -133,8 +133,6 @@ add_library(nexus_builtin_capabilities SHARED
   src/capabilities/plan_motion_capability.cpp
   src/capabilities/plan_motion.cpp
   src/capabilities/request_transporter.cpp
-  src/capabilities/rmf_capability.cpp
-  src/capabilities/rmf_wait_for_dispenser_request.cpp
   src/capabilities/rmf_request.cpp
   src/capabilities/rmf_request_capability.cpp
   src/capabilities/transporter_capability.cpp

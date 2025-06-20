@@ -6,18 +6,19 @@
         <StringToVector string="workcell_1," delimiter="," strings="{destination_names}"/>
         <MakePickupDestinations name="make_pickup_destinations" destination_names="{destination_names}" destinations="{destinations}"/>
         <transporter.BidTransporter name="bid_transporter" destinations="{destinations}" result="{transporter}"/>
-        <transporter.RequestTransporter name="request_transporter" transporter="{transporter}" destinations="{destinations}"/>
-        <!-- maybe another step to get the rmf task id -->
-        <rmf.WaitForDispenserRequest rmf_task_id="{rmf_task_id}" dispenser="workcell_1"/>
+        <transporter.RequestTransporter name="request_transporter" transporter="{transporter}" destinations="{destinations}" transporter_task_id="{rmf_task_id}"/>
+
+        <!-- Wait for AMR to reach the workcell -->
+        <rmf_request.WaitForAmr rmf_task_id="{rmf_task_id}" workcell="{workcell}" />
+        <!-- Signal workcell that the AMR arrived -->
         <SetSignal signal="transporter_done"/>
-        <WaitForSignal signal="workcell_done" clear="true"/>
-        <rmf.PublishDispenserResult rmf_task_id="{rmf_task_id}" dispenser="workcell_1"/>
+        <!-- Wait for workcell to be done with its task -->
+        <WaitForSignal signal="workcell_done" />
+        <!-- Signal RMF that we can move -->
+        <rmf_request.SignalAmr workcell="{workcell}" rmf_task_id="{rmf_task_id}" />
       </Sequence>
 
       <Sequence name="workcell_sequence">
-
-        <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
-
         <dispense_item.DispenseItem name="dispense_item" item="productA" />
 
         <ApplyTransform base_pose="pickup_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
@@ -33,13 +34,15 @@
         <plan_motion.PlanMotion name="plan_to_dropoff" robot_name="abb_irb910sc" goal="dropoff_pose" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{dropoff_traj}" />
         <GetJointConstraints trajectory="{dropoff_traj}" joint_constraints="{joint_constraints}" />
 
+        <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
         <execute_trajectory.ExecuteTrajectory name="execute_dropoff" trajectory="{dropoff_traj}" />
         <gripper.GripperControl name="dropoff_product" gripper="workcell_1_mock_gripper" position="1.0" max_effort="0.0" />
+
+        <SetSignal signal="workcell_done"/>
 
         <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb910sc" goal="home" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{home_traj}" />
         <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
 
-        <SetSignal signal="workcell_done"/>
       </Sequence>
     </Parallel>
   </BehaviorTree>

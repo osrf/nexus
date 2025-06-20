@@ -23,10 +23,6 @@
     <description>PlanMotion capability.</description>
   </class>
 
-  <class type="nexus::capabilities::RMFCapability" base_class_type="nexus::Capability">
-    <description>RMF capability.</description>
-  </class>
-
   <class type="nexus::capabilities::RMFRequestCapability" base_class_type="nexus::Capability">
     <description>RMFRequest capability.</description>
   </class>
