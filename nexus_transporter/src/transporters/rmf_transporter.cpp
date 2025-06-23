@@ -566,6 +566,11 @@ public:
         }
       });
 
+    _ready = true;
+    RCLCPP_INFO(
+      n->get_logger(),
+      "Finished configuring RmfTransporter!"
+    );
     return true;
   }
 

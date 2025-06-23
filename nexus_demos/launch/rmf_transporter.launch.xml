@@ -66,12 +66,6 @@
     </include>
   </group>
 
-  <node pkg="nexus_workcell_orchestrator" exec="nexus_workcell_orchestrator" name="rmf_nexus_transporter" output="both">
-    <param name="capabilities" value="[nexus::capabilities::RMFRequestCapability]"/>
-    <param name="bt_path" value="$(find-pkg-share nexus_demos)/config/rmf"/>
-    <param name="max_jobs" value="10"/>
-  </node>
-
   <!-- Temporary node to cancel RMF tasks if a workcell task fail -->
   <node pkg="nexus_demos" exec="rmf_task_canceller" name="rmf_task_canceller" output="both">
     <param name="rmf_workcell_name" value="rmf_nexus_transporter"/>
