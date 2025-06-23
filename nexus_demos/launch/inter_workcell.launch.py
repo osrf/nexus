@@ -176,14 +176,6 @@ def launch_setup(context, *args, **kwargs):
             {"speed": 1.0},
             {"unloading_station": "unloading"},
         ],
-        condition=UnlessCondition(use_rmf_transporter),
-    )
-
-    activate_transporter_node = GroupAction(
-        [
-            activate_node(transporter_node),
-        ],
-        condition=UnlessCondition(use_rmf_transporter),
     )
 
     mock_emergency_alarm_node = LifecycleNode(
@@ -239,7 +231,7 @@ def launch_setup(context, *args, **kwargs):
         nexus_panel,
         zenoh_bridge,
         activate_system_orchestrator,
-        activate_transporter_node,
+        activate_node(transporter_node),
         activate_node(mock_emergency_alarm_node),
     ]
 

@@ -44,7 +44,6 @@ public:
   using TransportFeedback = std::function<void(const TransporterState& state)>;
   /// A callback to execute once the transportation is completed
   using TransportCompleted = std::function<void(bool success)>;
-  /// Destination.
 
   /// Configure the transporter including getting relevant information from
   /// ROS 2 parameters. (Eg. List of destinations)
@@ -86,7 +85,7 @@ public:
   ///   A callback to execute to submit feedback on the transporter's progress
   ///
   /// \param[in] completed_cb
-  ///   A callback to execute to when the transportation has failed or succeeded
+  ///   A callback to execute when the transportation has failed or succeeded
   virtual void transport_to_destination(
     Itinerary itinerary,
     TransportFeedback feedback_cb,

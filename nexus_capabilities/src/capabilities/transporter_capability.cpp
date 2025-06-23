@@ -20,13 +20,7 @@
 #include "request_transporter.hpp"
 #include "transporter_capability.hpp"
 
-#include <nexus_capabilities/exceptions.hpp>
-
-#include <yaml-cpp/exceptions.h>
-
 namespace nexus::capabilities {
-
-using rcl_interfaces::msg::ParameterDescriptor;
 
 //==============================================================================
 void TransporterCapability::declare_params(rclcpp_lifecycle::LifecycleNode&)

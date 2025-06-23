@@ -29,7 +29,8 @@ BT::PortsList RequestTransporter::providedPorts()
   return {
     BT::InputPort<std::string>("transporter"),
     BT::InputPort<std::vector<nexus_transporter_msgs::msg::Destination>>(
-      "destinations")
+      "destinations"),
+    BT::OutputPort<std::string>("transporter_task_id"),
   };
 }
 
@@ -60,6 +61,13 @@ BT::NodeStatus RequestTransporter::onStart()
 
   return common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
     endpoints::TransportAction::ActionType>::onStart();
+}
+
+//==============================================================================
+void RequestTransporter::on_feedback(
+  endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr msg)
+{
+  this->setOutput("transporter_task_id", msg->state.task_id);
 }
 
 //==============================================================================

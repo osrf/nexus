@@ -55,6 +55,10 @@ public: inline RequestTransporter(
 
 public: BT::NodeStatus onStart() override;
 
+protected: void on_feedback(
+    endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr msg)
+  override;
+
 protected: std::string get_action_name() const override;
 
 protected: std::optional<endpoints::TransportAction::ActionType::Goal>
