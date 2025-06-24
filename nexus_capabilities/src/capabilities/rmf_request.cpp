@@ -202,8 +202,9 @@ BT::NodeStatus SignalAmr::tick()
 
   if (action_type == "pickup")
   {
-    this->_dispenser_result_pub =
-      this->_node->create_publisher<DispenserResult>("/dispenser_results", 10);
+    this->_dispenser_result_pub = this->_node->create_publisher<DispenserResult>(
+        "/dispenser_results",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable());
     DispenserResult msg;
     msg.request_guid = *rmf_task_id;
     msg.source_guid = *workcell;
@@ -212,8 +213,9 @@ BT::NodeStatus SignalAmr::tick()
   }
   else if (action_type == "dropoff")
   {
-    this->_ingestor_result_pub =
-      this->_node->create_publisher<IngestorResult>("/ingestor_results", 10);
+    this->_ingestor_result_pub = this->_node->create_publisher<IngestorResult>(
+        "/ingestor_results",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable());
     IngestorResult msg;
     msg.request_guid = *rmf_task_id;
     msg.source_guid = *workcell;
@@ -317,8 +319,8 @@ BT::NodeStatus WaitForAmr::onStart()
     this->_dispenser_request_sub =
       this->_node->create_subscription<DispenserRequest>(
         "/dispenser_requests",
-        10,
-        [&](DispenserRequest::UniquePtr msg)
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable(),
+        [&](DispenserRequest::ConstSharedPtr msg)
         {
           this->dispenser_request_cb(*msg);
         });
@@ -328,8 +330,8 @@ BT::NodeStatus WaitForAmr::onStart()
     this->_ingestor_request_sub =
       this->_node->create_subscription<IngestorRequest>(
         "/ingestor_requests",
-        10,
-        [&](IngestorRequest::UniquePtr msg)
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable(),
+        [&](IngestorRequest::ConstSharedPtr msg)
         {
           this->ingestor_request_cb(*msg);
         });
