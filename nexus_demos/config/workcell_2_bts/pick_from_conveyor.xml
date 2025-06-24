@@ -1,44 +1,34 @@
 <?xml version='1.0'?>
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
-    <Parallel success_threshold="-1">
-      <Sequence name="transporter_sequence">
-        <StringToVector string="workcell_2," delimiter="," strings="{destination_names}"/>
-        <MakeDropoffDestinations name="make_dropoff_destinations" destination_names="{destination_names}" destinations="{destinations}"/>
-        <transporter.BidTransporter name="bid_transporter" destinations="{destinations}" result="{transporter}"/>
-        <transporter.RequestTransporter name="request_transporter" transporter="{transporter}" destinations="{destinations}"/>
-        <SetSignal signal="transporter_done"/>
-      </Sequence>
+    <Sequence name="root_sequence">
+      <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
+      <StringToVector string="productA," delimiter="," strings="{items}"/>
+      <detection.DetectAllItems name="detect_items" detector="workcell_2_mock_product_detector" items="{items}" result="{all_products}" />
+      <detection.GetDetection detections="{all_products}" idx="0" result="{current_product_detection}" />
+      <detection.GetDetectionPose detection="{current_product_detection}" result="{current_product_pose}" />
 
-      <Sequence name="workcell_sequence">
-        <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
-        <StringToVector string="productA," delimiter="," strings="{items}"/>
-        <detection.DetectAllItems name="detect_items" detector="workcell_2_mock_product_detector" items="{items}" result="{all_products}" />
-        <detection.GetDetection detections="{all_products}" idx="0" result="{current_product_detection}" />
-        <detection.GetDetectionPose detection="{current_product_detection}" result="{current_product_pose}" />
+      <ApplyTransform base_pose="{current_product_pose}" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
+      <plan_motion.PlanMotion name="plan_to_pickup_top" robot_name="abb_irb1300" goal="{pickup_top_goal}" scale_speed="0.5" result="{pickup_top_traj}" />
+      <GetJointConstraints trajectory="{pickup_top_traj}" joint_constraints="{joint_constraints}" />
+      <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_top_traj}" />
 
-        <ApplyTransform base_pose="{current_product_pose}" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" local="true" result="{pickup_top_goal}" />
-        <plan_motion.PlanMotion name="plan_to_pickup_top" robot_name="abb_irb1300" goal="{pickup_top_goal}" scale_speed="0.5" result="{pickup_top_traj}" />
-        <GetJointConstraints trajectory="{pickup_top_traj}" joint_constraints="{joint_constraints}" />
-        <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_top_traj}" />
+      <plan_motion.PlanMotion name="plan_to_product" robot_name="abb_irb1300" goal="{current_product_pose}" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{pickup_traj}" />
+      <GetJointConstraints trajectory="{pickup_traj}" joint_constraints="{joint_constraints}" />
+      <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_traj}" />
+      <gripper.GripperControl name="pickup_product" gripper="workcell_2_mock_gripper" position="0.0" max_effort="1.0" />
 
-        <plan_motion.PlanMotion name="plan_to_product" robot_name="abb_irb1300" goal="{current_product_pose}" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{pickup_traj}" />
-        <GetJointConstraints trajectory="{pickup_traj}" joint_constraints="{joint_constraints}" />
-        <execute_trajectory.ExecuteTrajectory name="execute_pickup" trajectory="{pickup_traj}" />
-        <gripper.GripperControl name="pickup_product" gripper="workcell_2_mock_gripper" position="0.0" max_effort="1.0" />
+      <ApplyTransform base_pose="dropoff_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{dropoff_top_goal}" />
+      <plan_motion.PlanMotion name="plan_to_dropoff_top" robot_name="abb_irb1300" goal="{dropoff_top_goal}" scale_speed="0.5" result="{dropoff_top_traj}" />
+      <GetJointConstraints trajectory="{dropoff_top_traj}" joint_constraints="{joint_constraints}" />
+      <execute_trajectory.ExecuteTrajectory name="execute_dropoff_top" trajectory="{dropoff_top_traj}" />
 
-        <ApplyTransform base_pose="dropoff_pose" x="0" y="0" z="-0.02" qx="0" qy="0" qz="0" qw="1" result="{dropoff_top_goal}" />
-        <plan_motion.PlanMotion name="plan_to_dropoff_top" robot_name="abb_irb1300" goal="{dropoff_top_goal}" scale_speed="0.5" result="{dropoff_top_traj}" />
-        <GetJointConstraints trajectory="{dropoff_top_traj}" joint_constraints="{joint_constraints}" />
-        <execute_trajectory.ExecuteTrajectory name="execute_dropoff_top" trajectory="{dropoff_top_traj}" />
+      <plan_motion.PlanMotion name="plan_to_dropoff" robot_name="abb_irb1300" goal="dropoff_pose" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{dropoff_traj}" />
+      <GetJointConstraints trajectory="{dropoff_traj}" joint_constraints="{joint_constraints}" />
+      <gripper.GripperControl name="pickup_product" gripper="workcell_2_mock_gripper" position="1.0" max_effort="0.0" />
 
-        <plan_motion.PlanMotion name="plan_to_dropoff" robot_name="abb_irb1300" goal="dropoff_pose" scale_speed="0.5" cartesian="true" start_constraints="{joint_constraints}" result="{dropoff_traj}" />
-        <GetJointConstraints trajectory="{dropoff_traj}" joint_constraints="{joint_constraints}" />
-        <gripper.GripperControl name="pickup_product" gripper="workcell_2_mock_gripper" position="1.0" max_effort="0.0" />
-
-        <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb1300" goal="home" scale_speed="0.5" start_constraints="{joint_constraints}" result="{home_traj}" />
-        <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
-      </Sequence>
-    </Parallel>
+      <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb1300" goal="home" scale_speed="0.5" start_constraints="{joint_constraints}" result="{home_traj}" />
+      <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
+    </Sequence>
   </BehaviorTree>
 </root>
