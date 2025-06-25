@@ -57,11 +57,24 @@ BT::NodeStatus AssignTransporterWorkcell::onStart()
         this->name().c_str(), task.task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
+
+    // Note, for now we can only clearly encode if the transporter destination
+    // is either a pickup or dropoff, if they have the either input or output
+    // items, but not both filled or both empty. In those cases, we just default
+    // to a pickup action.
+    const auto step =
+      YAML::Load(task.payload).as<nexus::common::WorkOrder::Step>();
+    std::string action_type = "pickup";
+    if (!step.input_items().empty() && step.output_items().empty())
+    {
+      action_type = "dropoff";
+    }
+
     // Multipickup task
-    // TODO(luca) Consider encoding where is a pickup and where a dropoff
     // TODO(luca) remove consecutive duplicates (multiple tasks to same workcell that don't need transportation)
     YAML::Node order;
     order["type"] = "pickup";
+    order["type"] = action_type;
     order["destination"] = *assigned_workcell_id;
     order["workcell_task_id"] = task.task_id;
     orders.push_back(order);
