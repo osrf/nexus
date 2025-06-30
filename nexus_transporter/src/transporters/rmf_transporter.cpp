@@ -74,6 +74,8 @@ public:
 private:
   rclcpp_lifecycle::LifecycleNode::WeakPtr _node;
 
+  rclcpp::Node::SharedPtr _internal_node;
+
   bool _ready = false;
 
   // TODO(ac): parameterize these time windows
@@ -82,6 +84,12 @@ private:
   double _itinerary_expiration_seconds = 60;
 
   std::shared_ptr<rmf_task_ros2::bidding::Auctioneer> _auctioneer = nullptr;
+
+  rclcpp::CallbackGroup::SharedPtr _timer_cb_group = nullptr;
+
+  rclcpp::TimerBase::SharedPtr _timer = nullptr;
+
+  bool _check_results = false;
 
   std::mutex _mutex;
 
@@ -279,7 +287,7 @@ private:
       return;
     }
 
-    RCLCPP_ERROR(
+    RCLCPP_INFO(
       n->get_logger(),
       "Nexus RMF Transporter: found suitable transporter for bid [%s], fleet "
       "[%s], robot [%s].",
@@ -348,21 +356,45 @@ public:
     _node = n;
     // TODO(luca) get RMF parameters here
 
-    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make_with_node_interfaces(
-      n->get_node_base_interface(),
-      n->get_node_clock_interface(),
-      n->get_node_logging_interface(),
-      n->get_node_timers_interface(),
-      n->get_node_topics_interface(),
-      n->get_node_parameters_interface(),
+    _internal_node = rclcpp::Node::make_shared("rmf_transporter_internal_node");
+
+    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
+      _internal_node,
       [this](
         const std::string& rmf_task_id,
         const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
         const std::vector<std::string>& errors)
       {
         this->_conclude_bid(rmf_task_id, std::move(winner), errors);
+        _check_results = false;
       },
       std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
+
+    _timer_cb_group = n->create_callback_group(
+      rclcpp::CallbackGroupType::MutuallyExclusive);
+
+    _timer = n->create_wall_timer(
+      std::chrono::milliseconds(1000),
+      [&]()
+        {
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr << "RmfTransporter::tmp - invalid node"
+              << std::endl;
+            return;
+          }
+          // RCLCPP_INFO(n->get_logger(), "TIMER STILL RUNNING HEERREEEE");
+
+          // checks for results and spinsome
+          if (_check_results)
+          {
+            RCLCPP_INFO(n->get_logger(), "Checking results!");
+            rclcpp::spin_some(_internal_node);
+          }
+        },
+      _timer_cb_group);
+
 
     const auto transient_qos =
       rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
@@ -628,9 +660,13 @@ public:
       .dry_run(true);
     _auctioneer->request_bid(bid_notice);
 
-    std::lock_guard<std::mutex> lock(_mutex);
-    _rmf_task_id_to_itinerary_query[rmf_task_id] = ItineraryQuery{
-      job_id, destinations, std::move(completed_cb), std::nullopt};
+    {
+      std::lock_guard<std::mutex> lock(_mutex);
+      _rmf_task_id_to_itinerary_query[rmf_task_id] = ItineraryQuery{
+        job_id, destinations, std::move(completed_cb), std::nullopt};
+    }
+
+    _check_results = true;
   }
 
   void transport_to_destination(

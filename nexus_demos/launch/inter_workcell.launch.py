@@ -164,10 +164,23 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # transporter_node = LifecycleNode(
+    #     namespace="",
+    #     package="nexus_transporter",
+    #     executable="nexus_transporter_node",
+    #     name="transporter_node",
+    #     parameters=[
+    #         {"transporter_plugin": transporter_plugin},
+    #         {"destinations": ["loading", "workcell_1", "workcell_2", "unloading",]},
+    #         {"x_increment": 1.0},
+    #         {"speed": 1.0},
+    #         {"unloading_station": "unloading"},
+    #     ],
+    # )
     transporter_node = LifecycleNode(
         namespace="",
         package="nexus_transporter",
-        executable="nexus_transporter_node",
+        executable="nexus_tranporter_multi_threaded_node",
         name="transporter_node",
         parameters=[
             {"transporter_plugin": transporter_plugin},
