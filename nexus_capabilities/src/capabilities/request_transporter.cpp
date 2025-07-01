@@ -73,7 +73,10 @@ void RequestTransporter::on_feedback(
 //==============================================================================
 std::string RequestTransporter::get_action_name() const
 {
-  RCLCPP_INFO(this->_node->get_logger(), "action name: %s", this->_transporter.c_str());
+  RCLCPP_INFO(
+    this->_node->get_logger(),
+    "action name: %s",
+    endpoints::TransportAction::action_name(this->_transporter).c_str());
   return endpoints::TransportAction::action_name(this->_transporter);
 }
 

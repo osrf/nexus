@@ -105,7 +105,11 @@ private:
 
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
-    _cancellation_rmf_id_to_itinerary_id = {};
+  _cancellation_rmf_id_to_itinerary_id = {};
+
+  // Used for re-using past bid results
+  // TODO: cleanup expired itineraries when new itineraries are requested
+  std::unordered_map<std::string, Itinerary> _job_id_to_itinerary = {};
 
   // Task interface
   rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
@@ -192,6 +196,17 @@ private:
       return std::nullopt;
     }
 
+    const auto fleet_name = itinerary.metadata("fleet_name");
+    const auto robot_name = itinerary.metadata("robot_name");
+    if (!fleet_name.has_value() || !robot_name.has_value())
+    {
+      RCLCPP_ERROR(
+        n->get_logger(),
+        "Fleet name and/or robot name for this itinerary [%s] is not available",
+        itinerary.id().c_str());
+      return std::nullopt;
+    }
+
     const auto request_json =
       _generate_dispatch_task_request_json(itinerary.destinations());
     if (!request_json.has_value())
@@ -203,10 +218,8 @@ private:
 
     nlohmann::json j;
     j["type"] = "robot_task_request";
-    j["fleet"] =
-      _fleet_name_from_transporter_name(itinerary.transporter_name());
-    j["robot"] =
-      _robot_name_from_transporter_name(itinerary.transporter_name());
+    j["fleet"] = fleet_name.value();
+    j["robot"] = robot_name.value();
     j["request"] = request_json.value();
 
     ApiRequest msg;
@@ -303,14 +316,21 @@ private:
       rmf_traffic::time::apply_offset(
         std::chrono::steady_clock::now(), _itinerary_expiration_seconds));
 
-    const auto itinerary = Itinerary(
+    auto itinerary = Itinerary(
       rmf_task_id,
       it->second.destinations,
       _generate_transporter_name(
         winner->fleet_name, winner->expected_robot_name),
       rmf_traffic_ros2::to_ros2(winner->finish_time),
       expiration_time);
+    itinerary
+      .metadata("fleet_name", winner->fleet_name)
+      .metadata("robot_name", winner->expected_robot_name);
     it->second.completed_cb(itinerary);
+
+    // This itinerary may have been generated via get_itinerary, and contains
+    // the designated fleet or robot names.
+    _job_id_to_itinerary.insert({itinerary.id(), itinerary});
 
     // Since we will be using direct dispatching, we don't need to keep this
     // query anymore
@@ -384,9 +404,6 @@ public:
               << std::endl;
             return;
           }
-          // RCLCPP_INFO(n->get_logger(), "TIMER STILL RUNNING HEERREEEE");
-
-          // checks for results and spinsome
           if (_check_results)
           {
             RCLCPP_INFO(n->get_logger(), "Checking results!");
@@ -394,7 +411,6 @@ public:
           }
         },
       _timer_cb_group);
-
 
     const auto transient_qos =
       rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
@@ -677,14 +693,28 @@ public:
     auto n = _node.lock();
     if (!n)
     {
-      std::cerr << "RmfTransporter::transport_to_destionation - invalid node"
+      std::cerr << "RmfTransporter::transport_to_destination - invalid node"
         << std::endl;
       completed_cb(false);
       return;
     }
 
+    RCLCPP_INFO(
+      n->get_logger(),
+      "RmfTransporter::transport_to_destination, got a request for an itinerary!"
+    );
+
+    Itinerary itinerary_to_use = itinerary;
+    const auto saved_it = _job_id_to_itinerary.find(itinerary.id());
+    if (saved_it != _job_id_to_itinerary.end())
+    {
+      // TODO(ac): check that the destinations match
+      itinerary_to_use = saved_it->second;
+      _job_id_to_itinerary.erase(saved_it);
+    }
+
     const auto api_request_msg =
-      _generate_direct_dispatch_api_message(itinerary);
+      _generate_direct_dispatch_api_message(itinerary_to_use);
 
     if (!api_request_msg.has_value())
     {
@@ -694,19 +724,19 @@ public:
     _api_request_pub->publish(api_request_msg.value());
 
     nexus_transporter_msgs::msg::TransporterState transporter_state;
-    transporter_state.transporter = itinerary.transporter_name();
+    transporter_state.transporter = itinerary_to_use.transporter_name();
     transporter_state.state =
       nexus_transporter_msgs::msg::TransporterState::STATE_UNAVAILABLE;
     transporter_state.estimated_finish_time =
-      itinerary.estimated_finish_time() - n->get_clock()->now();
+      itinerary_to_use.estimated_finish_time() - n->get_clock()->now();
 
     std::lock_guard<std::mutex> lock(_mutex);
-    std::string itinerary_id = itinerary.id();
+    std::string itinerary_id = itinerary_to_use.id();
     _itinerary_id_to_unconfirmed_itineraries.insert(
       {
         std::move(itinerary_id),
         {
-          std::move(itinerary),
+          std::move(itinerary_to_use),
           std::move(transporter_state),
           std::move(feedback_cb),
           std::move(completed_cb)

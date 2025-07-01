@@ -21,7 +21,7 @@ system_orchestrators:
       subscribers: ["/estop", "/.*/workcell_state"]
       service_servers: ["/list_workcells", "/register_workcell", "/register_transporter"]
       service_clients: ["/.*/queue_task", "/.*/remove_pending_task", "/.*/pause", "/.*/signal", "/.*/get_state", "/.*/change_state", "/.*/is_task_doable"]
-      action_servers: ["/bid_transporter", "/.*/transport"]
+      action_servers: ["/bid_transporter", "/.*/transport", "/test_transport_action"]
       action_clients: ["/.*/request"]
     queries_timeout:
       default: 600.0
@@ -37,7 +37,7 @@ workcell_orchestrators:
       service_servers: ["/workcell_1/is_task_doable", "/workcell_1/queue_task", "/workcell_1/remove_pending_task", "/workcell_1/get_state", "/workcell_1/change_state", "/workcell_1/signal", "/workcell_1/pause"]
       service_clients: ["/register_workcell"]
       action_servers: ["/workcell_1/request"]
-      action_clients: ["/bid_transporter", "/.*/transport"]
+      action_clients: ["/bid_transporter", "/test_transport_action"]
     queries_timeout:
       default: 600.0
   - namespace: workcell_2
@@ -50,7 +50,7 @@ workcell_orchestrators:
       service_servers: ["/workcell_2/is_task_doable", "/workcell_2/queue_task", "/workcell_2/remove_pending_task", "/workcell_2/get_state", "/workcell_2/change_state", "/workcell_2/signal", "/workcell_2/pause"]
       service_clients: ["/register_workcell"]
       action_servers: ["/workcell_2/request"]
-      action_clients: ["/bid_transporter", "/.*/transport"]
+      action_clients: ["/bid_transporter", "/.*/transport", "/transporter_node/transport"]
     queries_timeout:
       default: 600.0
   - namespace: workcell_3
@@ -63,6 +63,6 @@ workcell_orchestrators:
       service_servers: ["workcell_3/is_task_doable", "workcell_3/queue_task", "workcell_3/remove_pending_task", "workcell_3/get_state", "workcell_3/change_state"]
       service_clients: ["/register_workcell"]
       action_servers: ["workcell_3/request"]
-      action_clients: ["/bid_transporter", "/.*/transport"]
+      action_clients: ["/bid_transporter", "/.*/transport", "/transporter_node/transport"]
     queries_timeout:
       default: 600.0
