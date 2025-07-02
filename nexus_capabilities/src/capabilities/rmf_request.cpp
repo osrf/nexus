@@ -351,7 +351,7 @@ BT::NodeStatus WaitForAmr::onStart()
 void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
 {
   if ((msg.request_guid == this->_rmf_task_id ||
-        msg.request_guid == "placeholder") &&
+        this->_rmf_task_id == "placeholder") &&
       msg.target_guid == this->_workcell)
   {
     this->_amr_ready = true;
@@ -361,7 +361,7 @@ void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
 void WaitForAmr::ingestor_request_cb(const IngestorRequest& msg)
 {
   if ((msg.request_guid == this->_rmf_task_id ||
-        msg.request_guid == "placeholder") &&
+        this->_rmf_task_id == "placeholder") &&
       msg.target_guid == this->_workcell)
   {
     this->_amr_ready = true;

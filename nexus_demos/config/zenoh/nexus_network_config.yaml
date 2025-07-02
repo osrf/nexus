@@ -6,7 +6,7 @@ mode: peer
 enable_rest_api: true
 
 system_orchestrators:
-  - namespace: system_orchestrator_and_transporters # ROS Namespace of the endpoints
+  - namespace: system_orchestrator # ROS Namespace of the endpoints
     # ROS Domain ID
     domain_id: 0
     # Listening TCP Address of Zenoh bridge
@@ -14,9 +14,9 @@ system_orchestrators:
     # HTTP Port for the REST API
     rest_api_http_port: 8000
     allow:
-      publishers: []
+      publishers: ["/dispenser_requests", "/ingestor_requests"]
       # TODO(luca) check if we need estop
-      subscribers: ["/estop", "/.*/workcell_state"]
+      subscribers: ["/estop", "/.*/workcell_state", "/dispenser_results", "/ingestor_results"]
       service_servers: ["/list_workcells", "/register_workcell", "/register_transporter"]
       # TODO(luca) check if transporter needs available endpoint
       service_clients: ["/.*/queue_task", "/.*/remove_pending_task", "/.*/pause", "/.*/signal", "/.*/get_state", "/.*/change_state", "/.*/is_task_doable"]
@@ -33,8 +33,8 @@ workcell_orchestrators:
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8001
     allow:
-      publishers: ["/workcell_1/workcell_state"]
-      subscribers: []
+      publishers: ["/workcell_1/workcell_state", "/dispenser_results", "/ingestor_results"]
+      subscribers: ["/dispenser_requests", "/ingestor_requests"]
       service_servers: ["/workcell_1/is_task_doable", "/workcell_1/queue_task", "/workcell_1/remove_pending_task", "/workcell_1/get_state", "/workcell_1/change_state", "/workcell_1/signal", "/workcell_1/pause"]
       service_clients: ["/register_workcell"]
       action_servers: ["/workcell_1/request"]
@@ -46,8 +46,8 @@ workcell_orchestrators:
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8002
     allow:
-      publishers: ["/workcell_2/workcell_state"]
-      subscribers: []
+      publishers: ["/workcell_2/workcell_state", "/dispenser_results", "/ingestor_results"]
+      subscribers: ["/dispenser_requests", "/ingestor_requests"]
       service_servers: ["/workcell_2/is_task_doable", "/workcell_2/queue_task", "/workcell_2/remove_pending_task", "/workcell_2/get_state", "/workcell_2/change_state", "/workcell_2/signal", "/workcell_2/pause"]
       service_clients: ["/register_workcell"]
       action_servers: ["/workcell_2/request"]
@@ -59,8 +59,8 @@ workcell_orchestrators:
     tcp_connect: ["0.0.0.0:7447"]
     rest_api_http_port: 8003
     allow:
-      publishers: ["workcell_3/workcell_state"]
-      subscribers: []
+      publishers: ["workcell_3/workcell_state", "/dispenser_results", "/ingestor_results"]
+      subscribers: ["/dispenser_requests", "/ingestor_requests"]
       service_servers: ["workcell_3/is_task_doable", "workcell_3/queue_task", "workcell_3/remove_pending_task", "workcell_3/get_state", "workcell_3/change_state"]
       service_clients: ["/register_workcell"]
       action_servers: ["workcell_3/request"]
