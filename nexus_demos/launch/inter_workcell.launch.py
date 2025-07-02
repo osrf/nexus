@@ -164,7 +164,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    transporter_node = LifecycleNode(
+    mock_transporter_node = LifecycleNode(
         namespace="",
         package="nexus_transporter",
         executable="nexus_transporter_node",
@@ -178,12 +178,28 @@ def launch_setup(context, *args, **kwargs):
         ],
         condition=UnlessCondition(use_rmf_transporter),
     )
-
-    activate_transporter_node = GroupAction(
+    activate_mock_transporter_node = GroupAction(
         [
-            activate_node(transporter_node),
+            activate_node(mock_transporter_node),
         ],
         condition=UnlessCondition(use_rmf_transporter),
+    )
+
+    rmf_transporter_node = LifecycleNode(
+        namespace="",
+        package="nexus_transporter",
+        executable="nexus_transporter_node",
+        name="transporter_node",
+        parameters=[
+            {"transporter_plugin": transporter_plugin},
+        ],
+        condition=IfCondition(use_rmf_transporter),
+    )
+    activate_rmf_transporter_node = GroupAction(
+        [
+            activate_node(rmf_transporter_node),
+        ],
+        condition=IfCondition(use_rmf_transporter),
     )
 
     mock_emergency_alarm_node = LifecycleNode(
@@ -234,12 +250,14 @@ def launch_setup(context, *args, **kwargs):
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
         rmf_transporter,
-        transporter_node,
+        mock_transporter_node,
+        rmf_transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
         zenoh_bridge,
         activate_system_orchestrator,
-        activate_transporter_node,
+        activate_mock_transporter_node,
+        activate_rmf_transporter_node,
         activate_node(mock_emergency_alarm_node),
     ]
 

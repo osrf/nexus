@@ -25,6 +25,7 @@
 
 #include <builtin_interfaces/msg/duration.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <rmf_building_map_msgs/msg/building_map.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -37,28 +38,18 @@
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace nexus_transporter {
 
 using ApiRequest = rmf_task_msgs::msg::ApiRequest;
 using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 using TaskStateUpdate = std_msgs::msg::String;
+using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
 
 class RmfTransporter : public Transporter
 {
 public:
-
-  struct ItineraryQuery
-  {
-    std::string job_id;
-
-    std::vector<Destination> destinations;
-
-    Transporter::ItineraryQueryCompleted completed_cb;
-
-    std::optional<rmf_task_ros2::bidding::Response::Proposal> winner =
-      std::nullopt;
-  };
 
   struct OngoingItinerary
   {
@@ -83,19 +74,7 @@ private:
     rmf_traffic_ros2::convert(rmf_traffic::time::from_seconds(2.0));
   double _itinerary_expiration_seconds = 60;
 
-  std::shared_ptr<rmf_task_ros2::bidding::Auctioneer> _auctioneer = nullptr;
-
-  rclcpp::CallbackGroup::SharedPtr _timer_cb_group = nullptr;
-
-  rclcpp::TimerBase::SharedPtr _timer = nullptr;
-
-  bool _check_results = false;
-
   std::mutex _mutex;
-
-  // Used for bidding only
-  std::unordered_map<std::string, ItineraryQuery>
-  _rmf_task_id_to_itinerary_query = {};
 
   // Used for transportation requests
   std::unordered_map<std::string, OngoingItinerary>
@@ -106,6 +85,12 @@ private:
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
   _cancellation_rmf_id_to_itinerary_id = {};
+
+  // RMF interface
+  BuildingMap::SharedPtr _building_map = nullptr;
+  std::unordered_set<std::string> _waypoints = {};
+  rclcpp::Subscription<rmf_building_map_msgs::msg::BuildingMap>::SharedPtr
+    _building_map_sub = nullptr;
 
   // Task interface
   rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
@@ -211,86 +196,6 @@ private:
     return msg;
   }
 
-  void _conclude_bid(
-    const std::string& rmf_task_id,
-    const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
-    const std::vector<std::string>& errors)
-  {
-    auto n = this->_node.lock();
-    if (!n)
-    {
-      std::cerr << "RmfTransporter::_conclude_bid - invalid node" << std::endl;
-      return;
-    }
-
-    if (!errors.empty())
-    {
-      RCLCPP_ERROR(
-        n->get_logger(),
-        "Errors occurred during auctioneer bidding:");
-      for (const auto& e : errors)
-      {
-        RCLCPP_ERROR(n->get_logger(), e.c_str());
-      }
-    }
-
-    std::lock_guard<std::mutex> lock(_mutex);
-    auto it = _rmf_task_id_to_itinerary_query.find(rmf_task_id);
-    if (it == _rmf_task_id_to_itinerary_query.end())
-    {
-      RCLCPP_ERROR(
-        n->get_logger(),
-        "Nexus RMF Transporter: unable to complete itinerary query for bid "
-        "[%s], as itinerary query completion callback was not found. "
-        "Skipping...",
-        rmf_task_id.c_str());
-      return;
-    }
-
-    if (!winner.has_value())
-    {
-      RCLCPP_INFO(
-        n->get_logger(),
-        "Nexus RMF Transporter Bidding Result: no suitable transporter found "
-        "for bid [%s].",
-        rmf_task_id.c_str());
-      it->second.completed_cb(std::nullopt);
-      return;
-    }
-
-    RCLCPP_INFO(
-      n->get_logger(),
-      "Nexus RMF Transporter: found suitable transporter for bid [%s], fleet "
-      "[%s], robot [%s].",
-      rmf_task_id.c_str(),
-      winner->fleet_name.c_str(),
-      winner->expected_robot_name.c_str());
-    it->second.winner = winner;
-
-    // TODO(ac): Use job_id instead of rmf_task_id, once we have made sure that
-    // job_id is always unique. At the moment, job_id is just the work order ID
-    // which could comprise of multiple transportation requests.
-    const rclcpp::Time expiration_time = rmf_traffic_ros2::to_ros2(
-      rmf_traffic::time::apply_offset(
-        std::chrono::steady_clock::now(), _itinerary_expiration_seconds));
-
-    // TODO(ac): winning fleet and robot should be added to this itinerary's
-    // metadata, and stored in this transporter based on job ID. When the
-    // transport request is needed, use the stored itinerary instead, and
-    // perform direct dispatch.
-    auto itinerary = Itinerary(
-      rmf_task_id,
-      it->second.destinations,
-      n->get_name(),
-      rmf_traffic_ros2::to_ros2(winner->finish_time),
-      expiration_time);
-    it->second.completed_cb(itinerary);
-
-    // Since we will be using direct dispatching, we don't need to keep this
-    // query anymore
-    _rmf_task_id_to_itinerary_query.erase(it);
-  }
-
   // From rmf_ros2/rmf_task_ros2/src/rmf_task_ros2/Dispatcher.cpp
   std::string _generate_random_hex_string(const std::size_t length = 3)
   {
@@ -329,42 +234,6 @@ public:
     }
     _node = n;
     // TODO(luca) get RMF parameters here
-
-    _internal_node = rclcpp::Node::make_shared("rmf_transporter_internal_node");
-
-    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
-      _internal_node,
-      [this](
-        const std::string& rmf_task_id,
-        const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
-        const std::vector<std::string>& errors)
-      {
-        this->_conclude_bid(rmf_task_id, std::move(winner), errors);
-        _check_results = false;
-      },
-      std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
-
-    _timer_cb_group = n->create_callback_group(
-      rclcpp::CallbackGroupType::MutuallyExclusive);
-
-    _timer = n->create_wall_timer(
-      std::chrono::milliseconds(1000),
-      [&]()
-        {
-          auto n = _node.lock();
-          if (!n)
-          {
-            std::cerr << "RmfTransporter::tmp - invalid node"
-              << std::endl;
-            return;
-          }
-          if (_check_results)
-          {
-            RCLCPP_INFO(n->get_logger(), "Checking results!");
-            rclcpp::spin_some(_internal_node);
-          }
-        },
-      _timer_cb_group);
 
     const auto transient_qos =
       rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
@@ -568,6 +437,27 @@ public:
         }
       });
 
+    _building_map_sub = n->create_subscription<BuildingMap>(
+      "/map",
+      transient_qos,
+      [&](BuildingMap::SharedPtr msg)
+      {
+        _building_map = msg;
+        for (const auto& level : _building_map->levels)
+        {
+          for (const auto& graph : level.nav_graphs)
+          {
+            for (const auto& v : graph.vertices)
+            {
+              if (!v.name.empty())
+              {
+                _waypoints.insert(v.name);
+              }
+            }
+          }
+        }
+      });
+
     _ready = true;
     RCLCPP_INFO(
       n->get_logger(),
@@ -606,37 +496,39 @@ public:
       ss.str().c_str()
     );
 
-    const auto request = _generate_dispatch_task_request_json(destinations);
-    if (!request.has_value())
+    if (!_building_map)
     {
       RCLCPP_ERROR(
         n->get_logger(),
-        "Failed to generate dispatch task request json");
+        "Building map not yet received");
       completed_cb(std::nullopt);
       return;
     }
 
-    // TODO(ac): set this to debug.
-    RCLCPP_INFO(n->get_logger(), "%s", request.value().dump(4).c_str());
-    // TODO(ac): perform schema validation.
-
-    const auto rmf_task_id = _generate_rmf_bidding_task_id(job_id);
-
-    const auto bid_notice =
-      rmf_task_msgs::build<rmf_task_msgs::msg::BidNotice>()
-      .request(request.value().dump())
-      .task_id(rmf_task_id)
-      .time_window(_bidding_time_window)
-      .dry_run(true);
-    _auctioneer->request_bid(bid_notice);
-
+    // Naively just checks if the waypoints exist on the building map.
+    // TODO(ac): use auctioneer for proper bidding
+    for (const auto& d : destinations)
     {
-      std::lock_guard<std::mutex> lock(_mutex);
-      _rmf_task_id_to_itinerary_query[rmf_task_id] = ItineraryQuery{
-        job_id, destinations, std::move(completed_cb), std::nullopt};
+      if (_waypoints.find(d.name) == _waypoints.end())
+      {
+        RCLCPP_ERROR(
+          n->get_logger(),
+          "Destination name [%s] not available.",
+          d.name.c_str());
+        completed_cb(std::nullopt);
+        return;
+      }
     }
 
-    _check_results = true;
+    // TODO(ac): use estimated finishing time from auctioneer. For now we just
+    // naively set the completion and expiration to 60 seconds from now.
+    auto itinerary = Itinerary(
+      job_id,
+      destinations,
+      n->get_name(),
+      n->get_clock()->now() + rclcpp::Duration(std::chrono::seconds(60)),
+      n->get_clock()->now() + rclcpp::Duration(std::chrono::seconds(60)));
+    completed_cb(itinerary);
   }
 
   void transport_to_destination(

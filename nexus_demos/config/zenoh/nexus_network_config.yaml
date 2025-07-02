@@ -6,7 +6,7 @@ mode: peer
 enable_rest_api: true
 
 system_orchestrators:
-  - namespace: system_orchestrator # ROS Namespace of the endpoints
+  - namespace: system_orchestrator_and_transporters # ROS Namespace of the endpoints
     # ROS Domain ID
     domain_id: 0
     # Listening TCP Address of Zenoh bridge
@@ -20,7 +20,7 @@ system_orchestrators:
       service_servers: ["/list_workcells", "/register_workcell", "/register_transporter"]
       # TODO(luca) check if transporter needs available endpoint
       service_clients: ["/.*/queue_task", "/.*/remove_pending_task", "/.*/pause", "/.*/signal", "/.*/get_state", "/.*/change_state", "/.*/is_task_doable"]
-      action_servers: []
+      action_servers: ["/bid_transporter", "/.*/transport"]
       # TODO(luca) check if we really need transporter client
       action_clients: ["/.*/request", "/.*/transport"]
     queries_timeout:

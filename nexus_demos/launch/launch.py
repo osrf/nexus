@@ -92,10 +92,12 @@ def launch_setup(context, *args, **kwargs):
     rviz_config_filename = "nexus_panel.rviz"
     max_jobs = "2"
     max_workcell_jobs = "1"
+    transporter_plugin = "nexus_transporter::MockTransporter"
     if (use_rmf_transporter.perform(context).lower() == "true"):
-        remap_task_types = """{
-                            pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
-                        }"""
+        transporter_plugin = "nexus_transporter::RmfTransporter"
+        # remap_task_types = """{
+        #                     pick_and_place_rmf: [place_on_conveyor, pick_from_conveyor],
+        #                 }"""
         main_bt_filename = "main_rmf.xml"
         rviz_config_filename = "nexus_panel_rmf.rviz"
         max_jobs = "10"
@@ -124,7 +126,7 @@ def launch_setup(context, *args, **kwargs):
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/system_orchestrator.json5",
                     "use_rmf_transporter": use_rmf_transporter,
-                    "transporter_plugin": "nexus_transporter::MockTransporter",
+                    "transporter_plugin": transporter_plugin,
                     "activate_system_orchestrator": headless,
                     "headless": headless,
                     "main_bt_filename": main_bt_filename,
