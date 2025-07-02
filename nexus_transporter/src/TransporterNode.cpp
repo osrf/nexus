@@ -113,6 +113,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           return;
         }
       );
+
       if (future.wait_for(data->wait_for_itinerary_timeout)
       == std::future_status::ready)
       {
@@ -198,7 +199,8 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
     this->get_node_clock_interface(),
     this->get_node_logging_interface(),
     this->get_node_waitables_interface(),
-    TransportAction::action_name(this->get_name()),
+    // TransportAction::action_name(this->get_name()),
+    "/test_transport_action",
     [data = _data](
       const rclcpp_action::GoalUUID& uuid,
       std::shared_ptr<const ActionType::Goal> goal)
