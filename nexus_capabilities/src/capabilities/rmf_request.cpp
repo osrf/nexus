@@ -350,7 +350,8 @@ BT::NodeStatus WaitForAmr::onStart()
 
 void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
 {
-  if (msg.request_guid == this->_rmf_task_id &&
+  if ((msg.request_guid == this->_rmf_task_id ||
+        msg.request_guid == "placeholder") &&
       msg.target_guid == this->_workcell)
   {
     this->_amr_ready = true;
@@ -359,7 +360,8 @@ void WaitForAmr::dispenser_request_cb(const DispenserRequest& msg)
 
 void WaitForAmr::ingestor_request_cb(const IngestorRequest& msg)
 {
-  if (msg.request_guid == this->_rmf_task_id &&
+  if ((msg.request_guid == this->_rmf_task_id ||
+        msg.request_guid == "placeholder") &&
       msg.target_guid == this->_workcell)
   {
     this->_amr_ready = true;
@@ -371,6 +373,110 @@ BT::NodeStatus WaitForAmr::onRunning()
   if (this->_amr_ready)
   {
     this->_amr_ready = false;
+    return BT::NodeStatus::SUCCESS;
+  }
+  return BT::NodeStatus::RUNNING;
+}
+
+BT::NodeStatus NaiveSignalAmr::onStart()
+{
+  const auto workcell = this->getInput<std::string>("workcell");
+  if (!workcell)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: [workcell] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  const auto action_type = this->getInput<std::string>("action_type");
+  if (!action_type)
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(), "%s: [action_type] port is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  this->_workcell = *workcell;
+  this->_action_type = *action_type;
+
+  if (action_type == "pickup")
+  {
+    this->_dispenser_request_sub =
+      this->_node->create_subscription<DispenserRequest>(
+        "/dispenser_requests",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable(),
+        [&](DispenserRequest::ConstSharedPtr msg)
+        {
+          this->dispenser_request_cb(*msg);
+        });
+    this->_dispenser_result_pub = this->_node->create_publisher<DispenserResult>(
+        "/dispenser_results",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable());
+  }
+  else if (action_type == "dropoff")
+  {
+    this->_ingestor_request_sub =
+      this->_node->create_subscription<IngestorRequest>(
+        "/ingestor_requests",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable(),
+        [&](IngestorRequest::ConstSharedPtr msg)
+        {
+          this->ingestor_request_cb(*msg);
+        });
+    this->_ingestor_result_pub = this->_node->create_publisher<IngestorResult>(
+        "/ingestor_results",
+        rclcpp::SystemDefaultsQoS().keep_last(10).reliable());
+  }
+  else
+  {
+    RCLCPP_ERROR(
+      this->_node->get_logger(),
+      "%s: [action_type] port only accepts \"pickup\" or \"dropoff\"",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  return BT::NodeStatus::RUNNING;
+}
+
+void NaiveSignalAmr::dispenser_request_cb(const DispenserRequest& msg)
+{
+  if (msg.target_guid == this->_workcell)
+  {
+    this->_rmf_task_id = msg.request_guid;
+  }
+}
+
+void NaiveSignalAmr::ingestor_request_cb(const IngestorRequest& msg)
+{
+  if (msg.target_guid == this->_workcell)
+  {
+    this->_rmf_task_id = msg.request_guid;
+  }
+}
+
+BT::NodeStatus NaiveSignalAmr::onRunning()
+{
+  if (!this->_rmf_task_id.empty())
+  {
+    if (this->_action_type == "pickup")
+    {
+      DispenserResult msg;
+      msg.request_guid = this->_rmf_task_id;
+      msg.source_guid = this->_workcell;
+      msg.status = DispenserResult::SUCCESS;
+      this->_dispenser_result_pub->publish(msg);
+    }
+    else if (this->_action_type == "dropoff")
+    {
+      IngestorResult msg;
+      msg.request_guid = this->_rmf_task_id;
+      msg.source_guid = this->_workcell;
+      msg.status = DispenserResult::SUCCESS;
+      this->_ingestor_result_pub->publish(msg);
+    }
+    this->_rmf_task_id = "";
     return BT::NodeStatus::SUCCESS;
   }
   return BT::NodeStatus::RUNNING;

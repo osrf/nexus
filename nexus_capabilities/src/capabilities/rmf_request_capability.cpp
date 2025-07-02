@@ -71,6 +71,13 @@ void RMFRequestCapability::configure(
       return std::make_unique<WaitForAmr>(name, config, node);
     });
 
+  bt_factory.registerBuilder<NaiveSignalAmr>("rmf_request.NaiveSignalAmr",
+    [this, node](const std::string& name,
+    const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<WaitForAmr>(name, config, node);
+    });
+
   bt_factory.registerBuilder<SendSignal>("rmf_request.SendSignal",
     [this, node, ctx_mgr](const std::string& name,
     const BT::NodeConfiguration& config)

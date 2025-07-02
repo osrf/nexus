@@ -157,6 +157,7 @@ def launch_setup(context, *args, **kwargs):
                     "nexus::capabilities::ExecuteTrajectoryCapability",
                     "nexus::capabilities::GripperCapability",
                     "nexus::capabilities::PlanMotionCapability",
+                    "nexus::capabilities::RMFRequestCapability",
                 ]
             ),
             Parameter("bt_path", bt_path),
