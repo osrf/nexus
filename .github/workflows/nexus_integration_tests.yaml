@@ -38,9 +38,4 @@ jobs:
     - name: build
       run: /ros_entrypoint.sh colcon build --packages-up-to nexus_calibration nexus_gazebo nexus_demos nexus_motion_planner --mixin release lld --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - name: Test - Demos unit tests and integration tests
-      uses: nick-fields/retry@v3
-      with:
-        timeout_minutes: 20
-        max_attempts: 3
-        retry_on: error
-        command: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner nexus_demos --event-handlers console_direct+ --parallel-workers 1 --return-code-on-test-failure
+      run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner nexus_demos --event-handlers console_direct+ --parallel-workers 1 --return-code-on-test-failure
