@@ -1,0 +1,52 @@
+repositories:
+  thirdparty/abb/abb_libegm:
+    type: git
+    url: https://github.com/yadunund/abb_libegm.git
+    version: feature/scara
+  thirdparty/abb/abb_librws:
+    type: git
+    url: https://github.com/ros-industrial/abb_librws.git
+    version: master
+  thirdparty/abb/abb_egm_rws_managers:
+    type: git
+    url: https://github.com/yadunund/abb_egm_rws_managers.git
+    version: feature/scara
+  thirdparty/abb/abb_ros2_msgs:
+    type: git
+    url: https://github.com/gbartyzel/abb_ros2_msgs.git
+    version: rolling
+  thirdparty/abb/abb_ros2:
+    type: git
+    url: https://github.com/yadunund/abb_ros2.git
+    version: main
+
+  # We need new features that are not part of jazzy or kilted
+  rmf/rmf_internal_msgs:
+    type: git
+    url: https://github.com/open-rmf/rmf_internal_msgs.git
+    version: main
+  rmf/rmf_api_msgs:
+    type: git
+    url: https://github.com/open-rmf/rmf_api_msgs.git
+    version: main
+  rmf/rmf_ros2:
+    type: git
+    url: https://github.com/open-rmf/rmf_ros2.git
+    version: main
+  rmf/rmf_task:
+    type: git
+    url: https://github.com/open-rmf/rmf_task.git
+    version: main
+  rmf/rmf_traffic:
+    type: git
+    url: https://github.com/open-rmf/rmf_traffic.git
+    version: main
+  # Remove when a new jazzy release is made
+  rmf/rmf_simulation:
+    type: git
+    url: https://github.com/open-rmf/rmf_simulation.git
+    version: jazzy
+  demonstrations/rmf_demos:
+    type: git
+    url: https://github.com/open-rmf/rmf_demos.git
+    version: jazzy
