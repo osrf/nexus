@@ -192,7 +192,9 @@ private:
 
     ApiRequest msg;
     msg.json_msg = j.dump();
-    msg.request_id = itinerary.id();
+    std::stringstream ss;
+    ss << "compose.nexus-delivery" << itinerary.id() << "-" << _generate_random_hex_string(5);
+    msg.request_id = ss.str();
     return msg;
   }
 
@@ -568,10 +570,9 @@ public:
       itinerary.estimated_finish_time() - n->get_clock()->now();
 
     std::lock_guard<std::mutex> lock(_mutex);
-    std::string itinerary_id = itinerary.id();
     _itinerary_id_to_unconfirmed_itineraries.insert(
       {
-        std::move(itinerary_id),
+        api_request_msg.value().request_id,
         {
           std::move(itinerary),
           std::move(transporter_state),
