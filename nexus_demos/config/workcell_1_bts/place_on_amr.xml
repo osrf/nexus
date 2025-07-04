@@ -2,10 +2,7 @@
 <root main_tree_to_execute="PickAndPlace">
   <BehaviorTree ID="PickAndPlace">
     <Sequence name="root_sequence">
-      <!-- <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/> -->
-      <!-- Wait for AMR to reach the workcell -->
-      <!-- TODO(ac): find a way to retrieve the rmf_task_id of the ongoing transportation -->
-      <rmf_request.WaitForAmr rmf_task_id="placeholder" workcell="workcell_1" action_type="pickup"/>
+      <WaitForSignal name="wait_for_pallet" signal="transporter_done" clear="true"/>
 
       <dispense_item.DispenseItem name="dispense_item" item="productA" />
 
