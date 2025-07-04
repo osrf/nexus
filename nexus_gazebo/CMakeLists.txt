@@ -28,10 +28,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${VRPN_INCLUDE_DIRS}
 )
 
-ament_target_dependencies(${PROJECT_NAME}
-  gz-sim
-  VRPN)
-
 
 #===============================================================================
 if(BUILD_TESTING)
