@@ -3,11 +3,6 @@ project(nexus_robot_controller)
 
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
-find_package(controller_manager REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(realtime_tools REQUIRED)
-find_package(std_msgs REQUIRED)
 
 include_directories(include)
 
@@ -21,15 +16,23 @@ set(dependencies
   realtime_tools
   std_msgs
 )
+foreach(dep ${dependencies})
+  find_package(${dep} REQUIRED)
+endforeach()
 
 # Library
 add_library(${library_name} src/robot_controller_server.cpp)
-ament_target_dependencies(${library_name} ${dependencies})
+target_link_libraries({${library_name} PUBLIC
+  controller_manager::controller_manager
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  realtime_tools::realtime_tools
+  ${std_msgs_TARGETS}
+)
 
 # Executable
 add_executable(${executable_name} src/robot_controller_server_node.cpp)
 target_link_libraries(${executable_name} ${library_name})
-ament_target_dependencies(${executable_name} ${dependencies})
 
 install(TARGETS ${library_name}
   ARCHIVE DESTINATION lib

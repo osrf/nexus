@@ -235,6 +235,50 @@ private: std::string _workcell;
 private: bool _amr_ready = false;
 };
 
+class NaiveSignalAmr: public BT::StatefulActionNode
+{
+// RMF interfaces
+public: using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
+public: using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
+public: using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
+public: using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
+
+public: static BT::PortsList providedPorts()
+  {
+    return {
+      BT::InputPort<std::string>("workcell"),
+      BT::InputPort<std::string>("action_type"),
+    };
+  }
+
+public: NaiveSignalAmr(const std::string& name,
+    const BT::NodeConfiguration& config,
+    rclcpp_lifecycle::LifecycleNode::SharedPtr node)
+  : BT::StatefulActionNode(name, config), _node(std::move(node)) {}
+
+public: BT::NodeStatus onStart() override;
+
+public: BT::NodeStatus onRunning() override;
+
+public: void onHalted() override {}
+
+private: void dispenser_request_cb(const DispenserRequest& msg);
+
+private: void ingestor_request_cb(const IngestorRequest& msg);
+
+private: rclcpp_lifecycle::LifecycleNode::SharedPtr _node;
+
+private: rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub;
+private: rclcpp::Subscription<IngestorRequest>::SharedPtr _ingestor_request_sub;
+
+private: rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub;
+private: rclcpp::Publisher<IngestorResult>::SharedPtr _ingestor_result_pub;
+
+private: std::string _rmf_task_id;
+private: std::string _workcell;
+private: std::string _action_type;
+};
+
 /**
  * Sends a signal to the system orchestrator.
  * The signal will be tied to the current task id

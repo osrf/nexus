@@ -38,12 +38,12 @@ add_library(${library_name} SHARED
   ${nexus_rviz_plugins_headers_to_moc}
 )
 
-ament_target_dependencies(${library_name}
-  nexus_endpoints
-  nexus_lifecycle_manager
-  lifecycle_msgs
-  rclcpp
-  rviz_common
+target_link_libraries(${library_name}
+  nexus_endpoints::nexus_endpoints
+  nexus_lifecycle_manager::nexus_lifecycle_manager_core
+  ${lifecycle_msgs_TARGETS}
+  rclcpp::rclcpp
+  rviz_common::rviz_common
 )
 
 pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)

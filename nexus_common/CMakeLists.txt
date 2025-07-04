@@ -136,5 +136,5 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_targets(${PROJECT_NAME})
-ament_export_dependencies(geometry_msgs lifecycle_msgs rclcpp rclcpp_action rclcpp_lifecycle tf2 vision_msgs)
+ament_export_dependencies(behaviortree_cpp_v3 geometry_msgs lifecycle_msgs rclcpp rclcpp_action rclcpp_lifecycle tf2 vision_msgs)
 ament_package()
