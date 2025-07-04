@@ -193,7 +193,8 @@ private:
     ApiRequest msg;
     msg.json_msg = j.dump();
     std::stringstream ss;
-    ss << "compose.nexus-delivery" << itinerary.id() << "-" << _generate_random_hex_string(5);
+    ss << "compose.nexus-delivery" << itinerary.id() << "-" <<
+      _generate_random_hex_string(5);
     msg.request_id = ss.str();
     return msg;
   }
@@ -220,7 +221,7 @@ private:
   {
     std::stringstream ss;
     ss << "compose.nexus-bidding-" << job_id << "-"
-      << _generate_random_hex_string(5);
+       << _generate_random_hex_string(5);
     return ss.str();
   }
 
@@ -253,7 +254,7 @@ public:
         if (!n)
         {
           std::cerr << "RmfTransporter::_api_response_sub - invalid node"
-            << std::endl;
+                    << std::endl;
           return;
         }
         if (msg->type != msg->TYPE_RESPONDING)
@@ -264,7 +265,7 @@ public:
 
         // Check for task cancellation first
         auto cancellation_it =
-          _cancellation_rmf_id_to_itinerary_id.find(msg->request_id);
+        _cancellation_rmf_id_to_itinerary_id.find(msg->request_id);
         if (cancellation_it != _cancellation_rmf_id_to_itinerary_id.end())
         {
           auto c = nlohmann::json::parse(msg->json_msg, nullptr, false);
@@ -304,10 +305,10 @@ public:
         {
           std::stringstream ss;
           for (auto it = _cancellation_rmf_id_to_itinerary_id.begin();
-            it != _cancellation_rmf_id_to_itinerary_id.end(); it++)
+          it != _cancellation_rmf_id_to_itinerary_id.end(); it++)
           {
             ss << "itinerary: [" << it->second << "], RMF: [" << it->first
-              << "]," << std::endl;
+               << "]," << std::endl;
           }
           RCLCPP_WARN(
             n->get_logger(),
@@ -317,7 +318,7 @@ public:
 
         std::lock_guard<std::mutex> lock(_mutex);
         auto it =
-          _itinerary_id_to_unconfirmed_itineraries.find(msg->request_id);
+        _itinerary_id_to_unconfirmed_itineraries.find(msg->request_id);
         if (it == _itinerary_id_to_unconfirmed_itineraries.end())
         {
           // Ignore API responses that are not for this transporter
@@ -327,10 +328,10 @@ public:
         auto j = nlohmann::json::parse(msg->json_msg, nullptr, false);
         // TODO(ac): use schema validation instead
         if (j.is_discarded() ||
-          !j.contains("success") ||
-          !j.contains("state") ||
-          !j["state"].contains("booking") ||
-          !j["state"]["booking"].contains("id"))
+        !j.contains("success") ||
+        !j.contains("state") ||
+        !j["state"].contains("booking") ||
+        !j["state"]["booking"].contains("id"))
         {
           RCLCPP_ERROR(
             n->get_logger(),
@@ -374,17 +375,17 @@ public:
         if (!n)
         {
           std::cerr << "RmfTransporter::_task_state_sub - invalid node"
-            << std::endl;
+                    << std::endl;
           return;
         }
 
         auto j = nlohmann::json::parse(msg->data, nullptr, false);
         // TODO(ac): use schema validation instead
         if (j.is_discarded() ||
-          !j.contains("data") ||
-          !j["data"].contains("status") ||
-          !j["data"].contains("booking") ||
-          !j["data"]["booking"].contains("id"))
+        !j.contains("data") ||
+        !j["data"].contains("status") ||
+        !j["data"].contains("booking") ||
+        !j["data"]["booking"].contains("id"))
         {
           RCLCPP_ERROR(
             n->get_logger(),
@@ -542,7 +543,7 @@ public:
     if (!n)
     {
       std::cerr << "RmfTransporter::transport_to_destination - invalid node"
-        << std::endl;
+                << std::endl;
       completed_cb(false);
       return;
     }
