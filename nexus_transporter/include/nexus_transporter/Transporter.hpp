@@ -108,7 +108,8 @@ public:
   ///   The signal to send
   ///
   /// \return True if the signal was successfully processed.
-  virtual bool signal(std::string task_id, std::string signal) {
+  virtual bool signal(std::string task_id, std::string signal)
+  {
     (void)task_id;
     (void)signal;
     return false;
