@@ -54,8 +54,7 @@ struct TransporterSession
   rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
   SharedPtr available_client;
 
-  // TODO(luca) SignalTransporterService
-  std::unique_ptr<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>
+  std::unique_ptr<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>
   signal_transporter_client;
 };
 
