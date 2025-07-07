@@ -111,7 +111,8 @@ private:
   // as soon as the robot reaches its last destination and publishes a dispenser or
   // ingestor request, based on pickup or dropoff.
   // For now we only do pickup and dispenser
-  rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub = nullptr;
+  rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub =
+    nullptr;
   rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub = nullptr;
 
   // TODO(ac): support ACTION_TRANSIT with a basic go-to-place.
@@ -490,7 +491,8 @@ public:
             it->second.itinerary.id().c_str());
           return;
         }
-        const auto& last_destination = it->second.itinerary.destinations().back();
+        const auto& last_destination =
+        it->second.itinerary.destinations().back();
         if (last_destination.action != DestinationMsg::ACTION_PICKUP)
         {
           RCLCPP_WARN(
