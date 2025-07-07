@@ -19,7 +19,6 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
-#include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
@@ -509,13 +508,6 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
           ctx->get_job_id().c_str());
         }
       });
-    });
-
-  bt_factory->registerBuilder<AssignTransporterWorkcell>("AssignTransporterWorkcell",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<AssignTransporterWorkcell>(name, config,
-        this->shared_from_this(), ctx);
     });
 
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
