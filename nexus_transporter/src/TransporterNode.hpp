@@ -45,6 +45,9 @@ public:
   using IsTransporterAvailableService =
     nexus::endpoints::IsTransporterAvailableService;
   using IsTransporterAvailable = IsTransporterAvailableService::ServiceType;
+  using SignalWorkcellService =
+    nexus::endpoints::SignalWorkcellService;
+  using SignalWorkcell = SignalWorkcellService::ServiceType;
   using RegisterTransporterService =
     nexus::endpoints::RegisterTransporterService;
   using RegisterTransporter = RegisterTransporterService::ServiceType;
@@ -88,6 +91,9 @@ private:
 
     /// Service server to process IsTransporterAvailable requests.
     rclcpp::Service<IsTransporterAvailable>::SharedPtr availability_srv;
+
+    /// Service server to process SignalWorkcell requests.
+    rclcpp::Service<SignalWorkcell>::SharedPtr signal_srv;
 
     // ROS 2 Action server to handle Transport requests.
     rclcpp_action::Server<ActionType>::SharedPtr

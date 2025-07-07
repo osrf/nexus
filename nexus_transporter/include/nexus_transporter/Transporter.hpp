@@ -97,6 +97,23 @@ public:
   /// \return True if the cancellation was successful.
   virtual bool cancel(Itinerary itinerary) = 0;
 
+  /// Process a signal for this transporter. This can be used for synchronization,
+  /// for example to release the transporter if the workcell is done with it.
+  /// This functionality is optional and can be ignored if the transporter does not
+  /// need to be synchronized with workcells.
+  /// \param[in] task_id
+  ///   The task id to send the signal to
+  ///
+  /// \param[in] signal
+  ///   The signal to send
+  ///
+  /// \return True if the signal was successfully processed.
+  virtual bool signal(std::string task_id, std::string signal) {
+    (void)task_id;
+    (void)signal;
+    return false;
+  }
+
   /// Virtual destructor
   virtual ~Transporter() = default;
 };

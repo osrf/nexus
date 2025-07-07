@@ -31,8 +31,6 @@
       <plan_motion.PlanMotion name="plan_to_home" robot_name="abb_irb1300" goal="home" scale_speed="0.5" start_constraints="{joint_constraints}" result="{home_traj}" />
       <execute_trajectory.ExecuteTrajectory name="execute_home" trajectory="{home_traj}" />
 
-      <!-- TODO(ac): find a way to retrieve the rmf_task_id so we can send dispenser/ingestor results properly -->
-      <rmf_request.NaiveSignalAmr workcell="workcell_2" action_type="pickup"/>
     </Sequence>
   </BehaviorTree>
 </root>
