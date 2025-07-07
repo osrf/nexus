@@ -132,9 +132,8 @@ BT::NodeStatus SignalTransporter::tick()
       return BT::NodeStatus::FAILURE;
     }
 
-    // TODO(luca) change this to SignalTransporterService
     auto req =
-      std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
+      std::make_shared<endpoints::SignalTransporterService::ServiceType::Request>();
     req->task_id = *transporter_task_id;
     req->signal = *signal;
     auto resp = session->signal_transporter_client->send_request(req);

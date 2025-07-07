@@ -847,9 +847,8 @@ void SystemOrchestrator::_handle_register_transporter(
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
           transporter_id)),
-      // TODO(luca) Signal transporter service
-      std::make_unique<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>(
-        this, endpoints::SignalWorkcellService::service_name(transporter_id))
+      std::make_unique<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>(
+        this, endpoints::SignalTransporterService::service_name(transporter_id))
     }));
 
   resp->success = true;
