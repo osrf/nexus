@@ -554,6 +554,12 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       return std::make_unique<SendSignal>(name, config, ctx);
     });
 
+  bt_factory->registerBuilder<SignalTransporter>("SignalTransporter",
+    [ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<SignalTransporter>(name, config, ctx);
+    });
+
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
 }
 
@@ -848,7 +854,10 @@ void SystemOrchestrator::_handle_register_transporter(
       req->description,
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
-          transporter_id))
+          transporter_id)),
+      // TODO(luca) Signal transporter service
+      std::make_unique<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>(
+        this, endpoints::SignalWorkcellService::service_name(transporter_id))
     }));
 
   resp->success = true;

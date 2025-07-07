@@ -53,6 +53,10 @@ struct TransporterSession
   nexus_orchestrator_msgs::msg::WorkcellDescription description;
   rclcpp::Client<endpoints::IsTransporterAvailableService::ServiceType>::
   SharedPtr available_client;
+
+  // TODO(luca) SignalTransporterService
+  std::unique_ptr<common::SyncServiceClient<endpoints::SignalWorkcellService::ServiceType>>
+  signal_transporter_client;
 };
 
 }

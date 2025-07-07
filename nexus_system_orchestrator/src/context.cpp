@@ -165,6 +165,18 @@ Context::get_transporter_sessions() const
   return _transporter_sessions;
 }
 
+std::shared_ptr<TransporterSession> Context::get_transporter_session(
+  const std::string& transporter_id) const
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto transporter_session_it = _transporter_sessions.find(transporter_id);
+  if (transporter_session_it == _transporter_sessions.end())
+  {
+    return nullptr;
+  }
+  return transporter_session_it->second;
+}
+
 Context& Context::set_task_state(
   const std::string& task_id, const Context::TaskState& task_state)
 {

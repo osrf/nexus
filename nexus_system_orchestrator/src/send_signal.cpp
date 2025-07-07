@@ -90,4 +90,74 @@ BT::NodeStatus SendSignal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+BT::NodeStatus SignalTransporter::tick()
+{
+  auto transporter =
+    this->getInput<std::string>("transporter");
+  if (!transporter)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(), "%s: port [transporter] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  auto transporter_task_id =
+    this->getInput<std::string>("transporter_task_id");
+  if (!transporter_task_id)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(), "%s: port [transporter_task_id] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  auto signal = this->getInput<std::string>("signal");
+  if (!signal)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(), "%s: port [signal] is required",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  try
+  {
+    const auto session = this->_ctx->get_transporter_session(*transporter);
+    if (!session)
+    {
+      RCLCPP_ERROR(this->_ctx->get_node().get_logger(),
+        "%s: Unable to find transporter session for this transporter",
+        this->name().c_str());
+      return BT::NodeStatus::FAILURE;
+    }
+
+    // TODO(luca) change this to SignalTransporterService
+    auto req =
+      std::make_shared<endpoints::SignalWorkcellService::ServiceType::Request>();
+    req->task_id = *transporter_task_id;
+    req->signal = *signal;
+    auto resp = session->signal_transporter_client->send_request(req);
+    RCLCPP_INFO(
+      this->_ctx->get_node().get_logger(), "%s: Sent signal [%s] to transporter [%s]",
+      this->name().c_str(), signal->c_str(), transporter->c_str());
+    if (!resp->success)
+    {
+      RCLCPP_WARN(
+        this->_ctx->get_node().get_logger(),
+        "%s: Transporter [%s] is not able to accept [%s].",
+        this->name().c_str(), transporter->c_str(), signal->c_str());
+      // Return failure?
+    }
+  }
+  catch (const std::out_of_range& e)
+  {
+    RCLCPP_ERROR(this->_ctx->get_node().get_logger(), "%s: %s",
+      this->name().c_str(), e.what());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  return BT::NodeStatus::SUCCESS;
+}
+
 }
