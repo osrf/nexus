@@ -23,6 +23,7 @@ set(dep_pkgs
   rclcpp_lifecycle
   rmf_api_msgs
   rmf_building_map_msgs
+  rmf_dispenser_msgs
   rmf_task_msgs
   rmf_task_ros2
   rmf_traffic
@@ -132,9 +133,6 @@ target_include_directories(nexus_builtin_transporters PUBLIC
   $<INSTALL_INTERFACE:include>
   ${pluginlub_INCLUDE_DIRS}
   ${geometry_msgs_INCLUDE_DIRS}
-  ${rmf_building_map_msgs_INCLUDE_DIRS}
-  ${rmf_task_msgs_INCLUDE_DIRS}
-  ${std_msgs_INCLUDE_DIRS}
 )
 target_link_libraries(nexus_builtin_transporters
   PUBLIC
@@ -143,7 +141,9 @@ target_link_libraries(nexus_builtin_transporters
     pluginlib::pluginlib
     rmf_api_msgs::rmf_api_msgs
     ${geometry_msgs_TARGETS}
+    ${nexus_transporter_msgs_TARGETS}
     ${rmf_building_map_msgs_TARGETS}
+    ${rmf_dispenser_msgs_TARGETS}
     ${rmf_task_msgs_TARGETS}
     ${std_msgs_TARGETS}
 )

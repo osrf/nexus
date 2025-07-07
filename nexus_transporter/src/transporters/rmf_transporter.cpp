@@ -22,10 +22,13 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 #include <nexus_transporter/Transporter.hpp>
+#include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <builtin_interfaces/msg/duration.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rmf_building_map_msgs/msg/building_map.hpp>
+#include <rmf_dispenser_msgs/msg/dispenser_request.hpp>
+#include <rmf_dispenser_msgs/msg/dispenser_result.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -42,6 +45,9 @@
 
 namespace nexus_transporter {
 
+using DestinationMsg = nexus_transporter_msgs::msg::Destination;
+using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
+using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
 using ApiRequest = rmf_task_msgs::msg::ApiRequest;
 using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 using TaskStateUpdate = std_msgs::msg::String;
@@ -82,6 +88,9 @@ private:
   std::unordered_map<std::string, OngoingItinerary>
   _rmf_task_id_to_ongoing_itinerary = {};
 
+  // Used to signal RMF dispensers / ingestors
+  std::unordered_set<std::string> _pending_dispenser_task_ids;
+
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
   _cancellation_rmf_id_to_itinerary_id = {};
@@ -96,6 +105,15 @@ private:
   rclcpp::Publisher<ApiRequest>::SharedPtr _api_request_pub = nullptr;
   rclcpp::Subscription<ApiResponse>::SharedPtr _api_response_sub = nullptr;
   rclcpp::Subscription<TaskStateUpdate>::SharedPtr _task_state_sub = nullptr;
+
+  // Dispenser and ingestor interface
+  // Used for signaling transporter completion. The transporter will report completion
+  // as soon as the robot reaches its last destination and publishes a dispenser or
+  // ingestor request, based on pickup or dropoff.
+  // For now we only do pickup and dispenser
+  rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub =
+    nullptr;
+  rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub = nullptr;
 
   // TODO(ac): support ACTION_TRANSIT with a basic go-to-place.
   std::optional<std::string> _action_to_activity_category(uint8_t action)
@@ -244,6 +262,10 @@ public:
     _api_request_pub = n->create_publisher<ApiRequest>(
       "/task_api_requests",
       transient_qos);
+
+    _dispenser_result_pub = n->create_publisher<DispenserResult>(
+      "/dispenser_results",
+      10);
 
     _api_response_sub = n->create_subscription<ApiResponse>(
       "/task_api_responses",
@@ -424,8 +446,8 @@ public:
             "RMF task [%s] completed, transporter itinerary [%s] completed.",
             rmf_task_id.c_str(),
             it->second.itinerary.id().c_str());
-          it->second.completed_cb(true);
-          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          // it->second.completed_cb(true);
+          // _rmf_task_id_to_ongoing_itinerary.erase(it);
           return;
         }
         else
@@ -438,6 +460,56 @@ public:
           // TODO(ac): modify transporter state
           it->second.feedback_cb(it->second.transporter_state);
         }
+      });
+
+    _dispenser_request_sub = n->create_subscription<DispenserRequest>(
+      "/dispenser_requests",
+      100,
+      [&](DispenserRequest::SharedPtr msg)
+      {
+        auto n = _node.lock();
+        if (!n)
+        {
+          std::cerr << "RmfTransporter::_api_response_sub - invalid node"
+                    << std::endl;
+          return;
+        }
+        auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
+        if (it == _rmf_task_id_to_ongoing_itinerary.end())
+        {
+          RCLCPP_WARN(
+            n->get_logger(),
+            "Dispenser request received for RMF task [%s] but it is not in an itinerary.",
+            msg->request_guid.c_str());
+          return;
+        }
+        if (it->second.itinerary.destinations().empty())
+        {
+          RCLCPP_WARN(
+            n->get_logger(),
+            "Itinerary with id [%s] has no destinations",
+            it->second.itinerary.id().c_str());
+          return;
+        }
+        const auto& last_destination =
+        it->second.itinerary.destinations().back();
+        if (last_destination.action != DestinationMsg::ACTION_PICKUP)
+        {
+          RCLCPP_WARN(
+            n->get_logger(),
+            "Itinerary with id [%s] does not end in a pickup but a pickup was requests, it ends with [%d] instead.",
+            it->second.itinerary.id().c_str(),
+            (int)last_destination.action);
+          return;
+        }
+        RCLCPP_INFO(
+          n->get_logger(),
+          "Dispenser request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
+          msg->request_guid.c_str());
+        // We are at the last step and it is marked as a pickup, this means we arrived
+        it->second.completed_cb(true);
+        _rmf_task_id_to_ongoing_itinerary.erase(it);
+        _pending_dispenser_task_ids.insert(msg->request_guid);
       });
 
     _building_map_sub = n->create_subscription<BuildingMap>(
@@ -621,6 +693,46 @@ public:
       "No ongoing RMF task for itinerary [%s] found",
       itinerary.id().c_str());
     return false;
+  }
+
+  bool signal(std::string task_id, std::string signal) final
+  {
+    auto n = _node.lock();
+    if (!n)
+    {
+      std::cerr << "RmfTransporter::cancel - invalid node" << std::endl;
+      return false;
+    }
+
+    // TODO(luca) also check for ingestors
+    auto it = _pending_dispenser_task_ids.find(task_id);
+    if (it == _pending_dispenser_task_ids.end())
+    {
+      RCLCPP_WARN(
+        n->get_logger(),
+        "Received signal [%s] for task [%s] that is not waiting for it, ignoring",
+        signal.c_str(), task_id.c_str());
+      return false;
+    }
+
+    if (signal != "pickup")
+    {
+      RCLCPP_WARN(
+        n->get_logger(),
+        "Received unsupported signal [%s] for task [%s]",
+        signal.c_str(), task_id.c_str());
+      return false;
+    }
+
+
+    // Publish the dispenser result
+    DispenserResult res;
+    res.status = DispenserResult::SUCCESS;
+    res.request_guid = task_id;
+    res.source_guid = n->get_name();
+    _dispenser_result_pub->publish(res);
+    _pending_dispenser_task_ids.erase(it);
+    return true;
   }
 
   ~RmfTransporter() = default;
