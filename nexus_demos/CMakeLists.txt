@@ -79,10 +79,7 @@ target_link_libraries(mock_emergency_alarm_component
   rclcpp::rclcpp
   ${rclcpp_components_TARGETS}
   rclcpp_lifecycle::rclcpp_lifecycle
-)
-ament_target_dependencies(mock_emergency_alarm_component
-  std_srvs
-  rclcpp_components
+  ${std_srvs_TARGETS}
 )
 rclcpp_components_register_node(mock_emergency_alarm_component
   PLUGIN "MockEmergencyAlarm"

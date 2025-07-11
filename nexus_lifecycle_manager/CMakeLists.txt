@@ -3,16 +3,6 @@ project(nexus_lifecycle_manager)
 
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
-find_package(behaviortree_cpp_v3 REQUIRED)
-find_package(nexus_common REQUIRED)
-find_package(nexus_lifecycle_msgs REQUIRED)
-find_package(lifecycle_msgs REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rmf_utils REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(diagnostic_updater REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
@@ -34,13 +24,26 @@ set(dependencies
   diagnostic_updater
 )
 
+foreach(dep ${dependencies})
+  find_package(${dep} REQUIRED)
+endforeach()
+
+
 target_include_directories(${library_name} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}>
 )
 
-ament_target_dependencies(${library_name}
-  ${dependencies}
+target_link_libraries(${library_name} PUBLIC
+  nexus_common::nexus_common
+  ${nexus_lifecycle_msgs_TARGETS}
+  ${lifecycle_msgs_TARGETS}
+  rclcpp::rclcpp
+  rclcpp_action::rclcpp_action
+  rclcpp_lifecycle::rclcpp_lifecycle
+  rmf_utils::rmf_utils
+  ${std_srvs_TARGETS}
+  diagnostic_updater::diagnostic_updater
 )
 
 add_executable(lifecycle_manager
@@ -49,10 +52,6 @@ add_executable(lifecycle_manager
 
 target_link_libraries(lifecycle_manager
   ${library_name}
-)
-
-ament_target_dependencies(lifecycle_manager
-  ${dependencies}
 )
 
 install(TARGETS

@@ -8,21 +8,10 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
-find_package(nexus_endpoints REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(moveit_ros_planning_interface REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(trajectory_msgs REQUIRED)
-find_package(warehouse_ros REQUIRED)
-find_package(warehouse_ros_sqlite REQUIRED)
 
 include_directories(include)
 
-set (motion_planner_server_dependencies
+set (dependencies
   nexus_endpoints
   geometry_msgs
   moveit_ros_planning_interface
@@ -31,22 +20,13 @@ set (motion_planner_server_dependencies
   rclcpp_lifecycle
   tf2
   tf2_ros
-)
-
-set (motion_plan_cache_dependencies
-  moveit_ros_planning_interface
-  rclcpp
   warehouse_ros
   warehouse_ros_sqlite
 )
 
-set (test_request_dependencies
-  moveit_msgs
-  nexus_endpoints
-  geometry_msgs
-  rclcpp
-  trajectory_msgs
-)
+foreach(dep ${dependencies})
+  find_package(${dep} REQUIRED)
+endforeach()
 
 #===============================================================================
 set(MOTION_PLAN_CACHE_LIBRARY_NAME motion_planner_server_core)
@@ -54,16 +34,29 @@ set(EXECUTABLE_NAME motion_planner_server)
 
 # Motion plan cache library
 add_library(${MOTION_PLAN_CACHE_LIBRARY_NAME} src/motion_plan_cache.cpp)
-ament_target_dependencies(${MOTION_PLAN_CACHE_LIBRARY_NAME} ${motion_plan_cache_dependencies})
+target_link_libraries(${MOTION_PLAN_CACHE_LIBRARY_NAME} PUBLIC
+  ${moveit_ros_planning_interface_TARGETS}
+  rclcpp::rclcpp
+  warehouse_ros::warehouse_ros
+  warehouse_ros_sqlite::warehouse_ros_sqlite
+)
 
 # Server executable
 add_executable(${EXECUTABLE_NAME} src/main.cpp src/motion_planner_server.cpp)
-ament_target_dependencies(${EXECUTABLE_NAME} ${motion_planner_server_dependencies})
-target_link_libraries(${EXECUTABLE_NAME} ${MOTION_PLAN_CACHE_LIBRARY_NAME})
+target_link_libraries(${EXECUTABLE_NAME}
+  nexus_endpoints::nexus_endpoints
+  ${MOTION_PLAN_CACHE_LIBRARY_NAME}
+)
 
 # Test executable
 add_executable(test_request src/test_request.cpp)
-ament_target_dependencies(test_request ${test_request_dependencies})
+target_link_libraries(test_request
+  ${moveit_msgs_TARGETS}
+  nexus_endpoints::nexus_endpoints
+  ${geometry_msgs_TARGETS}
+  rclcpp::rclcpp
+  ${trajectory_msgs_TARGETS}
+)
 
 #===============================================================================
 install(TARGETS
@@ -122,5 +115,5 @@ if(BUILD_TESTING)
   )
 endif()
 
-ament_export_dependencies(${motion_planner_server_dependencies} ${motion_plan_cache_dependencies})
+ament_export_dependencies(${dependencies})
 ament_package()

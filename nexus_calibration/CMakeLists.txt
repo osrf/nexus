@@ -22,8 +22,17 @@ endforeach()
 
 #===============================================================================
 add_library(nexus_calibration_component SHARED src/calibration_node.cpp)
-
-ament_target_dependencies(nexus_calibration_component ${dep_pkgs})
+target_include_directories(nexus_calibration_component PRIVATE
+  ${VRPN_INCLUDE_DIRS}
+)
+target_link_libraries(nexus_calibration_component PUBLIC
+  nexus_endpoints::nexus_endpoints
+  rclcpp::rclcpp
+  rclcpp_components::component
+  rclcpp_lifecycle::rclcpp_lifecycle
+  tf2::tf2
+  ${VRPN_LIBRARIES}
+)
 
 target_compile_features(nexus_calibration_component INTERFACE cxx_std_17)
 
