@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ros:${{ matrix.ros_distribution }}-ros-base
+      image: ghcr.io/osrf/nexus/rmf:${{ matrix.ros_distribution }}-rmf-main
     strategy:
       fail-fast: false
       matrix:
@@ -41,4 +41,5 @@ jobs:
             nexus_workcell_orchestrator
           target-ros2-distro: ${{ matrix.ros_distribution }}
           colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
-          vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/ac/rmf-so-bid/nexus.repos
+          # TODO(ac): retarget this repo file before merging
+          vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/ac/rmf-so-bid/abb.repos

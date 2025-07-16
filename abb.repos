@@ -1,0 +1,21 @@
+repositories:
+  thirdparty/abb/abb_libegm:
+    type: git
+    url: https://github.com/yadunund/abb_libegm.git
+    version: feature/scara
+  thirdparty/abb/abb_librws:
+    type: git
+    url: https://github.com/ros-industrial/abb_librws.git
+    version: master
+  thirdparty/abb/abb_egm_rws_managers:
+    type: git
+    url: https://github.com/yadunund/abb_egm_rws_managers.git
+    version: feature/scara
+  thirdparty/abb/abb_ros2_msgs:
+    type: git
+    url: https://github.com/gbartyzel/abb_ros2_msgs.git
+    version: rolling
+  thirdparty/abb/abb_ros2:
+    type: git
+    url: https://github.com/yadunund/abb_ros2.git
+    version: main
