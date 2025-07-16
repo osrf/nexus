@@ -43,3 +43,10 @@ jobs:
           colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
           # TODO(ac): retarget this repo file before merging
           vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/ac/rmf-so-bid/abb.repos
+          no-symlink-install: true
+          colcon-defaults: |
+            {
+              "build": {
+                "mixin": ["release"]
+              }
+            }
