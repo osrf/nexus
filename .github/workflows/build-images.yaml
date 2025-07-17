@@ -1,7 +1,6 @@
 name: Build docker images
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       ros_distribution:
@@ -34,7 +33,7 @@ jobs:
         with:
           push: true
           build-args: |
-            ROS_DISTRO=jazzy
-            RMF_BRANCH=main
-          tags: ghcr.io/${{ github.repository }}/rmf:jazzy-rmf-main
+            ROS_DISTRO=${{ inputs.ros_distribution }}
+            RMF_BRANCH=${{ inputs.rmf_branch }}
+          tags: ghcr.io/${{ github.repository }}/rmf:${{ inputs.ros_distribution }}-rmf-${{ inputs.rmf_branch }}
           context: .github/rmf
