@@ -106,13 +106,6 @@ rclcpp_components_register_node(nexus_transporter_component
   EXECUTABLE nexus_transporter_node
   EXECUTOR MultiThreadedExecutor)
 
-add_executable(nexus_tranporter_multi_threaded_node
-  src/main.cpp
-)
-target_link_libraries(nexus_tranporter_multi_threaded_node
-  nexus_transporter_component
-)
-
 #===============================================================================
 # Builtin transporter plugins
 
@@ -192,7 +185,6 @@ install(
     nexus_builtin_transporters
     nexus_transporter
     nexus_transporter_component
-    nexus_tranporter_multi_threaded_node
   EXPORT nexus_transporter
   RUNTIME DESTINATION lib/${PROJECT_NAME}
   LIBRARY DESTINATION lib

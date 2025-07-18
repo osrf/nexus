@@ -138,7 +138,9 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
       return;
     });
 
-  // Setup service server to process IsTransportAvailable requests
+  // TODO(ac): use dedicated signalling type, or make signalling service type
+  // generic to be used by both workcell and transporter
+  // Setup service server to process signalling requests
   _data->signal_srv =
     this->create_service<SignalWorkcell>(
     SignalWorkcellService::service_name(this->get_name()),
