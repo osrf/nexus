@@ -1,19 +1,30 @@
 <root main_tree_to_execute="main">
   <BehaviorTree ID="main">
     <ReactiveSequence>
-      <!--IsPauseTriggered paused="{paused}"/-->
-      <!--PausableSequence pause="{paused}"-->
-        <!-- Iterates over all task assignments and dispatches an AMR -->
-        <Sequence>
-          <AssignTransporterWorkcell name="assign_transporter_workcell" transporter_id="{transporter_id}" transport_task="{transport_task}"/>
-          <Parallel success_threshold="-1">
-            <WorkcellRequest name="transporter_workcell_request" workcell="{transporter_id}" task="{transport_task}"/>
-            <ForEachTask task="{task}" workcell="{workcell}">
-              <ExecuteTask task="{task}" workcell="{workcell}" transport_task="{transport_task}"/>
-            </ForEachTask>
-          </Parallel>
-        </Sequence>
-      <!--/PausableSequence-->
+      <IsPauseTriggered paused="{paused}"/>
+
+      <PausableSequence pause="{paused}">
+        <ForEachTask task="{task}" workcell="{workcell}">
+          <ExecuteTask task="{task}" workcell="{workcell}"/>
+        </ForEachTask>
+        <!-- <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
+        <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/> -->
+      </PausableSequence>
+
+      <!-- <Fallback>
+        <PausableSequence pause="{paused}">
+          <ForEachTask task="{task}" workcell="{workcell}">
+            <ExecuteTask task="{task}" workcell="{workcell}"/>
+          </ForEachTask>
+          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
+        </PausableSequence>
+        <PausableSequence pause="{paused}">
+          <BidTransporter name="bid_transporter" destination="unloading" result="{transporter}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="unloading"/>
+          <AlwaysFailure/>
+        </PausableSequence>
+      </Fallback> -->
     </ReactiveSequence>
   </BehaviorTree>
 </root>

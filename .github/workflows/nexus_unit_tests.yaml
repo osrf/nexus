@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ros:${{ matrix.ros_distribution }}-ros-base
+      image: ghcr.io/osrf/nexus/rmf:${{ matrix.ros_distribution }}-rmf-main
     strategy:
       fail-fast: false
       matrix:
@@ -19,26 +19,49 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
 
-      # Only tests that can be run without arbitrary number of workers. For
-      # tests that require --parallel-workers 1, run it in
-      # nexus_integration_tests.
-      - name: build and test
-        uses: ros-tooling/action-ros-ci@v0.3
-        env:
-          RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
-        with:
-          package-name: |
-            nexus_common
-            nexus_lifecycle_manager
-            nexus_system_orchestrator
-            nexus_transporter
-            nexus_workcell_orchestrator
-          target-ros2-distro: ${{ matrix.ros_distribution }}
-          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
-          vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/main/abb.repos
+      - name: rosdep
+        run: |
+          apt update
+          apt install -y ccache
+          colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
+          colcon mixin update default
+          rosdep update
+          rosdep install --from-paths . -yir
+      - name: build
+        run: /ros_entrypoint.sh colcon build --packages-up-to nexus_common nexus_lifecycle_manager nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --mixin release
+      - name: test
+        run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_common nexus_lifecycle_manager nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --event-handlers=console_direct+
+
+      # TODO(ac): reinstate this once https://github.com/ros-tooling/action-ros-ci/issues/991
+      # is resolved.
+      # # Only tests that can be run without arbitrary number of workers. For
+      # # tests that require --parallel-workers 1, run it in
+      # # nexus_integration_tests.
+      # - name: build and test
+      #   uses: ros-tooling/action-ros-ci@v0.4
+      #   env:
+      #     RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      #   with:
+      #     package-name: |
+      #       nexus_common
+      #       nexus_lifecycle_manager
+      #       nexus_system_orchestrator
+      #       nexus_transporter
+      #       nexus_workcell_orchestrator
+      #     target-ros2-distro: ${{ matrix.ros_distribution }}
+      #     colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
+      #     # TODO(ac): retarget this repo file before merging
+      #     vcs-repo-file-url: https://raw.githubusercontent.com/osrf/nexus/ac/rmf-so-bid/abb.repos
+      #     no-symlink-install: true
+      #     colcon-defaults: |
+      #       {
+      #         "build": {
+      #           "mixin": ["release"]
+      #         }
+      #       }

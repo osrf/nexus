@@ -5,10 +5,13 @@
       <Parallel success_threshold="-1">
         <Sequence>
           <BidTransporter name="bid_transporterasdasd" destination="{workcell}" result="{transporter}"/>
-          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}"/>
+          <TransporterRequest name="transporter_request" transporter="{transporter}" destination="{workcell}" transporter_task_id="{transporter_task_id}"/>
           <SendSignal task="{task}" signal="transporter_done"/>
         </Sequence>
-        <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+        <Sequence>
+          <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
+          <SignalTransporter name="signal_transporter" transporter="{transporter}" transporter_task_id="{transporter_task_id}" signal="pickup"/>
+        </Sequence>
       </Parallel>
     </ReactiveSequence>
   </BehaviorTree>
