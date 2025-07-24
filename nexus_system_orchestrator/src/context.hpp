@@ -139,13 +139,13 @@ private:
   std::unordered_map<std::string, std::string> _workcell_task_assignments = {};
 
   /**
-   * Map of workcell ids and its session.
+   * Map of workcell ids and their sessions.
    */
   std::unordered_map<std::string,
   std::shared_ptr<WorkcellSession>> _workcell_sessions;
 
   /**
-   * Map of transporter ids and its session.
+   * Map of transporter ids and their sessions.
    */
   std::unordered_map<std::string,
   std::shared_ptr<TransporterSession>> _transporter_sessions;
