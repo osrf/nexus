@@ -23,7 +23,7 @@
 #include <nexus_orchestrator_msgs/srv/register_transporter.hpp>
 #include <nexus_orchestrator_msgs/srv/register_workcell.hpp>
 #include <nexus_orchestrator_msgs/srv/remove_pending_task.hpp>
-#include <nexus_orchestrator_msgs/srv/signal_workcell.hpp>
+#include <nexus_orchestrator_msgs/srv/signal.hpp>
 #include <nexus_transporter_msgs/action/transport.hpp>
 #include <nexus_transporter_msgs/srv/is_transporter_available.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
@@ -382,6 +382,26 @@ public:
   }
 };
 
+class SignalTransporterService {
+public:
+  using ServiceType = nexus_orchestrator_msgs::srv::Signal;
+
+  static inline std::string service_name(const std::string& transporter_id) {
+    const std::string name = "/" + transporter_id + "/signal";
+    return name;
+  }
+
+  template<typename NodePtrT, typename CallbackT>
+  static rclcpp::Service<SignalTransporterService::ServiceType>::SharedPtr create_service(NodePtrT node, const std::string& transporter_id, CallbackT&& callback) {
+    return node->template create_service<SignalTransporterService::ServiceType>(SignalTransporterService::service_name(transporter_id), std::forward<CallbackT>(callback));
+  }
+
+  template<typename NodePtrT>
+  static rclcpp::Client<SignalTransporterService::ServiceType>::SharedPtr create_client(NodePtrT node, const std::string& transporter_id) {
+    return node->template create_client<SignalTransporterService::ServiceType>(SignalTransporterService::service_name(transporter_id));
+  }
+};
+
 class DetectorService {
 public:
   using ServiceType = nexus_detector_msgs::srv::Detect;
@@ -514,7 +534,7 @@ public:
 
 class SignalWorkcellService {
 public:
-  using ServiceType = nexus_orchestrator_msgs::srv::SignalWorkcell;
+  using ServiceType = nexus_orchestrator_msgs::srv::Signal;
 
   static inline std::string service_name(const std::string& workcell_id) {
     const std::string name = "/" + workcell_id + "/signal";

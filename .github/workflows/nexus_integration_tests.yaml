@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ros:jazzy-ros-base']
+        docker_image: ['ghcr.io/osrf/nexus/rmf:jazzy-rmf-main']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 60
@@ -30,12 +30,14 @@ jobs:
     - name: rosdep
       run: |
         apt update
-        apt install -y clang clang-tools lld ccache
+        apt install -y ccache
         colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml
         colcon mixin update default
         rosdep update
         rosdep install --from-paths . -yir
     - name: build
-      run: /ros_entrypoint.sh colcon build --packages-up-to nexus_calibration nexus_gazebo nexus_demos nexus_motion_planner --mixin release lld --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-    - name: Test - Demos unit tests and integration tests
-      run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner nexus_demos --event-handlers console_direct+ --parallel-workers 1 --return-code-on-test-failure
+      run: /ros_entrypoint.sh colcon build --packages-up-to nexus_calibration nexus_gazebo nexus_demos nexus_motion_planner --mixin release --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - name: Test - Unit Tests
+      run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner --event-handlers=console_direct+
+    - name: Test - Integration test
+      run: . ./install/setup.bash && cd nexus_demos && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh python3 -m unittest

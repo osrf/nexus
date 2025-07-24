@@ -19,7 +19,6 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
-#include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
@@ -511,13 +510,6 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       });
     });
 
-  bt_factory->registerBuilder<AssignTransporterWorkcell>("AssignTransporterWorkcell",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<AssignTransporterWorkcell>(name, config,
-        this->shared_from_this(), ctx);
-    });
-
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -552,6 +544,12 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SendSignal>(name, config, ctx);
+    });
+
+  bt_factory->registerBuilder<SignalTransporter>("SignalTransporter",
+    [ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<SignalTransporter>(name, config, ctx);
     });
 
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
@@ -848,7 +846,9 @@ void SystemOrchestrator::_handle_register_transporter(
       req->description,
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
-          transporter_id))
+          transporter_id)),
+      std::make_unique<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>(
+        this, endpoints::SignalTransporterService::service_name(transporter_id))
     }));
 
   resp->success = true;

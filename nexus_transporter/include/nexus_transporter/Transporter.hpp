@@ -44,7 +44,6 @@ public:
   using TransportFeedback = std::function<void(const TransporterState& state)>;
   /// A callback to execute once the transportation is completed
   using TransportCompleted = std::function<void(bool success)>;
-  /// Destination.
 
   /// Configure the transporter including getting relevant information from
   /// ROS 2 parameters. (Eg. List of destinations)
@@ -86,7 +85,7 @@ public:
   ///   A callback to execute to submit feedback on the transporter's progress
   ///
   /// \param[in] completed_cb
-  ///   A callback to execute to when the transportation has failed or succeeded
+  ///   A callback to execute when the transportation has failed or succeeded
   virtual void transport_to_destination(
     Itinerary itinerary,
     TransportFeedback feedback_cb,
@@ -97,6 +96,24 @@ public:
   ///   The itinerary of the task to cancel
   /// \return True if the cancellation was successful.
   virtual bool cancel(Itinerary itinerary) = 0;
+
+  /// Handle a signal for this transporter. This can be used for synchronization,
+  /// for example to release the transporter if the workcell is done with it.
+  /// This functionality is optional and can be ignored if the transporter does not
+  /// need to be synchronized with workcells.
+  /// \param[in] task_id
+  ///   The task id to send the signal to
+  ///
+  /// \param[in] signal
+  ///   The signal to send
+  ///
+  /// \return True if the signal was successfully handled.
+  virtual bool handle_signal(std::string task_id, std::string signal)
+  {
+    (void)task_id;
+    (void)signal;
+    return false;
+  }
 
   /// Virtual destructor
   virtual ~Transporter() = default;
