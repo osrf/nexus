@@ -31,6 +31,7 @@ TransporterNode::Data::Data()
 : transporter_loader("nexus_transporter", "nexus_transporter::Transporter"),
   transporter(nullptr),
   availability_srv(nullptr),
+  signal_srv(nullptr),
   action_srv(nullptr),
   tf_broadcaster(nullptr),
   ongoing_register(std::nullopt)
@@ -113,6 +114,7 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
           return;
         }
       );
+
       if (future.wait_for(data->wait_for_itinerary_timeout)
       == std::future_status::ready)
       {
@@ -134,6 +136,43 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
 
       // Timed out
       return;
+    });
+
+  // TODO(ac): use dedicated signalling type, or make signalling service type
+  // generic to be used by both workcell and transporter
+  // Setup service server to process signalling requests
+  _data->signal_srv =
+    this->create_service<SignalTransporter>(
+    SignalTransporterService::service_name(this->get_name()),
+    [data = _data](
+      SignalTransporter::Request::ConstSharedPtr request,
+      SignalTransporter::Response::SharedPtr response)
+    {
+      response->success = false;
+      auto node = data->w_node.lock();
+      if (node == nullptr)
+      {
+        return;
+      }
+
+      RCLCPP_INFO(
+        node->get_logger(),
+        "Received SignalTransporter request for task %s and signal %s. ",
+        request->task_id.c_str(),
+        request->signal.c_str()
+      );
+
+      if (!data->transporter->handle_signal(request->task_id, request->signal))
+      {
+        RCLCPP_INFO(
+          node->get_logger(),
+          "Transporter %s refused signal %s for task %s. ",
+          node->get_name(),
+          request->signal.c_str(),
+          request->task_id.c_str()
+        );
+      }
+
     });
 
   // Load transporter plugin
@@ -417,6 +456,7 @@ auto TransporterNode::on_cleanup(const State& /*previous_state*/)
   _data->register_timer.reset();
   _data->transporter.reset();
   _data->availability_srv.reset();
+  _data->signal_srv.reset();
   _data->action_srv.reset();
   {
     std::lock_guard<std::mutex> lock(_data->itineraries_mutex);

@@ -33,6 +33,12 @@ mkdir ~/ws_nexus/src -p
 cd ~/ws_nexus/src/
 git clone git@github.com:osrf/nexus
 vcs import . < nexus/abb.repos
+
+# There are new features from Open-RMF that are required but not released into
+# Jazzy yet
+wget https://raw.githubusercontent.com/open-rmf/rmf/main/rmf.repos
+vcs import . < rmf.repos
+
 cd ~/ws_nexus
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -y -r
 ```

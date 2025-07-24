@@ -27,7 +27,8 @@ using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
 BT::PortsList TransporterRequest::providedPorts()
 {
   return { BT::InputPort<std::string>("transporter"),
-    BT::InputPort<std::string>("destination") };
+    BT::InputPort<std::string>("destination"),
+    BT::OutputPort<std::string>("transporter_task_id") };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
@@ -77,6 +78,11 @@ make_goal()
       .params("")
   );
   return goal;
+}
+
+void TransporterRequest::on_feedback(endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr fb)
+{
+  this->setOutput("transporter_task_id", fb->state.task_id);
 }
 
 }

@@ -11,15 +11,25 @@ include(GNUInstallDirs)
 find_package(ament_cmake REQUIRED)
 set(dep_pkgs
   backward_ros
+  builtin_interfaces
   nexus_endpoints
   nexus_transporter_msgs
   geometry_msgs
+  nlohmann_json
   pluginlib
   rclcpp
   rclcpp_action
   rclcpp_components
   rclcpp_lifecycle
+  rmf_api_msgs
+  rmf_building_map_msgs
+  rmf_dispenser_msgs
+  rmf_task_msgs
+  rmf_task_ros2
+  rmf_traffic
+  rmf_traffic_ros2
   rmf_utils
+  std_msgs
   tf2_ros
   yaml_cpp_vendor
   yaml-cpp
@@ -96,24 +106,43 @@ rclcpp_components_register_node(nexus_transporter_component
   EXECUTABLE nexus_transporter_node
   EXECUTOR SingleThreadedExecutor)
 
-
 #===============================================================================
-# Mock transporter plugin.
-add_library(mock_transporter SHARED src/transporters/mock_transporter.cpp)
-target_include_directories(mock_transporter PUBLIC
+# Builtin transporter plugins
+
+add_library(nexus_builtin_transporters SHARED
+  src/transporters/mock_transporter.cpp
+  src/transporters/rmf_transporter.cpp
+)
+target_compile_options(nexus_builtin_transporters PUBLIC INTERFACE cxx_std_17)
+ament_target_dependencies(nexus_builtin_transporters
+  PUBLIC
+    builtin_interfaces
+    rmf_task_ros2
+    rmf_traffic
+    rmf_traffic_ros2
+)
+target_include_directories(nexus_builtin_transporters PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${pluginlub_INCLUDE_DIRS}
+  ${geometry_msgs_INCLUDE_DIRS}
 )
-target_link_libraries(mock_transporter
+target_link_libraries(nexus_builtin_transporters
   PUBLIC
     nexus_transporter
+    nlohmann_json
     pluginlib::pluginlib
+    rmf_api_msgs::rmf_api_msgs
+    ${geometry_msgs_TARGETS}
+    ${nexus_transporter_msgs_TARGETS}
+    ${rmf_building_map_msgs_TARGETS}
+    ${rmf_dispenser_msgs_TARGETS}
+    ${rmf_task_msgs_TARGETS}
+    ${std_msgs_TARGETS}
 )
 
+ament_export_libraries(nexus_builtin_transporters)
 pluginlib_export_plugin_description_file(nexus_transporter src/transporters/plugins.xml)
-
-ament_export_libraries(mock_transporter)
 
 #===============================================================================
 find_package(ament_cmake_uncrustify QUIET)
@@ -153,7 +182,7 @@ install(
 
 install(
   TARGETS
-    mock_transporter
+    nexus_builtin_transporters
     nexus_transporter
     nexus_transporter_component
   EXPORT nexus_transporter
