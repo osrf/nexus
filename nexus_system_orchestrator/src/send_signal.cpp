@@ -96,20 +96,20 @@ BT::NodeStatus SignalTransporter::tick()
     this->getInput<std::string>("transporter");
   if (!transporter)
   {
-    RCLCPP_ERROR(
-      this->_ctx->get_node().get_logger(), "%s: port [transporter] is required",
+    RCLCPP_WARN(
+      this->_ctx->get_node().get_logger(), "%s: [transporter] not provided, skipping signaling",
       this->name().c_str());
-    return BT::NodeStatus::FAILURE;
+    return BT::NodeStatus::SUCCESS;
   }
 
   auto transporter_task_id =
     this->getInput<std::string>("transporter_task_id");
   if (!transporter_task_id)
   {
-    RCLCPP_ERROR(
-      this->_ctx->get_node().get_logger(), "%s: port [transporter_task_id] is required",
+    RCLCPP_WARN(
+      this->_ctx->get_node().get_logger(), "%s: [transporter_task_id] not provided, skipping signaling",
       this->name().c_str());
-    return BT::NodeStatus::FAILURE;
+    return BT::NodeStatus::SUCCESS;
   }
 
   auto signal = this->getInput<std::string>("signal");

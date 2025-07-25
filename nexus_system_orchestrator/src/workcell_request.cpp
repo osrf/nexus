@@ -120,6 +120,11 @@ bool WorkcellRequest::on_result(
   }
 
   this->_ctx->set_task_results(result.result->result); // -.-
+  // Set output items of the step to be in this workcell
+  if (this->_task.output_item.size() > 0)
+  {
+    this->_ctx->set_sku_location(this->_task, this->_workcell_id);
+  }
 
   const auto task_state = this->_ctx->get_task_state(this->_task.task_id);
   if (!task_state.has_value())

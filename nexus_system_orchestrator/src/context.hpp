@@ -128,6 +128,11 @@ public:
   std::optional<std::vector<std::string>> get_task_queued_signals(
     const std::string& task_id) const;
 
+  // Given a task, update the location of its output items to the workcell
+  void set_sku_location(const WorkcellTask& task, const std::string& workcell);
+
+  std::optional<std::string> get_sku_location(const std::string& sku) const;
+
 private:
   // using reference to prevent circular references
   rclcpp_lifecycle::LifecycleNode& _node;
@@ -154,6 +159,8 @@ private:
   std::shared_ptr<TransporterSession>> _transporter_sessions;
 
   std::unordered_map<std::string, TaskState> _task_states = {};
+  // Map items to their location
+  std::unordered_map<std::string, std::string> sku_locations = {};
   std::shared_ptr<WorkOrderGoalHandle> _goal_handle = nullptr;
   std::vector<std::string> _errors = {};
   std::string _task_results;

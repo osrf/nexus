@@ -29,6 +29,8 @@
 #include <rmf_building_map_msgs/msg/building_map.hpp>
 #include <rmf_dispenser_msgs/msg/dispenser_request.hpp>
 #include <rmf_dispenser_msgs/msg/dispenser_result.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -47,6 +49,8 @@ namespace nexus_transporter {
 
 using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
 using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
+using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
+using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
 using ApiRequest = rmf_task_msgs::msg::ApiRequest;
 using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 using TaskStateUpdate = std_msgs::msg::String;
@@ -83,7 +87,7 @@ private:
   _rmf_task_id_to_ongoing_itinerary = {};
 
   // Used to signal RMF dispensers / ingestors
-  std::unordered_set<std::string> _pending_dispenser_task_ids;
+  std::unordered_set<std::string> _pending_ingestor_task_ids;
 
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
@@ -102,12 +106,18 @@ private:
 
   // Dispenser and ingestor interface
   // Used for signaling transporter completion. The transporter will report completion
-  // as soon as the robot reaches its last destination and publishes a dispenser or
-  // ingestor request, based on pickup or dropoff.
-  // For now we only do pickup with dispensers.
-  rclcpp::Subscription<DispenserRequest>::SharedPtr _dispenser_request_sub =
+  // as soon as the robot reaches its last destination and publishes an ingestor request,
+  // to request the workcell to pickup its item.
+  // A mock dispenser interface is optionally provided for dispensing from workcells,
+  // useful for validating transportation if the logic to dispense item on robots
+  // from workcells is not implemented
+  rclcpp::Subscription<IngestorRequest>::SharedPtr _ingestor_request_sub =
     nullptr;
-  rclcpp::Publisher<DispenserResult>::SharedPtr _dispenser_result_pub = nullptr;
+  rclcpp::Publisher<IngestorResult>::SharedPtr _ingestor_result_pub = nullptr;
+  rclcpp::Subscription<DispenserRequest>::SharedPtr
+    _mock_dispenser_request_sub = nullptr;
+  rclcpp::Publisher<DispenserResult>::SharedPtr _mock_dispenser_result_pub =
+    nullptr;
 
   // TODO(ac): support ACTION_TRANSIT with a basic go-to-place.
   std::optional<std::string> _action_to_activity_category(uint8_t action)
@@ -251,6 +261,64 @@ public:
       _itinerary_expiration_seconds
     );
 
+    const bool mock_dispenser = n->declare_parameter(
+      "mock_dispenser_interface",
+      true);
+    RCLCPP_INFO(
+      n->get_logger(),
+      "RmfTransporter mock_dispenser_interface set to [%s].",
+      mock_dispenser ? "true" : "false"
+    );
+
+    if (mock_dispenser)
+    {
+      _mock_dispenser_result_pub = n->create_publisher<DispenserResult>(
+        "/dispenser_results",
+        10);
+
+      _mock_dispenser_request_sub = n->create_subscription<DispenserRequest>(
+        "/dispenser_requests",
+        100,
+        [&](DispenserRequest::SharedPtr msg)
+        {
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr << "RmfTransporter::_api_response_sub - invalid node"
+                      << std::endl;
+            return;
+          }
+          auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
+          if (it == _rmf_task_id_to_ongoing_itinerary.end())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Dispenser request received for RMF task [%s] but it is not in an itinerary.",
+              msg->request_guid.c_str());
+            return;
+          }
+          if (it->second.itinerary.destinations().empty())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] has no destinations",
+              it->second.itinerary.id().c_str());
+            return;
+          }
+          RCLCPP_INFO(
+            n->get_logger(),
+            "Dispenser request received for RMF task [%s] publishing a mock successful result.",
+            msg->request_guid.c_str());
+          _pending_ingestor_task_ids.insert(msg->request_guid);
+
+          DispenserResult res;
+          res.status = DispenserResult::SUCCESS;
+          res.request_guid = msg->request_guid;
+          res.source_guid = n->get_name();
+          _mock_dispenser_result_pub->publish(res);
+        });
+    }
+
     const auto transient_qos =
       rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
 
@@ -258,8 +326,8 @@ public:
       "/task_api_requests",
       transient_qos);
 
-    _dispenser_result_pub = n->create_publisher<DispenserResult>(
-      "/dispenser_results",
+    _ingestor_result_pub = n->create_publisher<IngestorResult>(
+      "/ingestor_results",
       10);
 
     _api_response_sub = n->create_subscription<ApiResponse>(
@@ -457,10 +525,10 @@ public:
         }
       });
 
-    _dispenser_request_sub = n->create_subscription<DispenserRequest>(
-      "/dispenser_requests",
+    _ingestor_request_sub = n->create_subscription<IngestorRequest>(
+      "/ingestor_requests",
       100,
-      [&](DispenserRequest::SharedPtr msg)
+      [&](IngestorRequest::SharedPtr msg)
       {
         auto n = _node.lock();
         if (!n)
@@ -474,7 +542,7 @@ public:
         {
           RCLCPP_WARN(
             n->get_logger(),
-            "Dispenser request received for RMF task [%s] but it is not in an itinerary.",
+            "Ingestor request received for RMF task [%s] but it is not in an itinerary.",
             msg->request_guid.c_str());
           return;
         }
@@ -488,23 +556,23 @@ public:
         }
         const auto& last_destination =
         it->second.itinerary.destinations().back();
-        if (last_destination.action != Destination::ACTION_PICKUP)
+        if (last_destination.action != Destination::ACTION_DROPOFF)
         {
           RCLCPP_WARN(
             n->get_logger(),
-            "Itinerary with id [%s] does not end in a pickup but a pickup was requests, it ends with [%d] instead.",
+            "Itinerary with id [%s] does not end in a dropoff but a dropoff was requested, it ends with [%d] instead.",
             it->second.itinerary.id().c_str(),
             (int)last_destination.action);
           return;
         }
         RCLCPP_INFO(
           n->get_logger(),
-          "Dispenser request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
+          "Ingestor request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
           msg->request_guid.c_str());
         // We are at the last step and it is marked as a pickup, this means we arrived
         it->second.completed_cb(true);
         _rmf_task_id_to_ongoing_itinerary.erase(it);
-        _pending_dispenser_task_ids.insert(msg->request_guid);
+        _pending_ingestor_task_ids.insert(msg->request_guid);
       });
 
     _building_map_sub = n->create_subscription<BuildingMap>(
@@ -702,8 +770,8 @@ public:
     }
 
     // TODO(luca) also check for ingestors
-    auto it = _pending_dispenser_task_ids.find(task_id);
-    if (it == _pending_dispenser_task_ids.end())
+    auto it = _pending_ingestor_task_ids.find(task_id);
+    if (it == _pending_ingestor_task_ids.end())
     {
       RCLCPP_WARN(
         n->get_logger(),
@@ -712,7 +780,7 @@ public:
       return false;
     }
 
-    if (signal != "pickup")
+    if (signal != "dropoff")
     {
       RCLCPP_WARN(
         n->get_logger(),
@@ -723,12 +791,12 @@ public:
 
 
     // Publish the dispenser result
-    DispenserResult res;
-    res.status = DispenserResult::SUCCESS;
+    IngestorResult res;
+    res.status = IngestorResult::SUCCESS;
     res.request_guid = task_id;
     res.source_guid = n->get_name();
-    _dispenser_result_pub->publish(res);
-    _pending_dispenser_task_ids.erase(it);
+    _ingestor_result_pub->publish(res);
+    _pending_ingestor_task_ids.erase(it);
     return true;
   }
 
