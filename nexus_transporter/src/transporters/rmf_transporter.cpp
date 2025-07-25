@@ -240,14 +240,13 @@ private:
     }
     j["request"] = request_json.value();
 
-    RCLCPP_INFO(n->get_logger(), "%s", j.dump(4).c_str());
+    RCLCPP_DEBUG(n->get_logger(), "%s", j.dump(4).c_str());
 
     ApiRequest msg;
     msg.json_msg = j.dump();
     std::stringstream ss;
     ss << "compose.nexus-transport-" << itinerary.id() << "-" <<
       _generate_random_hex_string(5);
-    RCLCPP_INFO(n->get_logger(), ss.str().c_str());
     msg.request_id = ss.str();
     return msg;
   }
@@ -351,9 +350,7 @@ private:
     itinerary
       .metadata("fleet_name", winner->fleet_name)
       .metadata("robot_name", winner->expected_robot_name);
-    RCLCPP_INFO(n->get_logger(), "BEFORE COMPLETED_CB");
     it->second.completed_cb(itinerary);
-    RCLCPP_INFO(n->get_logger(), "AFTER COMPLETED_CB");
 
     // This itinerary may have been generated via get_itinerary, and contains
     // the designated fleet or robot names.
@@ -364,7 +361,6 @@ private:
     _rmf_task_id_to_itinerary_query.erase(it);
 
     _auctioneer->ready_for_next_bid();
-    RCLCPP_INFO(n->get_logger(), "AUCTIONEER READY FOR NEXT BID");
   }
 
 public:
@@ -399,18 +395,53 @@ public:
       _itinerary_expiration_seconds
     );
 
+    // The internal node is used to run any interactions with RMF without
+    // being blocked by the transporter node's actions and services
+    _internal_node = rclcpp::Node::make_shared("rmf_transporter_internal_node");
+
+    // The timer runs on a separate callback group on the transporter node,
+    // in order to spin the internal node
+    _timer_cb_group = n->create_callback_group(
+      rclcpp::CallbackGroupType::MutuallyExclusive);
+    _timer = n->create_wall_timer(
+      std::chrono::milliseconds(200),
+      [&]()
+        {
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr
+              << "RmfTransporter timer to spin internal node - invalid node"
+              << std::endl;
+            return;
+          }
+          rclcpp::spin_some(_internal_node);
+        },
+      _timer_cb_group);
+
+    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
+      _internal_node,
+      [this](
+        const std::string& rmf_task_id,
+        const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
+        const std::vector<std::string>& errors)
+      {
+        this->_conclude_bid(rmf_task_id, std::move(winner), errors);
+      },
+      std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
+
     const auto transient_qos =
       rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
 
-    _api_request_pub = n->create_publisher<ApiRequest>(
+    _api_request_pub = _internal_node->create_publisher<ApiRequest>(
       "/task_api_requests",
       transient_qos);
 
-    _dispenser_result_pub = n->create_publisher<DispenserResult>(
+    _dispenser_result_pub = _internal_node->create_publisher<DispenserResult>(
       "/dispenser_results",
       10);
 
-    _api_response_sub = n->create_subscription<ApiResponse>(
+    _api_response_sub = _internal_node->create_subscription<ApiResponse>(
       "/task_api_responses",
       transient_qos,
       [&](ApiResponse::UniquePtr msg)
@@ -423,18 +454,11 @@ public:
           return;
         }
 
-        RCLCPP_INFO(
-          n->get_logger(),
-          "TASK_API_RESPONSES callback running!"
-        );
-
         if (msg->type != msg->TYPE_RESPONDING)
         {
           // Ignore non-responding messages
           return;
         }
-
-        RCLCPP_INFO(n->get_logger(), "RESPONSE TYPE IS RESPONDING");
 
         // Check for task cancellation first
         auto cancellation_it =
@@ -489,35 +513,15 @@ public:
             ss.str().c_str());
         }
 
-        RCLCPP_INFO(n->get_logger(), "NON CANCELLATION RELATED");
-
         auto it =
         _itinerary_id_to_unconfirmed_itineraries.find(msg->request_id);
         if (it == _itinerary_id_to_unconfirmed_itineraries.end())
         {
-          RCLCPP_INFO(
-            n->get_logger(),
-            "%s NOT FOUND IN _ITINERARY_ID_TO_UNCONFIRMED_ITINERARIES",
-            msg->request_id.c_str());
-
-          for (const auto& t : _itinerary_id_to_unconfirmed_itineraries)
-          {
-            RCLCPP_INFO(
-              n->get_logger(),
-              "available: %s",
-              t.first.c_str()
-            );
-          }
-
           // Ignore API responses that are not for this transporter
           return;
         }
 
-        RCLCPP_INFO(n->get_logger(), msg->json_msg.c_str());
-
-        RCLCPP_INFO(n->get_logger(), "BEFORE PARSING");
         auto j = nlohmann::json::parse(msg->json_msg, nullptr, false);
-        RCLCPP_INFO(n->get_logger(), "AFTER PARSING");
         // TODO(ac): use schema validation instead
         if (j.is_discarded() ||
         !j.contains("success") ||
@@ -533,7 +537,6 @@ public:
           _itinerary_id_to_unconfirmed_itineraries.erase(it);
           return;
         }
-        RCLCPP_INFO(n->get_logger(), "AFTER CHECKING");
 
         if (j["success"] == false)
         {
@@ -559,7 +562,7 @@ public:
         _itinerary_id_to_unconfirmed_itineraries.erase(it);
       });
 
-    _task_state_sub = n->create_subscription<TaskStateUpdate>(
+    _task_state_sub = _internal_node->create_subscription<TaskStateUpdate>(
       "/task_state_update",
       transient_qos,
       [&](TaskStateUpdate::UniquePtr msg)
@@ -632,57 +635,62 @@ public:
         }
       });
 
-    _dispenser_request_sub = n->create_subscription<DispenserRequest>(
-      "/dispenser_requests",
-      100,
-      [&](DispenserRequest::SharedPtr msg)
-      {
-        auto n = _node.lock();
-        if (!n)
+    _dispenser_request_sub =
+      _internal_node->create_subscription<DispenserRequest>(
+        "/dispenser_requests",
+        100,
+        [&](DispenserRequest::SharedPtr msg)
         {
-          std::cerr << "RmfTransporter::_api_response_sub - invalid node"
-                    << std::endl;
-          return;
-        }
-        auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
-        if (it == _rmf_task_id_to_ongoing_itinerary.end())
-        {
-          RCLCPP_WARN(
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr << "RmfTransporter::_api_response_sub - invalid node"
+                      << std::endl;
+            return;
+          }
+          auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
+          if (it == _rmf_task_id_to_ongoing_itinerary.end())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Dispenser request received for RMF task [%s] but it is not in "
+              "an itinerary.",
+              msg->request_guid.c_str());
+            return;
+          }
+          if (it->second.itinerary.destinations().empty())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] has no destinations",
+              it->second.itinerary.id().c_str());
+            return;
+          }
+          const auto& last_destination =
+          it->second.itinerary.destinations().back();
+          if (last_destination.action != Destination::ACTION_PICKUP)
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] does not end in a pickup but a pickup "
+              "was requests, it ends with [%d] instead.",
+              it->second.itinerary.id().c_str(),
+              (int)last_destination.action);
+            return;
+          }
+          RCLCPP_INFO(
             n->get_logger(),
-            "Dispenser request received for RMF task [%s] but it is not in an itinerary.",
+            "Dispenser request received for RMF task [%s] which is the last "
+            "step in the itinerary, marking task as completed.",
             msg->request_guid.c_str());
-          return;
-        }
-        if (it->second.itinerary.destinations().empty())
-        {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Itinerary with id [%s] has no destinations",
-            it->second.itinerary.id().c_str());
-          return;
-        }
-        const auto& last_destination =
-        it->second.itinerary.destinations().back();
-        if (last_destination.action != Destination::ACTION_PICKUP)
-        {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Itinerary with id [%s] does not end in a pickup but a pickup was requests, it ends with [%d] instead.",
-            it->second.itinerary.id().c_str(),
-            (int)last_destination.action);
-          return;
-        }
-        RCLCPP_INFO(
-          n->get_logger(),
-          "Dispenser request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
-          msg->request_guid.c_str());
-        // We are at the last step and it is marked as a pickup, this means we arrived
-        it->second.completed_cb(true);
-        _rmf_task_id_to_ongoing_itinerary.erase(it);
-        _pending_dispenser_task_ids.insert(msg->request_guid);
-      });
+          // We are at the last step and it is marked as a pickup, this means we
+          // arrived
+          it->second.completed_cb(true);
+          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          _pending_dispenser_task_ids.insert(msg->request_guid);
+        });
 
-    _building_map_sub = n->create_subscription<BuildingMap>(
+    _building_map_sub = _internal_node->create_subscription<BuildingMap>(
       "/map",
       transient_qos,
       [&](BuildingMap::SharedPtr msg)
@@ -702,41 +710,6 @@ public:
           }
         }
       });
-
-    _internal_node = rclcpp::Node::make_shared("rmf_transporter_internal_node");
-
-    _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
-      _internal_node,
-      [this](
-        const std::string& rmf_task_id,
-        const std::optional<rmf_task_ros2::bidding::Response::Proposal> winner,
-        const std::vector<std::string>& errors)
-      {
-        this->_conclude_bid(rmf_task_id, std::move(winner), errors);
-      },
-      std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
-
-    _timer_cb_group = n->create_callback_group(
-      rclcpp::CallbackGroupType::MutuallyExclusive);
-
-    _timer = n->create_wall_timer(
-      std::chrono::milliseconds(1000),
-      [&]()
-        {
-          auto n = _node.lock();
-          if (!n)
-          {
-            std::cerr << "RmfTransporter::tmp - invalid node"
-              << std::endl;
-            return;
-          }
-          if (!_rmf_task_id_to_itinerary_query.empty())
-          {
-            RCLCPP_INFO(n->get_logger(), "Checking itinerary query!");
-            rclcpp::spin_some(_internal_node);
-          }
-        },
-      _timer_cb_group);
 
     _ready = true;
     RCLCPP_INFO(
@@ -809,8 +782,7 @@ public:
       return;
     }
 
-    // TODO(ac): set this to debug.
-    RCLCPP_INFO(n->get_logger(), "%s", request.value().dump(4).c_str());
+    RCLCPP_DEBUG(n->get_logger(), "%s", request.value().dump(4).c_str());
     // TODO(ac): perform schema validation.
 
     const auto rmf_task_id = _generate_rmf_bidding_task_id(job_id);
@@ -940,7 +912,8 @@ public:
     {
       RCLCPP_WARN(
         n->get_logger(),
-        "Received signal [%s] for task [%s] that is not waiting for it, ignoring",
+        "Received signal [%s] for task [%s] that is not waiting for it, "
+        "ignoring",
         signal.c_str(), task_id.c_str());
       return false;
     }
