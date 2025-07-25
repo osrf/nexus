@@ -20,7 +20,6 @@
 #include "bid_transporter.hpp"
 #include "context.hpp"
 #include "create_transporter_task.hpp"
-#include "assign_transporter_workcell.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
@@ -526,13 +525,6 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
         this->shared_from_this());
     });
 
-  bt_factory->registerBuilder<AssignTransporterWorkcell>("AssignTransporterWorkcell",
-    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
-    {
-      return std::make_unique<AssignTransporterWorkcell>(name, config,
-        this->shared_from_this(), ctx);
-    });
-
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -567,6 +559,12 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SendSignal>(name, config, ctx);
+    });
+
+  bt_factory->registerBuilder<SignalTransporter>("SignalTransporter",
+    [ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<SignalTransporter>(name, config, ctx);
     });
 
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);
@@ -639,6 +637,10 @@ void SystemOrchestrator::_init_job(
       work_order_id](const std::unordered_map<std::string,
       std::optional<std::string>>& maybe_task_assignments)
       {
+        // We iterate through all the task assignments and exit early if any task
+        // was not successfully assigned.
+        // This prevents assigning tasks to workcells for a work order that will not
+        // be executed.
         for (const auto& [task_id, maybe_assignment] : maybe_task_assignments)
         {
           if (!maybe_assignment.has_value())
@@ -652,6 +654,10 @@ void SystemOrchestrator::_init_job(
             this->_jobs.erase(work_order_id);
             return;
           }
+        }
+        for (const auto& [task_id, maybe_assignment] : maybe_task_assignments)
+        {
+          // Task assignments are valid, they have been checked in the previous loop
           job.ctx->set_workcell_task_assignment(task_id, *maybe_assignment);
           auto task_state = TaskState();
           task_state.workcell_id = *maybe_assignment;
@@ -875,7 +881,9 @@ void SystemOrchestrator::_handle_register_transporter(
       req->description,
       this->create_client<endpoints::IsTransporterAvailableService::ServiceType>(
         endpoints::IsTransporterAvailableService::service_name(
-          transporter_id))
+          transporter_id)),
+      std::make_unique<common::SyncServiceClient<endpoints::SignalTransporterService::ServiceType>>(
+        this, endpoints::SignalTransporterService::service_name(transporter_id))
     }));
 
   resp->success = true;

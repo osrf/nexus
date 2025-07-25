@@ -92,6 +92,11 @@ endpoints:
     type: action
     action_name: '{transporter_id}/transport'
     action_type: nexus_transporter_msgs/action/Transport
+  - title: Signal Transporter Service
+    description: Sends a signal to a transporter.
+    type: service
+    service_name: /{transporter_id}/signal
+    service_type: nexus_orchestrator_msgs/srv/Signal
   # Detector
   - title: Detector Service
     description: Get 3D poses of objects detected by a detector
@@ -137,7 +142,7 @@ endpoints:
     description: Sends a signal to a workcell.
     type: service
     service_name: /{workcell_id}/signal
-    service_type: nexus_orchestrator_msgs/srv/SignalWorkcell
+    service_type: nexus_orchestrator_msgs/srv/Signal
   # Dispenser Service
   - title: Dispenser Service
     description: Send a request to a dispenser

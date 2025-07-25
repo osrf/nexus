@@ -97,6 +97,9 @@ public:
   std::unordered_map<std::string, std::shared_ptr<TransporterSession>>
     get_transporter_sessions() const;
 
+  std::shared_ptr<TransporterSession> get_transporter_session(
+    const std::string& transporter_id) const;
+
   Context& set_task_state(const std::string& task_id, const TaskState& task_state);
 
   std::unordered_map<std::string, TaskState> get_task_states() const;
@@ -144,13 +147,13 @@ private:
   std::unordered_map<std::string, std::string> _workcell_task_assignments = {};
 
   /**
-   * Map of workcell ids and it's session.
+   * Map of workcell ids and their sessions.
    */
   std::unordered_map<std::string,
   std::shared_ptr<WorkcellSession>> _workcell_sessions;
 
   /**
-   * Map of transporter ids and it's session.
+   * Map of transporter ids and their sessions.
    */
   std::unordered_map<std::string,
   std::shared_ptr<TransporterSession>> _transporter_sessions;

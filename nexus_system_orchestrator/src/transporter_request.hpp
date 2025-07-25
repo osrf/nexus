@@ -61,6 +61,8 @@ protected: std::string get_action_name() const override;
 protected: std::optional<endpoints::TransportAction::ActionType::Goal> make_goal()
   override;
 
+protected: void on_feedback(endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr) override;
+
 private: std::shared_ptr<Context> _ctx;
 private: nexus_transporter_msgs::msg::TransportationRequest _request;
 private: std::string _transporter;

@@ -1,5 +1,9 @@
-<library path="mock_transporter">
+<library path="nexus_builtin_transporters">
   <class type="nexus_transporter::MockTransporter" base_class_type="nexus_transporter::Transporter">
     <description>Mock transporter plugin.</description>
+  </class>
+
+  <class type="nexus_transporter::RmfTransporter" base_class_type="nexus_transporter::Transporter">
+    <description>RMF transporter plugin using AMRs.</description>
   </class>
 </library>

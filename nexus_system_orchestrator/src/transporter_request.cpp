@@ -25,7 +25,8 @@ namespace nexus::system_orchestrator {
 BT::PortsList TransporterRequest::providedPorts()
 {
   return { BT::InputPort<TransportationRequest>("transport_task"),
-    BT::InputPort<std::string>("transporter") };
+    BT::InputPort<std::string>("transporter"),
+    BT::OutputPort<std::string>("transporter_task_id") };
 }
 
 BT::NodeStatus TransporterRequest::onStart()
@@ -67,6 +68,11 @@ make_goal()
   endpoints::TransportAction::ActionType::Goal goal;
   goal.request = this->_request;
   return goal;
+}
+
+void TransporterRequest::on_feedback(endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr fb)
+{
+  this->setOutput("transporter_task_id", fb->state.task_id);
 }
 
 }
