@@ -549,7 +549,7 @@ public:
           return;
         }
 
-        RCLCPP_INFO(
+        RCLCPP_DEBUG(
           n->get_logger(),
           "RMF task dispatch request for itinerary [%s] accepted,\n%s",
           it->second.itinerary.id().c_str(),
