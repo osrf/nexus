@@ -121,7 +121,7 @@ BT::NodeStatus UnpackTransporterTask::tick()
   {
     return BT::NodeStatus::FAILURE;
   }
-  this->setOutput("output", maybe_request.value());
+  this->setOutput("output", *maybe_request.value());
   return BT::NodeStatus::SUCCESS;
 }
 
