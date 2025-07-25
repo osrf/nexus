@@ -19,7 +19,7 @@
         </Sequence>
         <Sequence>
           <WorkcellRequest name="workcell_request" workcell="{workcell}" task="{task}"/>
-          <SignalTransporter name="signal_transporter" transporter="{transporter}" transporter_task_id="{transporter_task_id}" signal="pickup"/>
+          <SignalTransporter name="signal_transporter" transporter="{transporter}" transporter_task_id="{transporter_task_id}" signal="dropoff"/>
         </Sequence>
       </Parallel>
     </ReactiveSequence>
