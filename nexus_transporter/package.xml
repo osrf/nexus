@@ -22,6 +22,8 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rmf_api_msgs</depend>
   <depend>rmf_building_map_msgs</depend>
+  <depend>rmf_dispenser_msgs</depend>
+  <depend>rmf_ingestor_msgs</depend>
   <depend>rmf_task_msgs</depend>
   <depend>rmf_task_ros2</depend>
   <depend>rmf_traffic</depend>
