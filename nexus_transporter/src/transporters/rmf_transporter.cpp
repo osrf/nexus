@@ -83,16 +83,14 @@ private:
 
   rclcpp::Node::SharedPtr _internal_node;
 
+  std::shared_ptr<std::thread> _spin_thread;
+
   bool _ready = false;
 
   int _bidding_time_window_seconds = 2;
   int _itinerary_expiration_seconds = 60;
 
   std::shared_ptr<rmf_task_ros2::bidding::Auctioneer> _auctioneer = nullptr;
-
-  rclcpp::CallbackGroup::SharedPtr _timer_cb_group = nullptr;
-
-  rclcpp::TimerBase::SharedPtr _timer = nullptr;
 
   // Used for bidding only
   std::unordered_map<std::string, ItineraryQuery>
@@ -399,25 +397,14 @@ public:
     // being blocked by the transporter node's actions and services
     _internal_node = rclcpp::Node::make_shared("rmf_transporter_internal_node");
 
-    // The timer runs on a separate callback group on the transporter node,
-    // in order to spin the internal node
-    _timer_cb_group = n->create_callback_group(
-      rclcpp::CallbackGroupType::MutuallyExclusive);
-    _timer = n->create_wall_timer(
-      std::chrono::milliseconds(200),
-      [&]()
+    _spin_thread = std::make_shared<std::thread>([&]()
+      {
+        while (rclcpp::ok())
         {
-          auto n = _node.lock();
-          if (!n)
-          {
-            std::cerr
-              << "RmfTransporter timer to spin internal node - invalid node"
-              << std::endl;
-            return;
-          }
           rclcpp::spin_some(_internal_node);
-        },
-      _timer_cb_group);
+          std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        }
+      });
 
     _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
       _internal_node,
@@ -938,7 +925,13 @@ public:
     return true;
   }
 
-  ~RmfTransporter() = default;
+  ~RmfTransporter()
+  {
+    if (_spin_thread && _spin_thread->joinable())
+    {
+      _spin_thread->join();
+    }
+  };
 };
 
 }  // namespace nexus_transporter
