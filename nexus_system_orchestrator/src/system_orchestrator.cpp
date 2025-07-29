@@ -622,6 +622,10 @@ void SystemOrchestrator::_init_job(
       work_order_id](const std::unordered_map<std::string,
       std::optional<std::string>>& maybe_task_assignments)
       {
+        // We iterate through all the task assignments and exit early if any task
+        // was not successfully assigned.
+        // This prevents assigning tasks to workcells for a work order that will not
+        // be executed.
         for (const auto& [task_id, maybe_assignment] : maybe_task_assignments)
         {
           if (!maybe_assignment.has_value())
@@ -635,6 +639,10 @@ void SystemOrchestrator::_init_job(
             this->_jobs.erase(work_order_id);
             return;
           }
+        }
+        for (const auto& [task_id, maybe_assignment] : maybe_task_assignments)
+        {
+          // Task assignments are valid, they have been checked in the previous loop
           job.ctx->set_workcell_task_assignment(task_id, *maybe_assignment);
           auto task_state = TaskState();
           task_state.workcell_id = *maybe_assignment;
