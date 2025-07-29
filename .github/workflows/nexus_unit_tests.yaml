@@ -10,12 +10,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/osrf/nexus/rmf:${{ matrix.ros_distribution }}-rmf-main
+      image: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
         ros_distribution:
           - jazzy
+        include:
+          - ros_distribution: jazzy
+            image: ghcr.io/open-rmf/rmf/rmf_demos:jazzy-rmf-latest@sha256:abebb3a35c04241fb9be14578e9adcb98a7416cf0eef34c3ee2e484d9bc6fbdf
     timeout-minutes: 60
     steps:
       - name: Checkout
