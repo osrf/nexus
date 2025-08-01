@@ -15,13 +15,20 @@
  *
 */
 
+#include <rclcpp/rclcpp.hpp>
+
 #include <nexus_transporter/Transporter.hpp>
+
+#include <rmf_building_map_msgs/msg/building_map.hpp>
 
 #include <mutex>
 #include <thread>
 #include <unordered_set>
 
+
 namespace nexus_transporter {
+
+using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
 
 //==============================================================================
 struct Location
@@ -42,7 +49,8 @@ struct MockTransporter3000
 {
   std::string name;
   Location current_location;
-  std::optional<Itinerary> itinerary; // If idle and not at `unloading_station` this should be nullopt.
+  std::vector<Location> destinations;
+  std::optional<Itinerary> itinerary; // If idle this should be nullopt.
 
   MockTransporter3000(
     const std::string& name_,
@@ -78,41 +86,29 @@ public:
       _increment
     );
 
-    std::vector<std::string> destinations;
-    destinations = n->declare_parameter(
-      "destinations",
-      std::vector<std::string>(
-        {"loading", "workcell_1", "workcell_2", "unloading"}));
-
-    if (!destinations.empty())
+    _nav_graph_indices = n->declare_parameter(
+      "nav_graph_indices",
+      std::vector<int>({1}));
+    if (_nav_graph_indices.empty())
     {
-      double x_pose = 0.0;
-      for (const auto& dest : destinations)
-      {
-        _destinations.insert({dest, x_pose});
-        x_pose += _increment;
-      }
+      RCLCPP_ERROR(
+        n->get_logger(),
+        "nav_graph_indices is required"
+      );
+      return false;
     }
-
-    std::stringstream ss;
-    for (const auto& d : _destinations)
-      ss << d.first << ", ";
-    RCLCPP_INFO(
-      n->get_logger(),
-      "MockTransporter configured with the following destinations: %s",
-      ss.str().c_str()
-    );
-
-    // Set the initial location of all added transporters as first destination in the vector
-    _initial_location = destinations.front();
-
-    // Set the unloading station
-    _unloading_station = n->declare_parameter("unloading_station", "unloading");
-    RCLCPP_INFO(
-      n->get_logger(),
-      "MockTransporter unloading station set to [%s].",
-      _unloading_station.c_str()
-    );
+    else
+    {
+      std::stringstream ss;
+      for (const auto& i : _nav_graph_indices)
+      {
+        ss << i << ", ";
+      }
+      RCLCPP_INFO(
+        n->get_logger(),
+        "MockTransporter nav_graph_indices set to [%s]",
+        ss.str().c_str());
+    }
 
     // Set the speed of transporter (m/s)
     _speed = n->declare_parameter("speed", 1.0);
@@ -123,6 +119,22 @@ public:
     );
 
     _node = node;
+
+    const auto transient_qos =
+      rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
+
+    _building_map_sub = _node->create_subscription<BuildingMap>(
+      "/map",
+      transient_qos,
+      [&](BuildingMap::SharedPtr msg)
+      {
+        _building_map = msg;
+        for (const auto& level : _building_map->levels)
+        {
+
+        }
+      });
+
     _ready = true;
     RCLCPP_INFO(
       n->get_logger(),
@@ -362,19 +374,21 @@ private:
   /// A boolean that is set true when the system is initialized and without
   /// errors
   bool _ready = false;
-  /// The MockTransporter system offers multiple transporters capable of transporting items
-  std::unordered_map<std::string,
-    std::shared_ptr<MockTransporter3000>> _transporters;
-  /// First stop in the list of destinations where the transporter starts
-  std::string _initial_location;
-  /// A set of destinations that _transporter is capable to visiting
-  std::unordered_map<std::string, double> _destinations;
-  /// The final location of each transporter request
-  std::string _unloading_station;
+  /// The nav graphs that represent mock transporters
+  std::vector<int> _nav_graph_indices;
   /// The speed of the transporter in m/s
   double _speed;
   /// Increment along X axis for transporter destinations
   double _increment;
+  /// RMF building map
+  BuildingMap::SharedPtr _building_map = nullptr;
+  /// All the instances of MockTransporter, based on the navigation graph indices
+  std::unordered_map<std::string,
+    std::shared_ptr<MockTransporter3000>> _transporters;
+
+  /// Building map subscription to retrieve navigation graphs
+  rclcpp::Subscription<rmf_building_map_msgs::msg::BuildingMap>::SharedPtr
+    _building_map_sub = nullptr;
 
   std::thread _thread;
   std::mutex _mutex;
