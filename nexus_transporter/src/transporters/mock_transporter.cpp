@@ -147,7 +147,7 @@ public:
       [&](BuildingMap::SharedPtr msg)
       {
         _building_map = msg;
-        
+
         std::unordered_map<std::string, std::unordered_map<std::string, Location>>
           nav_graph_to_destinations_map;
         for (const auto& n : _nav_graph_names)
@@ -197,9 +197,8 @@ public:
               std::nullopt)});
         }
 
+        std::lock_guard<std::mutex> lock(_mutex);
         _transporters = transporters;
-
-        _ready = true;
       });
 
     _ready = true;
@@ -225,22 +224,23 @@ public:
       completed_cb(std::nullopt);
       return;
     }
-    
+
     auto n = _node.lock();
-    
+
     // This transporter can only go to one destination at a time.
     if (destinations.size() > 1)
     {
       RCLCPP_ERROR(
         n->get_logger(),
         "MockTransporter currently only supports 1 destination at a time");
-        completed_cb(std::nullopt);
-        return;
-      }
-      
+      completed_cb(std::nullopt);
+      return;
+    }
+
     const rclcpp::Time now = n ? n->get_clock()->now() : rclcpp::Clock().now();
-    
+
     const auto& destination = destinations[0];
+    std::lock_guard<std::mutex> lock(_mutex);
     for (const auto& t : _transporters)
     {
       const auto dest = t.second->destinations_map.find(destination.name);
@@ -302,113 +302,157 @@ public:
       }
     }
 
-    // const auto& destinations = itinerary.destinations();
-    // if (destinations.empty())
-    // {
-    //   completed_cb(true);
-    //   return;
-    // }
-    // const auto& destination = destinations[0];
-    // if (current_location.name.has_value() &&
-    //   destination.name == current_location.name)
-    // {
-    //   completed_cb(true);
-    //   return;
-    // }
+    const auto& destinations = itinerary.destinations();
+    if (destinations.empty())
+    {
+      completed_cb(true);
+      return;
+    }
 
-    // if (_thread.joinable())
-    //   _thread.join();
+    // This transporter can only go to one destination at a time.
+    if (destinations.size() > 1)
+    {
+      RCLCPP_ERROR(
+        n->get_logger(),
+        "MockTransporter currently only supports 1 destination at a time");
+      completed_cb(false);
+      return;
+    }
+    const auto& destination = destinations[0];
+    if (current_location.name.has_value() &&
+      destination.name == current_location.name)
+    {
+      completed_cb(true);
+      return;
+    }
 
-    // RCLCPP_INFO(n->get_logger(),
-    //   "Received request for transporter [%s] to %s",
-    //   current_transporter.c_str(), destination.name.c_str());
+    if (_thread.joinable())
+    {
+      _thread.join();
+    }
 
-    // // TODO(YV): Capture a data_ptr to avoid reference captures
-    // _thread = std::thread(
-    //   [this, feedback_cb = feedback_cb, completed_cb = completed_cb](
-    //     Itinerary itinerary)
-    //   {
-    //     const auto& current_transporter = itinerary.transporter_name();
-    //     {
-    //       std::lock_guard<std::mutex> lock(_mutex);
+    RCLCPP_INFO(n->get_logger(),
+      "Received request for transporter [%s] to %s",
+      current_transporter.c_str(), destination.name.c_str());
 
-    //       _transporters.at(current_transporter)->itinerary = itinerary;
-    //     }
-    //     const auto& destination = itinerary.destinations()[0];
-    //     const auto& dest_pose =
-    //     _destinations.find(destination.name)->second;
-    //     const auto& current_pose = _transporters.at(
-    //       current_transporter)->current_location.pose;
-    //     const auto& dist = abs(dest_pose - current_pose);
-    //     const auto now = rclcpp::Clock().now();
-    //     // TODO(YV): Make duration a param
-    //     const auto finish_time =
-    //     now + rclcpp::Duration::from_seconds(dist/_speed);
-    //     Transporter::TransporterState state;
-    //     state.transporter = current_transporter;
-    //     state.model = "MockTransporter3000";
-    //     state.task_id = itinerary.id();
-    //     state.location.header.frame_id = "world";
-    //     state.location.header.stamp = now;
-    //     state.location.pose.position.x = current_pose;
-    //     state.state = state.STATE_IDLE;
-    //     feedback_cb(state);
+    // TODO(YV): Capture a data_ptr to avoid reference captures
+    _thread = std::thread(
+      [this, feedback_cb = feedback_cb, completed_cb = completed_cb](
+        Itinerary itinerary)
+      {
+        const auto& current_transporter = itinerary.transporter_name();
+        {
+          std::lock_guard<std::mutex> lock(_mutex);
+          _transporters.at(current_transporter)->itinerary = itinerary;
+        }
+        const auto& destination = itinerary.destinations()[0];
+        const auto& destinations_map =
+          _transporters.at(current_transporter)->destinations_map;
+        const auto loc_it = destinations_map.find(destination.name);
+        if (loc_it == destinations_map.end())
+        {
+          completed_cb(false);
+        }
+        
+        const auto& current_loc =
+          _transporters.at(current_transporter)->current_location;
+        const auto& dest_loc = loc_it->second;
+        const auto& dist = get_2d_distance(
+          dest_loc.x, dest_loc.y, current_loc.x, current_loc.y);
+        const auto now = rclcpp::Clock().now();
+        // TODO(YV): Make duration a param
+        const auto finish_time =
+          now + rclcpp::Duration::from_seconds(dist/_speed);
+        
+        // Calculate direction vector components
+        double dx = dest_loc.x - current_loc.x;
+        double dy = dest_loc.y - current_loc.y;
+        
+        // Normalize the direction vector
+        double direction_magnitude = std::sqrt(dx * dx + dy * dy);
+        if (direction_magnitude > 0.0) {
+          dx /= direction_magnitude;
+          dy /= direction_magnitude;
+        }
+        
+        Transporter::TransporterState state;
+        state.transporter = current_transporter;
+        state.model = "MockTransporter3000";
+        state.task_id = itinerary.id();
+        state.location.header.frame_id = "world";
+        state.location.header.stamp = now;
+        state.location.pose.position.x = current_loc.x;
+        state.location.pose.position.y = current_loc.y;
+        state.state = state.STATE_IDLE;
+        feedback_cb(state);
 
-    //     state.state = state.STATE_MOVING;
-    //     _stop = false;
-    //     double dist_traveled = 0.0;
-    //     while (rclcpp::Clock().now() < finish_time && !_stop)
-    //     {
-    //       std::this_thread::sleep_for(std::chrono::seconds(1));
+        state.state = state.STATE_MOVING;
+        _stop = false;
+        double dist_traveled = 0.0;
 
-    //       double x_increment;
-    //       if (dist - dist_traveled < _speed &&
-    //       (finish_time - rclcpp::Clock().now()).seconds() <= 0.0)
-    //       {
-    //         auto gap = dist - dist_traveled;
-    //         x_increment = dest_pose < current_pose ?
-    //         -1*gap : gap;
-    //       }
-    //       else
-    //         x_increment = dest_pose < current_pose ?
-    //         -1*_speed : _speed;
+        
 
-    //       state.location.pose.position.x += x_increment;
-    //       dist_traveled += abs(x_increment);
-    //       _transporters.at(
-    //         current_transporter)->current_location.pose =
-    //       state.location.pose.position.x;
-    //       feedback_cb(state);
-    //     }
+        while (rclcpp::Clock().now() < finish_time && !_stop)
+        {
+          std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    //     completed_cb(true);
-    //     std::lock_guard<std::mutex> lock(_mutex);
+          double x_increment;
+          double y_increment;
+          
+          // Calculate remaining distance to travel
+          double remaining_dist = dist - dist_traveled;
+          
+          if (remaining_dist < _speed)
+          {
+            // Final step - travel the remaining distance
+            x_increment = dx * remaining_dist;
+            y_increment = dy * remaining_dist;
+          }
+          else
+          {
+            // Normal step - travel at speed
+            x_increment = dx * _speed;
+            y_increment = dy * _speed;
+          }
 
-    //     // Check if the transporter is at the unloading station
-    //     if (destination.name == _unloading_station)
-    //     {
-    //       // Work order completed, ok to remove transporter from list
-    //       _transporters.erase(
-    //         current_transporter);
-    //     }
-    //     else
-    //     {
-    //       // Update the transporter location
-    //       _transporters.at(
-    //         current_transporter)->current_location.name = std::nullopt;
-    //       for (const auto& it : _destinations)
-    //       {
-    //         if (it.second ==
-    //         _transporters.at(current_transporter)->current_location.pose)
-    //         {
-    //           _transporters.at(
-    //             current_transporter)->current_location.name = it.first;
-    //           break;
-    //         }
-    //       }
-    //       _transporters.at(current_transporter)->itinerary = std::nullopt;
-    //     }
-    //   }, itinerary);
+          state.location.pose.position.x += x_increment;
+          state.location.pose.position.y += y_increment;
+          dist_traveled += std::sqrt(x_increment * x_increment + y_increment * y_increment);
+          
+          // Update transporter's current location
+          _transporters.at(current_transporter)->current_location.x = state.location.pose.position.x;
+          _transporters.at(current_transporter)->current_location.y = state.location.pose.position.y;
+          feedback_cb(state);
+        }
+
+        // completed_cb(true);
+        // std::lock_guard<std::mutex> lock(_mutex);
+
+        // // Check if the transporter is at the unloading station
+        // if (destination.name == _unloading_station)
+        // {
+        //   // Work order completed, ok to remove transporter from list
+        //   _transporters.erase(
+        //     current_transporter);
+        // }
+        // else
+        // {
+        //   // Update the transporter location
+        //   _transporters.at(
+        //     current_transporter)->current_location.name = std::nullopt;
+        //   for (const auto& it : _destinations)
+        //   {
+        //     if (it.second ==
+        //     _transporters.at(current_transporter)->current_location.pose)
+        //     {
+        //       _transporters.at(
+        //         current_transporter)->current_location.name = it.first;
+        //       break;
+        //     }
+        //   }
+        //   _transporters.at(current_transporter)->itinerary = std::nullopt;
+        // }
+      }, itinerary);
   }
 
   bool cancel(Itinerary itinerary) final
