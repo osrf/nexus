@@ -399,11 +399,9 @@ public:
 
     _spin_thread = std::make_shared<std::thread>([&]()
       {
-        while (rclcpp::ok())
-        {
-          rclcpp::spin_some(_internal_node);
-          std::this_thread::sleep_for(std::chrono::milliseconds{100});
-        }
+        rclcpp::experimental::executors::EventsExecutor executor;
+        executor.add_node(_internal_node);
+        executor.spin();
       });
 
     _auctioneer = rmf_task_ros2::bidding::Auctioneer::make(
