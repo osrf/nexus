@@ -91,6 +91,13 @@ public:
   /// Set the expiration time
   Itinerary& expiration_time(rclcpp::Time time);
 
+  /// Get some metadata based on the key
+  std::optional<std::string> metadata(const std::string& key) const;
+
+  /// Insert some metadata, queriable from a key. Using the same key will
+  /// override the past values.
+  Itinerary& metadata(const std::string& key, const std::string& value);
+
   class Implementation;
 private:
   Itinerary();
