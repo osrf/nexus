@@ -17,11 +17,16 @@ The plugin will then simulate a conveyor with a list of `destinations`, equally 
 
 ### RMF transporter
 
-The RMF transporter provides an interface to a running RMF instance. The plugin will create a composed task with a series of pickup / dropoffs based on the requested itinerary and assess its feasibility by checking that the requested destinations are present in the building map published by Open-RMF.
-The time estimate is temporarily hardcoded to a fixed value.
-The node also uses the `Transporter::handle_signal` interface to signal AMRs when they can resume their itinerary.
-Specifically, when an AMR reaches its last destination and it is marked as a `dropoff`, the transportation request will be marked as complete and Open-RMF will begin publishing an `IngestorRequest` and wait for a matching `IngestorResponse`.
-As soon as the transporter's `handle_signal` function receives the `dropoff` signal, the matching `IngestorResponse` message will be published and the AMR will be released and complete its task.
+The RMF transporter provides an interface to a running RMF instance. The plugin will create a composed task with a series of pickup / dropoffs based on the requested itinerary and assess its feasibility by checking,
+* that the requested destinations are present in the navigation graphs of the Open-RMF building map, only then will it
+* start an Open-RMF dry-run bidding process with the created task, to determine which AMR should be assigned to the task, without starting the task
+
+Once the itinerary has been accepted and the transporter starts the transportation task, the composed task will be directly dispatched to the assigned AMR.
+
+The plugin implements the `Transporter::handle_signal` interface to signal AMRs when they can resume their itinerary, by publishing the corresponding dispensing or ingesting results.
+
+Specifically, when an AMR reaches its last destination and it is marked as a `dropoff`, the transportation request will be marked as complete and Open-RMF will begin publishing an `IngestorRequest` and wait for a matching `IngestorResult`.
+As soon as the transporter's `handle_signal` function receives the `dropoff` signal, the matching `IngestorResult` message will be published and the AMR will be released and complete its task.
 
 #### Mock dispenser
 
@@ -30,5 +35,4 @@ The purpose of this dispenser is to allow testing full RMF delivery tasks while 
 
 #### Future work
 
-* Move from using the building map to using the dry run feature of the task bidding system to assess feasibility and calculate task completion time estimates.
 * Implement workcells with multiple input / output stations and use them for transportation requests.

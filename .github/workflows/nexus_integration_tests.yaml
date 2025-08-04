@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ['ghcr.io/osrf/nexus/rmf:jazzy-rmf-main']
+        docker_image: ['ghcr.io/open-rmf/rmf/rmf_demos:jazzy-rmf-latest@sha256:abebb3a35c04241fb9be14578e9adcb98a7416cf0eef34c3ee2e484d9bc6fbdf']
     container:
       image: ${{ matrix.docker_image }}
     timeout-minutes: 60
