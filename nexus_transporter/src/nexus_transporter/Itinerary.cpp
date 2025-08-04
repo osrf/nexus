@@ -28,6 +28,7 @@ public:
   std::string transporter_name;
   rclcpp::Time finish_time;
   rclcpp::Time expiration_time;
+  std::unordered_map<std::string, std::string> metadata;
 };
 
 //==============================================================================
@@ -96,6 +97,24 @@ Itinerary& Itinerary::expiration_time(rclcpp::Time time)
 }
 
 //==============================================================================
+std::optional<std::string> Itinerary::metadata(const std::string& key) const
+{
+  const auto it = _pimpl->metadata.find(key);
+  if (it == _pimpl->metadata.end())
+  {
+    return std::nullopt;
+  }
+  return it->second;
+}
+
+//==============================================================================
+Itinerary& Itinerary::metadata(const std::string& key, const std::string& value)
+{
+  _pimpl->metadata[key] = value;
+  return *this;
+}
+
+//==============================================================================
 Itinerary::Itinerary(
   std::string id,
   std::vector<Destination> destinations,
@@ -108,7 +127,8 @@ Itinerary::Itinerary(
         std::move(destinations),
         std::move(transporter_name),
         std::move(estimated_finish_time),
-        std::move(expiration_time)
+        std::move(expiration_time),
+        {}
       }))
 {
   // Do nothing
