@@ -182,10 +182,8 @@ def launch_setup(context, *args, **kwargs):
         name="transporter_node",
         parameters=[
             {"transporter_plugin": transporter_plugin},
-            {"destinations": ["loading", "workcell_1", "workcell_2", "unloading",]},
-            {"x_increment": 1.0},
-            {"speed": 1.0},
-            {"unloading_station": "unloading"},
+            {"nav_graph_names": ["1",]},
+            {"travel_duration_seconds": 2},
         ],
         condition=UnlessCondition(use_rmf_transporter),
     )
