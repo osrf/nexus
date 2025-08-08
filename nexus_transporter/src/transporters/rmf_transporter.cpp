@@ -698,7 +698,8 @@ public:
         auto n = _node.lock();
         if (!n)
         {
-          std::cerr << "RmfTransporter::_api_response_sub - invalid node"
+          std::cerr << "RmfTransporter::_ingestor_request_sub - invalid node"
+
                     << std::endl;
           return;
         }
