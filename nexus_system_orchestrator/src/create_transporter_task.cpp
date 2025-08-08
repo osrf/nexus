@@ -63,6 +63,8 @@ BT::NodeStatus CreateTransporterTask::tick()
     // and a nullopt transportation task
     return BT::NodeStatus::SUCCESS;
   }
+  // TODO(luca) Implement a node that tracks the location of SKUs and query it
+  // for the location, rather than using a context variable
   const auto sku_position = this->_ctx->get_sku_location(workcell_task->input_item);
   if (sku_position == std::nullopt)
   {
