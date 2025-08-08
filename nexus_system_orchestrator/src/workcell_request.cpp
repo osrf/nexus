@@ -120,7 +120,8 @@ bool WorkcellRequest::on_result(
   }
 
   this->_ctx->set_task_results(result.result->result); // -.-
-  // Set output items of the step to be in this workcell
+  // TODO(luca) When output stations are available, set the location of the SKU
+  // to the output station here and the workcell itself when WorkcellRequest is called.
   if (this->_task.output_item.size() > 0)
   {
     this->_ctx->set_sku_location(this->_task, this->_workcell_id);
