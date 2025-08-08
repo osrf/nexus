@@ -26,7 +26,7 @@ using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
 
 BT::NodeStatus CreateTransporterTask::tick()
 {
-  std::shared_ptr<TransportationRequest> result;
+  std::optional<TransportationRequest> result;
   this->setOutput("result", result);
   const auto node = this->_w_node.lock();
   if (!node)
@@ -75,7 +75,7 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::SUCCESS;
   }
 
-  result = std::make_shared<TransportationRequest>();
+  result = TransportationRequest();
   result->id = this->_ctx->get_job_id();
   result->requester = node->get_name();
   // TODO(Yadunund): Parse work order and assign params.
@@ -108,7 +108,7 @@ BT::NodeStatus UnpackTransporterTask::tick()
     std::terminate();
   }
 
-  const auto maybe_request = this->getInput<std::shared_ptr<TransportationRequest>>("input");
+  const auto maybe_request = this->getInput<std::optional<TransportationRequest>>("input");
   if (!maybe_request)
   {
     RCLCPP_ERROR(

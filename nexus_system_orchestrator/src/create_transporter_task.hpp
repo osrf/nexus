@@ -53,7 +53,7 @@ public: static BT::PortsList providedPorts()
         "The task that the workcell is trying to execute."),
       BT::InputPort<std::string>(
         "destination", "Name of the workcell to transport to."),
-      BT::OutputPort<std::shared_ptr<TransportationRequest>>(
+      BT::OutputPort<std::optional<TransportationRequest>>(
          "result", "The result transportation task, or std::nullopt if it's not needed") };
   }
 
@@ -84,7 +84,7 @@ public: using TransportationRequest = nexus_transporter_msgs::msg::Transportatio
 public: static BT::PortsList providedPorts()
   {
     return {
-      BT::InputPort<std::shared_ptr<TransportationRequest>>(
+      BT::InputPort<std::optional<TransportationRequest>>(
          "input", "An optional TransportationRequest"),
       BT::OutputPort<TransportationRequest>(
          "output", "The contained TransportationRequest, if available") };
