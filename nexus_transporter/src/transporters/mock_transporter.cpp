@@ -34,15 +34,15 @@ struct Location
 {
   double x;
   double y;
-  std::optional<std::string> name;
+  std::string name;
 
   Location(
     double x_,
     double y_,
-    std::optional<std::string> name_)
+    std::string name_)
   : x(x_),
     y(y_),
-    name(std::move(name_))
+    name(name_)
   {}
 };
 
@@ -132,6 +132,17 @@ public:
         {
           return;
         }
+        if (_building_map)
+        {
+          RCLCPP_WARN(
+            n->get_logger(),
+            "Received new building map after mock transporters have been "
+            "initialized. Mock transporters will not be updated to avoid "
+            "interrupting any ongoing operations. If an update is necessary, "
+            "please restart the MockTransporter plugin.");
+          return;
+        }
+
         _building_map = msg;
 
         std::unordered_map<std::string, std::unordered_map<std::string, Location>>
@@ -163,8 +174,7 @@ public:
           }
         }
 
-        std::unordered_map<std::string, std::shared_ptr<MockTransporter3000>>
-          transporters;
+        std::lock_guard<std::mutex> lock(_mutex);
         for (const auto& nd : nav_graph_to_destinations_map)
         {
           if (nd.second.empty())
@@ -184,17 +194,14 @@ public:
 
           const std::string transporter_name =
             make_mock_transporter_name(nd.first);
-          transporters.insert({
+          _transporters.insert({
             transporter_name,
-            std::make_shared<MockTransporter3000>(
+            MockTransporter3000(
               transporter_name,
               nd.second.begin()->second,
               nd.second,
               std::nullopt)});
         }
-
-        std::lock_guard<std::mutex> lock(_mutex);
-        _transporters = transporters;
       });
 
     _ready = true;
@@ -239,8 +246,8 @@ public:
 
       for (const auto& d : destinations)
       {
-        if (t.second->destinations_map.find(d.name) ==
-          t.second->destinations_map.end())
+        if (t.second.destinations_map.find(d.name) ==
+          t.second.destinations_map.end())
         {
           found_transporter = false;
           break;
@@ -256,7 +263,7 @@ public:
       completed_cb(Itinerary{
         id,
         destinations,
-        t.second->name,
+        t.second.name,
         now + rclcpp::Duration::from_seconds(
           _travel_duration_seconds_per_destination * destinations.size()),
         now + rclcpp::Duration::from_seconds(60.0)});
@@ -308,14 +315,14 @@ public:
       }
 
       // The transporter needs to be idle
-      if (transporter_it->second->itinerary.has_value())
+      if (transporter_it->second.itinerary.has_value())
       {
         RCLCPP_ERROR(
           n->get_logger(),
           "MockTransporter::transport_to_destination: transporter [%s] is "
           "already performing itinerary [%s]",
           desired_transporter_name.c_str(),
-          transporter_it->second->itinerary->id().c_str());
+          transporter_it->second.itinerary->id().c_str());
         lock.unlock();
         completed_cb(false);
         return;
@@ -324,8 +331,8 @@ public:
       // The transporter needs to have the destinations available
       for (const auto& d : destinations)
       {
-        if (transporter_it->second->destinations_map.find(d.name) ==
-          transporter_it->second->destinations_map.end())
+        if (transporter_it->second.destinations_map.find(d.name) ==
+          transporter_it->second.destinations_map.end())
         {
           RCLCPP_ERROR(
             n->get_logger(),
@@ -338,7 +345,7 @@ public:
         }
       }
 
-      const auto& current_location = transporter_it->second->current_location;
+      const auto& current_location = transporter_it->second.current_location;
       RCLCPP_INFO(
         n->get_logger(),
         "MockTransporter %s starting at pose [%.2f, %.2f]",
@@ -379,13 +386,13 @@ public:
         {
           std::lock_guard<std::mutex> lock(_mutex);
           const auto& transporter = _transporters.at(selected_transporter);
-          transporter->itinerary = itinerary;
-          curr_x = transporter->current_location.x;
-          curr_y = transporter->current_location.y;
+          _transporters.at(selected_transporter).itinerary = itinerary;
+          curr_x = transporter.current_location.x;
+          curr_y = transporter.current_location.y;
 
           state.location.header.stamp = rclcpp::Clock().now();
-          state.location.pose.position.x = transporter->current_location.x;
-          state.location.pose.position.y = transporter->current_location.y;
+          state.location.pose.position.x = transporter.current_location.x;
+          state.location.pose.position.y = transporter.current_location.y;
           state.state = state.STATE_IDLE;
           feedback_cb(state);
         }
@@ -399,7 +406,7 @@ public:
           {
             std::lock_guard<std::mutex> lock(_mutex);
             const auto& dest =
-              _transporters.at(selected_transporter)->destinations_map.find(
+              _transporters.at(selected_transporter).destinations_map.find(
                 d.name);
             dx = (dest->second.x - curr_x)
               / _travel_duration_seconds_per_destination;
@@ -424,14 +431,14 @@ public:
           }
 
           std::lock_guard<std::mutex> lock(_mutex);
-          _transporters.at(selected_transporter)->current_location.name =
+          _transporters.at(selected_transporter).current_location.name =
             d.name;
         }
 
         completed_cb(true);
 
         std::lock_guard<std::mutex> lock(_mutex);
-        _transporters.at(selected_transporter)->itinerary = std::nullopt;
+        _transporters.at(selected_transporter).itinerary = std::nullopt;
       },
       itinerary);
   }
@@ -446,7 +453,7 @@ public:
       return true;
     }
 
-    if (_transporters.at(transporter)->itinerary.has_value())
+    if (_transporters.at(transporter).itinerary.has_value())
     {
       _stop = true;
       // need to unlock first to avoid deadlock
@@ -479,8 +486,7 @@ private:
   /// RMF building map
   BuildingMap::SharedPtr _building_map = nullptr;
   /// All the instances of MockTransporter, based on the navigation graph names
-  std::unordered_map<std::string,
-    std::shared_ptr<MockTransporter3000>> _transporters;
+  std::unordered_map<std::string, MockTransporter3000> _transporters;
 
   /// Building map subscription to retrieve navigation graphs
   rclcpp::Subscription<rmf_building_map_msgs::msg::BuildingMap>::SharedPtr
