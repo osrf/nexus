@@ -743,13 +743,13 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
     // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
     if (input_items.size() > 0)
     {
-      task.input_item = input_items[0].guid();
+      task.input_item_id = input_items[0].guid();
     }
     const auto& output_items = step.output_items();
     // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
     if (output_items.size() > 0)
     {
-      task.output_item = output_items[0].guid();
+      task.output_item_id = output_items[0].guid();
     }
 
     // Inject metadata into payload for workcell.

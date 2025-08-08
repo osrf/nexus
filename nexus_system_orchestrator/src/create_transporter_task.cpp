@@ -57,7 +57,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   }
 
   // Get the source as the location of the input SKU
-  if (workcell_task->input_item.size() == 0)
+  if (workcell_task->input_item_id.size() == 0)
   {
     // We actually don't need to transport anything here, just return success
     // and a nullopt transportation task
@@ -65,7 +65,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   }
   // TODO(luca) Implement a node that tracks the location of SKUs and query it
   // for the location, rather than using a context variable
-  const auto sku_position = this->_ctx->get_sku_location(workcell_task->input_item);
+  const auto sku_position = this->_ctx->get_sku_location(workcell_task->input_item_id);
   if (sku_position == std::nullopt)
   {
     // The item cannot be found, fail

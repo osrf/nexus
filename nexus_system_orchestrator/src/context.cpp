@@ -274,9 +274,9 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
 
 void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
 {
-  if (task.output_item.size() > 0)
+  if (task.output_item_id.size() > 0)
   {
-    this->sku_locations[task.output_item] = workcell;
+    this->sku_locations[task.output_item_id] = workcell;
   }
 }
 
