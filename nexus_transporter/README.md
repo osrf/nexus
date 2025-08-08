@@ -25,10 +25,14 @@ Once the itinerary has been accepted and the transporter starts the transportati
 
 The plugin implements the `Transporter::handle_signal` interface to signal AMRs when they can resume their itinerary, by publishing the corresponding dispensing or ingesting results.
 
-Specifically, when an AMR reaches its last destination and it is marked as a `pickup`, the transportation request will be marked as complete and Open-RMF will begin publishing an `DispenserRequest` and wait for a matching `DispenserResult`.
-As soon as the transporter's `handle_signal` function receives the `pickup` signal, the matching `DispenserResult` message will be published and the AMR will be released and complete its task.
+Specifically, when an AMR reaches its last destination and it is marked as a `dropoff`, the transportation request will be marked as complete and Open-RMF will begin publishing an `IngestorRequest` and wait for a matching `IngestorResult`.
+As soon as the transporter's `handle_signal` function receives the `dropoff` signal, the matching `IngestorResult` message will be published and the AMR will be released and complete its task.
+
+#### Mock dispenser
+
+A `mock_dispenser_interface` parameter is provided (and defaults to `true`). The parameter creates a mock dispenser interface that will always publish a successful dispenser result for each dispenser request that is sent for a Nexus itinerary.
+The purpose of this dispenser is to allow testing full RMF delivery tasks while the logic for a workcell to dispense arbitrary items on an AMR is not available yet.
 
 #### Future work
 
-* Move from hardcoded `pickup` final phase to a `dropoff `.
 * Implement workcells with multiple input / output stations and use them for transportation requests.

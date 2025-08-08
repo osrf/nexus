@@ -272,4 +272,22 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
   return it->second;
 }
 
+void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
+{
+  if (task.output_item_id.size() > 0)
+  {
+    this->sku_locations[task.output_item_id] = workcell;
+  }
+}
+
+std::optional<std::string> Context::get_sku_location(const std::string& sku) const
+{
+  const auto it = this->sku_locations.find(sku);
+  if (it != this->sku_locations.end())
+  {
+    return it->second;
+  }
+  return std::nullopt;
+}
+
 } // namespace nexus::system_orchestrator

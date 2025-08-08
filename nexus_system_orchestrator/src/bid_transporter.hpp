@@ -22,7 +22,7 @@
 #include "session.hpp"
 
 #include <nexus_common/models/work_order.hpp>
-#include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
+#include <nexus_transporter_msgs/msg/transportation_request.hpp>
 
 #include <behaviortree_cpp_v3/action_node.h>
 
@@ -51,6 +51,8 @@ class BidTransporter : public BT::StatefulActionNode
 {
 public: using IsTransporterAvailableService =
     endpoints::IsTransporterAvailableService;
+
+public: using TransportationRequest = nexus_transporter_msgs::msg::TransportationRequest;
 
 public: static BT::PortsList providedPorts();
 
