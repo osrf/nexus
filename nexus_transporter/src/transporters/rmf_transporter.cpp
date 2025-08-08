@@ -957,7 +957,6 @@ public:
       return false;
     }
 
-    // TODO(luca) also check for ingestors
     auto it = _pending_ingestor_task_ids.find(task_id);
     if (it == _pending_ingestor_task_ids.end())
     {
@@ -979,7 +978,7 @@ public:
     }
 
 
-    // Publish the dispenser result
+    // Publish the ingestor result
     IngestorResult res;
     res.status = IngestorResult::SUCCESS;
     res.request_guid = task_id;
