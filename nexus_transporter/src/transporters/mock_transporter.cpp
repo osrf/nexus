@@ -23,7 +23,6 @@
 
 #include <mutex>
 #include <thread>
-#include <unordered_set>
 
 
 namespace nexus_transporter {
@@ -233,49 +232,37 @@ public:
       return;
     }
 
-    // This transporter can only go to one destination at a time.
-    if (destinations.size() > 1)
-    {
-      RCLCPP_ERROR(
-        n->get_logger(),
-        "MockTransporter currently only supports 1 destination at a time");
-      completed_cb(std::nullopt);
-      return;
-    }
-
     const rclcpp::Time now = n ? n->get_clock()->now() : rclcpp::Clock().now();
 
-    const auto& destination = destinations[0];
     std::unique_lock<std::mutex> lock(_mutex);
     for (const auto& t : _transporters)
     {
-      const auto dest = t.second->destinations_map.find(destination.name);
-      if (dest != t.second->destinations_map.end())
+      bool found_transporter = true;
+
+      for (const auto& d : destinations)
       {
-        // Assign transporter
-        const auto& transporter_location = t.second->current_location;
-
-        int travel_duration;
-        if (transporter_location.name.has_value() &&
-          dest->second.name == transporter_location.name)
+        if (t.second->destinations_map.find(d.name) ==
+          t.second->destinations_map.end())
         {
-          travel_duration = 0;
+          found_transporter = false;
+          break;
         }
-        else
-        {
-          travel_duration = _travel_duration_seconds;
-        }
-
-        lock.unlock();
-        completed_cb(Itinerary{
-            id,
-            destinations,
-            t.second->name,
-            now + rclcpp::Duration::from_seconds(travel_duration),
-            now + rclcpp::Duration::from_seconds(60.0)
-          });
-        return;
       }
+
+      if (!found_transporter)
+      {
+        continue;
+      }
+
+      lock.unlock();
+      completed_cb(Itinerary{
+        id,
+        destinations,
+        t.second->name,
+        now + rclcpp::Duration::from_seconds(
+          _travel_duration_seconds * destinations.size()),
+        now + rclcpp::Duration::from_seconds(60.0)});
+      return;
     }
 
     completed_cb(std::nullopt);
@@ -300,16 +287,6 @@ public:
     if (destinations.empty())
     {
       RCLCPP_ERROR(n->get_logger(), "Itinerary has no destinations");
-      completed_cb(false);
-      return;
-    }
-
-    // This transporter can only go to one destination at a time.
-    if (destinations.size() > 1)
-    {
-      RCLCPP_ERROR(
-        n->get_logger(),
-        "MockTransporter currently only supports 1 destination at a time");
       completed_cb(false);
       return;
     }
@@ -346,20 +323,21 @@ public:
         return;
       }
 
-      // The transporter needs to have this destination name available
-      const auto& destination = destinations[0];
-      const auto& d_it =
-        transporter_it->second->destinations_map.find(destination.name);
-      if (d_it == transporter_it->second->destinations_map.end())
+      // The transporter needs to have the destinations available
+      for (const auto& d : destinations)
       {
-        RCLCPP_ERROR(
-          n->get_logger(),
-          "MockTransporter %s does not support destination [%s]",
-          desired_transporter_name.c_str(),
-          destination.name.c_str());
-        lock.unlock();
-        completed_cb(false);
-        return;
+        if (transporter_it->second->destinations_map.find(d.name) ==
+          transporter_it->second->destinations_map.end())
+        {
+          RCLCPP_ERROR(
+            n->get_logger(),
+            "MockTransporter %s does not support destination [%s]",
+            desired_transporter_name.c_str(),
+            d.name.c_str());
+          lock.unlock();
+          completed_cb(false);
+          return;
+        }
       }
 
       const auto& current_location = transporter_it->second->current_location;
@@ -376,10 +354,15 @@ public:
       _thread.join();
     }
 
+    std::stringstream ss;
+    for (const auto& d : destinations)
+    {
+      ss << d.name << ", ";
+    }
     RCLCPP_INFO(n->get_logger(),
       "Received request for transporter [%s] to %s",
       itinerary.transporter_name().c_str(),
-      destinations[0].name.c_str());
+      ss.str().c_str());
 
     // TODO(YV): Capture a data_ptr to avoid reference captures
     _thread = std::thread(
@@ -387,9 +370,7 @@ public:
         Itinerary itinerary)
       {
         const auto& selected_transporter = itinerary.transporter_name();
-        const auto& destination = itinerary.destinations()[0];
-
-        double dx, dy;
+        double curr_x, curr_y;
 
         Transporter::TransporterState state;
         state.transporter = itinerary.transporter_name();
@@ -401,21 +382,8 @@ public:
           std::lock_guard<std::mutex> lock(_mutex);
           const auto& transporter = _transporters.at(selected_transporter);
           transporter->itinerary = itinerary;
-
-          const auto dest_it =
-            transporter->destinations_map.find(destination.name);
-          if (dest_it == transporter->destinations_map.end())
-          {
-            completed_cb(false);
-          }
-
-          // distance travel per second
-          dx =
-            (dest_it->second.x - transporter->current_location.x)
-            / _travel_duration_seconds;
-          dy =
-            (dest_it->second.y - transporter->current_location.y)
-            / _travel_duration_seconds;
+          curr_x = transporter->current_location.x;
+          curr_y = transporter->current_location.y;
 
           state.location.header.stamp = rclcpp::Clock().now();
           state.location.pose.position.x = transporter->current_location.x;
@@ -427,32 +395,42 @@ public:
         state.state = state.STATE_MOVING;
         _stop = false;
 
-        for (int i = 0; i < _travel_duration_seconds; ++i)
+        for (const auto& d : itinerary.destinations())
         {
-          // TODO(ac): use a stop flag for each mock transporter
-          if (_stop)
+          double dx, dy;
           {
-            break;
+            std::lock_guard<std::mutex> lock(_mutex);
+            const auto& dest =
+              _transporters.at(selected_transporter)->destinations_map.find(
+                d.name);
+            dx = (dest->second.x - curr_x) / _travel_duration_seconds;
+            dy = (dest->second.y - curr_y) / _travel_duration_seconds;
           }
-          std::this_thread::sleep_for(std::chrono::seconds(1));
 
-          state.location.pose.position.x += dx;
-          state.location.pose.position.y += dy;
+          for (int i = 0; i < _travel_duration_seconds; ++i)
+          {
+            // TODO(ac): use a stop flag for each mock transporter
+            if (_stop)
+            {
+              break;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
 
-          // Update transporter's current location
+            curr_x += dx;
+            curr_y += dy;
+            state.location.pose.position.x = curr_x;
+            state.location.pose.position.y = curr_y;
+            feedback_cb(state);
+          }
+
           std::lock_guard<std::mutex> lock(_mutex);
-          _transporters.at(selected_transporter)->current_location.x =
-            state.location.pose.position.x;
-          _transporters.at(selected_transporter)->current_location.y =
-            state.location.pose.position.y;
-          feedback_cb(state);
+          _transporters.at(selected_transporter)->current_location.name =
+            d.name;
         }
 
         completed_cb(true);
 
         std::lock_guard<std::mutex> lock(_mutex);
-        _transporters.at(selected_transporter)->current_location.name =
-          destination.name;
         _transporters.at(selected_transporter)->itinerary = std::nullopt;
       },
       itinerary);
