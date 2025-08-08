@@ -183,7 +183,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {"transporter_plugin": transporter_plugin},
             {"nav_graph_names": ["1",]},
-            {"travel_duration_seconds": 2},
+            {"travel_duration_seconds_per_destination": 2},
         ],
         condition=UnlessCondition(use_rmf_transporter),
     )

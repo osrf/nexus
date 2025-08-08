@@ -99,25 +99,23 @@ public:
       );
       return false;
     }
-    else
-    {
-      std::stringstream ss;
-      for (const auto& i : _nav_graph_names)
-      {
-        ss << i << ", ";
-      }
-      RCLCPP_INFO(
-        n->get_logger(),
-        "MockTransporter nav_graph_names set to [%s]",
-        ss.str().c_str());
-    }
 
-    _travel_duration_seconds =
-      n->declare_parameter("travel_duration_seconds", 2);
+    std::stringstream ss;
+    for (const auto& i : _nav_graph_names)
+    {
+      ss << i << ", ";
+    }
+    RCLCPP_INFO(
+      n->get_logger(),
+      "MockTransporter nav_graph_names set to [%s]",
+      ss.str().c_str());
+
+    _travel_duration_seconds_per_destination =
+      n->declare_parameter("travel_duration_seconds_per_destination", 2);
     RCLCPP_INFO(
       n->get_logger(),
       "MockTransporter travel_duration_seconds set to [%d].",
-      _travel_duration_seconds);
+      _travel_duration_seconds_per_destination);
 
     _node = node;
 
@@ -260,7 +258,7 @@ public:
         destinations,
         t.second->name,
         now + rclcpp::Duration::from_seconds(
-          _travel_duration_seconds * destinations.size()),
+          _travel_duration_seconds_per_destination * destinations.size()),
         now + rclcpp::Duration::from_seconds(60.0)});
       return;
     }
@@ -360,7 +358,7 @@ public:
       ss << d.name << ", ";
     }
     RCLCPP_INFO(n->get_logger(),
-      "Received request for transporter [%s] to %s",
+      "Received request for transporter [%s] to [%s]",
       itinerary.transporter_name().c_str(),
       ss.str().c_str());
 
@@ -403,11 +401,13 @@ public:
             const auto& dest =
               _transporters.at(selected_transporter)->destinations_map.find(
                 d.name);
-            dx = (dest->second.x - curr_x) / _travel_duration_seconds;
-            dy = (dest->second.y - curr_y) / _travel_duration_seconds;
+            dx = (dest->second.x - curr_x)
+              / _travel_duration_seconds_per_destination;
+            dy = (dest->second.y - curr_y)
+              / _travel_duration_seconds_per_destination;
           }
 
-          for (int i = 0; i < _travel_duration_seconds; ++i)
+          for (int i = 0; i < _travel_duration_seconds_per_destination; ++i)
           {
             // TODO(ac): use a stop flag for each mock transporter
             if (_stop)
@@ -474,8 +474,8 @@ private:
   bool _ready = false;
   /// The nav graphs that represent mock transporters
   std::vector<std::string> _nav_graph_names;
-  /// The mocked travel duration of each transport
-  int _travel_duration_seconds;
+  /// The mocked travel duration to each destination
+  int _travel_duration_seconds_per_destination;
   /// RMF building map
   BuildingMap::SharedPtr _building_map = nullptr;
   /// All the instances of MockTransporter, based on the navigation graph names
