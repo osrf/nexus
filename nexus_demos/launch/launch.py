@@ -94,7 +94,6 @@ def launch_setup(context, *args, **kwargs):
     max_workcell_jobs = "1"
     transporter_plugin = "nexus_transporter::MockTransporter"
     if (use_rmf_transporter.perform(context).lower() == "true"):
-        main_bt_filename = "main_rmf.xml"
         transporter_plugin = "nexus_transporter::RmfTransporter"
         rviz_config_filename = "nexus_panel_rmf.rviz"
 
