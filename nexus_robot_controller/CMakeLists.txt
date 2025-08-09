@@ -22,7 +22,7 @@ endforeach()
 
 # Library
 add_library(${library_name} src/robot_controller_server.cpp)
-target_link_libraries({${library_name} PUBLIC
+target_link_libraries(${library_name} PUBLIC
   controller_manager::controller_manager
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
