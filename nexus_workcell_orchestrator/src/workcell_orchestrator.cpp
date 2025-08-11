@@ -52,6 +52,7 @@ namespace nexus::workcell_orchestrator {
 
 using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 using WorkcellRequest = endpoints::WorkcellRequestAction::ActionType;
+using WorkcellStation = nexus_orchestrator_msgs::msg::WorkcellStation;
 
 using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
@@ -160,6 +161,61 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     desc.description =
       "A list of BT node names whose state changes should not be logged.";
     this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
+  }
+
+  // TODO(ac): use a single source of truth that defines the IO station of
+  // workcells, positions, and probably even connecting navigation graphs that
+  // transporters will use.
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "List of input stations that this workcell interacts with.";
+    this->declare_parameter(
+      "input_station_names", std::vector<std::string>{}, desc);
+    const auto input_station_names =
+      this->get_parameter("input_station_names").as_string_array();
+    for (const auto& n : input_station_names)
+    {
+      this->_io_stations.emplace_back(
+        nexus_orchestrator_msgs::build<WorkcellStation>()
+          .name(n)
+          .io_type(WorkcellStation::IO_TYPE_INPUT));
+    }
+  }
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "List of output stations that this workcell interacts with.";
+    this->declare_parameter(
+      "output_station_names", std::vector<std::string>{}, desc);
+    const auto output_station_names =
+      this->get_parameter("output_station_names").as_string_array();
+    for (const auto& n : output_station_names)
+    {
+      this->_io_stations.emplace_back(
+        nexus_orchestrator_msgs::build<WorkcellStation>()
+          .name(n)
+          .io_type(WorkcellStation::IO_TYPE_OUTPUT));
+    }
+  }
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "List of bidirectional (input + output) stations that this workcell interacts with.";
+    this->declare_parameter(
+      "bidirectional_station_names", std::vector<std::string>{}, desc);
+    const auto bidirectional_station_names =
+      this->get_parameter("bidirectional_station_names").as_string_array();
+    for (const auto& n : bidirectional_station_names)
+    {
+      this->_io_stations.emplace_back(
+        nexus_orchestrator_msgs::build<WorkcellStation>()
+          .name(n)
+          .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
+    }
   }
 
   this->_register_workcell_client =
@@ -966,6 +1022,7 @@ void WorkcellOrchestrator::_register()
   }
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
+  req->description.io_stations = this->_io_stations;
   this->_ongoing_register = this->_register_workcell_client->async_send_request(
     req,
     register_cb);

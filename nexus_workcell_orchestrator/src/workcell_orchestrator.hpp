@@ -36,6 +36,8 @@
 
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 
+#include <nexus_orchestrator_msgs/msg/workcell_station.hpp>
+
 #include <pluginlib/class_loader.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -168,6 +170,8 @@ private: void _handle_task_doable(
     endpoints::IsTaskDoableService::ServiceType::Response::SharedPtr resp);
 
 private: int _max_parallel_jobs = 1;
+
+private: std::vector<nexus_orchestrator_msgs::msg::WorkcellStation> _io_stations;
 };
 
 }
