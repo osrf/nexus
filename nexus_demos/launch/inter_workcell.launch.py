@@ -122,6 +122,7 @@ def launch_setup(context, *args, **kwargs):
     nexus_rviz_config = LaunchConfiguration("nexus_rviz_config")
     system_orchestrator_bt_dir = LaunchConfiguration("system_orchestrator_bt_dir")
     max_jobs = LaunchConfiguration("max_jobs")
+    building_map_file_path = LaunchConfiguration("building_map_file_path")
     # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
@@ -140,6 +141,16 @@ def launch_setup(context, *args, **kwargs):
                 "main_bt_filename": main_bt_filename,
                 "max_jobs": max_jobs,
             }
+        ],
+    )
+
+    building_map_node = Node(
+        package="rmf_building_map_tools",
+        executable="building_map_server",
+        name="building_map_server",
+        arguments=[building_map_file_path.perform(context)],
+        parameters=[
+            {"use_sim_time": True},
         ],
     )
 
@@ -171,10 +182,8 @@ def launch_setup(context, *args, **kwargs):
         name="transporter_node",
         parameters=[
             {"transporter_plugin": transporter_plugin},
-            {"destinations": ["loading", "workcell_1", "workcell_2", "unloading",]},
-            {"x_increment": 1.0},
-            {"speed": 1.0},
-            {"unloading_station": "unloading"},
+            {"nav_graph_names": ["1",]},
+            {"travel_duration_seconds_per_destination": 2},
         ],
         condition=UnlessCondition(use_rmf_transporter),
     )
@@ -249,6 +258,7 @@ def launch_setup(context, *args, **kwargs):
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
         system_orchestrator_node,
+        building_map_node,
         rmf_transporter,
         mock_transporter_node,
         rmf_transporter_node,
@@ -336,6 +346,11 @@ def generate_launch_description():
                 "max_jobs",
                 default_value="2",
                 description="Maximum number of jobs the system orchestrator can process in parallel.",
+            ),
+            DeclareLaunchArgument(
+                "building_map_file_path",
+                default_value=os.path.join(get_package_share_directory("nexus_demos"), "config", "rmf", "maps", "depot", "depot.building.yaml"),
+                description="Building map file that defines the various navigation graphs"
             ),
             OpaqueFunction(function=launch_setup),
         ]
