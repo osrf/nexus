@@ -37,9 +37,9 @@ jobs:
           rosdep update
           rosdep install --from-paths . -yir
       - name: build
-        run: /ros_entrypoint.sh colcon build --packages-up-to nexus_common nexus_lifecycle_manager nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --mixin release
+        run: /ros_entrypoint.sh colcon build --packages-up-to nexus_common nexus_lifecycle_manager nexus_robot_controller nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --mixin release
       - name: test
-        run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_common nexus_lifecycle_manager nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --event-handlers=console_direct+
+        run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_common nexus_lifecycle_manager nexus_robot_controller nexus_system_orchestrator nexus_transporter nexus_workcell_orchestrator --event-handlers=console_direct+
 
       # TODO(ac): reinstate this once https://github.com/ros-tooling/action-ros-ci/issues/991
       # is resolved.
