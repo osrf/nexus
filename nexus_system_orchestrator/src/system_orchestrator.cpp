@@ -797,7 +797,7 @@ void SystemOrchestrator::_handle_register_workcell(
   state.workcell_id = workcell_id;
   state.work_order_id = "";
   state.status = WorkcellState::STATUS_IDLE;
-  this->_workcell_sessions.emplace(workcell_id,
+  const auto added = this->_workcell_sessions.emplace(workcell_id,
     std::make_shared<WorkcellSession>(WorkcellSession{
       req->description,
       std::move(state),
@@ -827,8 +827,16 @@ void SystemOrchestrator::_handle_register_workcell(
 
   resp->success = true;
 
-  RCLCPP_INFO(this->get_logger(), "Registered workcell [%s]",
-    workcell_id.c_str());
+  std::stringstream ss;
+  for (const auto& station : added.first->second->description.io_stations)
+  {
+    ss << station.name << ",";
+  }
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Registered workcell [%s] with stations: [%s]",
+    workcell_id.c_str(),
+    ss.str().c_str());
 }
 
 void SystemOrchestrator::_handle_register_transporter(

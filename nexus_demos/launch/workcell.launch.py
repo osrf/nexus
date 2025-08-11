@@ -102,7 +102,15 @@ def launch_setup(context, *args, **kwargs):
     # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
-    bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
+    bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
+    input_station_names = LaunchConfiguration("input_station_names")
+    output_station_names = LaunchConfiguration("output_station_names")
+    bidirectional_station_names = LaunchConfiguration("bidirectional_station_names")
+
+    def get_list_from_str(s: str) -> List[str]:
+        if not s:
+            return []
+        return [item.strip() for item in s.split(',') if item.strip()]
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -142,6 +150,17 @@ def launch_setup(context, *args, **kwargs):
         executable="mock_gripper",
         parameters=[{"autostart": True}],
     )
+
+    stations_params = []
+    input_stations = get_list_from_str(input_station_names.perform(context))
+    if input_stations:
+        stations_params.append(Parameter("input_station_names", input_stations))
+    output_stations = get_list_from_str(output_station_names.perform(context))
+    if output_stations:
+        stations_params.append(Parameter("output_station_names", output_stations))
+    bidirectional_stations = get_list_from_str(bidirectional_station_names.perform(context))
+    if bidirectional_stations:
+        stations_params.append(Parameter("bidirectional_station_names", bidirectional_stations))
 
     workcell_orchestrator_node = LifecycleNode(
         name=workcell_id_str,
@@ -195,7 +214,7 @@ def launch_setup(context, *args, **kwargs):
             Parameter("gripper_max_effort", 0.0),
             Parameter("remap_task_types", remap_task_types),
             Parameter("bt_logging_blocklist", bt_logging_blocklist),
-        ],
+        ] + stations_params,
         arguments=['--ros-args', '--log-level', 'info'],
     )
 
@@ -402,6 +421,21 @@ def generate_launch_description():
             "remap_task_types",
             default_value="",
             description="A yaml containing a dictionary of task types and an array of remaps",
+        ),
+        DeclareLaunchArgument(
+            "input_station_names",
+            default_value="",
+            description="Comma-separated list of input station names for this workcell",
+        ),
+        DeclareLaunchArgument(
+            "output_station_names",
+            default_value="",
+            description="Comma-separated list of output station names for this workcell",
+        ),
+        DeclareLaunchArgument(
+            "bidirectional_station_names",
+            default_value="",
+            description="Comma-separated list of bidirectional station names for this workcell",
         ),
         OpaqueFunction(function = launch_setup)
     ])

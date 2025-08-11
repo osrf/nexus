@@ -204,7 +204,8 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "List of bidirectional (input + output) stations that this workcell interacts with.";
+      "List of bidirectional (input + output) stations that this workcell "
+      "interacts with.";
     this->declare_parameter(
       "bidirectional_station_names", std::vector<std::string>{}, desc);
     const auto bidirectional_station_names =

@@ -169,6 +169,10 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot1_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_1.json5",
+                    # TODO(ac): use a single source of truth that defines the IO
+                    # station of workcells, positions, and probably even
+                    # connecting navigation graphs that transporters will use.
+                    "bidirectional_station_names": "workcell_1_front,workcell_1_left,workcell_1_right",
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -214,6 +218,10 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot2_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_2.json5",
+                    # TODO(ac): use a single source of truth that defines the IO
+                    # station of workcells, positions, and probably even
+                    # connecting navigation graphs that transporters will use.
+                    "bidirectional_station_names": "workcell_2_front,workcell_2_left,workcell_2_right",
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )
