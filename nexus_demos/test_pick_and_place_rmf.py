@@ -28,7 +28,8 @@ from ros_testcase import RosTestCase
 import subprocess
 
 class PickAndPlaceRMFTest(NexusTestCase):
-    @RosTestCase.timeout(60)
+    # Gazebo needs more time to setup to download the models from fuel
+    @RosTestCase.timeout(120)
     async def asyncSetUp(self):
         # todo(YV): Find a better fix to the problem below.
         # zenoh-bridge was bumped to 0.72 as part of the upgrade to
