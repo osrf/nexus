@@ -1,4 +1,4 @@
-# Service to check whether a workcell is capable of carrying out 
+# Service to check whether a workcell is capable of carrying out
 # the specified task. This is not a request to execute the task.
 
 WorkcellTask task
@@ -8,6 +8,9 @@ WorkcellTask task
 # True if the task can be performed
 bool success
 
-# An estimate of how long it will take the workcell to perform 
+# Name of the input station for this task, if any.
+string input_station
+
+# An estimate of how long it will take the workcell to perform
 # this task
 builtin_interfaces/Time estimated_finish_time

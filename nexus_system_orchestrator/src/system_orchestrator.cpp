@@ -1111,6 +1111,14 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         {
           // TODO(kp): assign based on some heuristics
           assigned = wc_id;
+          if (!result.resp->input_station.empty())
+          {
+            RCLCPP_INFO(
+              this->get_logger(),
+              "Assigned task to [%s] with input [%s]",
+              wc_id.c_str(),
+              result.resp->input_station.c_str());
+          }
         }
       }
       if (assigned.empty())

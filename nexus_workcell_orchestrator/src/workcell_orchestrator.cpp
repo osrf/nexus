@@ -1147,6 +1147,11 @@ void WorkcellOrchestrator::_handle_task_doable(
   {
     auto task = this->_task_parser.parse_task(req->task);
     resp->success = this->_task_checker->is_task_doable(task);
+    if (_task_to_input_station_map.find(task.type) !=
+      _task_to_input_station_map.end())
+    {
+      resp->input_station = _task_to_input_station_map[task.type];
+    }
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");
