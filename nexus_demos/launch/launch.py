@@ -130,6 +130,12 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    workcell_1_task_output_station_map = """{
+        place_on_amr: workcell_1_front,
+        place_on_conveyor: workcell_1_left,
+        invalid_place_on_conveyor: workcell_1_left
+    }"""
+
     launch_workcell_1 = GroupAction(
         actions=[
             IncludeLaunchDescription(
@@ -172,12 +178,17 @@ def launch_setup(context, *args, **kwargs):
                     # TODO(ac): use a single source of truth that defines the IO
                     # station of workcells, positions, and probably even
                     # connecting navigation graphs that transporters will use.
-                    "bidirectional_station_names": "workcell_1_front,workcell_1_left,workcell_1_right",
+                    "task_output_station_map": workcell_1_task_output_station_map,
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
         ],
     )
+
+    workcell_2_task_input_station_map = """{
+        pick_from_amr: workcell_2_front,
+        pick_from_conveyor: workcell_2_right
+    }"""
 
     launch_workcell_2 = GroupAction(
         actions=[
@@ -221,7 +232,7 @@ def launch_setup(context, *args, **kwargs):
                     # TODO(ac): use a single source of truth that defines the IO
                     # station of workcells, positions, and probably even
                     # connecting navigation graphs that transporters will use.
-                    "bidirectional_station_names": "workcell_2_front,workcell_2_left,workcell_2_right",
+                    "task_input_station_map": workcell_2_task_input_station_map,
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )

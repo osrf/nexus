@@ -170,53 +170,56 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "List of input stations that this workcell interacts with.";
-    this->declare_parameter(
-      "input_station_names", std::vector<std::string>{}, desc);
-    const auto input_station_names =
-      this->get_parameter("input_station_names").as_string_array();
-    for (const auto& n : input_station_names)
-    {
-      this->_io_stations.emplace_back(
-        nexus_orchestrator_msgs::build<WorkcellStation>()
-          .name(n)
-          .io_type(WorkcellStation::IO_TYPE_INPUT));
-    }
+      "A yaml containing a dictionary of task types and input station names.";
+    this->declare_parameter("task_input_station_map", "", desc);
   }
   {
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "List of output stations that this workcell interacts with.";
-    this->declare_parameter(
-      "output_station_names", std::vector<std::string>{}, desc);
-    const auto output_station_names =
-      this->get_parameter("output_station_names").as_string_array();
-    for (const auto& n : output_station_names)
+      "A yaml containing a dictionary of task types and output station names.";
+    this->declare_parameter("task_output_station_map", "", desc);
+  }
+
+  std::unordered_map<std::string, WorkcellStation> io_stations;
+  const auto task_input_station_map =
+    this->get_parameter("task_input_station_map").as_string();
+  try
+  {
+    YAML::Node node = YAML::Load(task_input_station_map);
+    for (const auto& n : node)
     {
-      this->_io_stations.emplace_back(
-        nexus_orchestrator_msgs::build<WorkcellStation>()
-          .name(n)
-          .io_type(WorkcellStation::IO_TYPE_OUTPUT));
+      this->_task_to_input_station_map.emplace(
+        n.first.as<std::string>(),
+        n.second.as<std::string>());
     }
   }
+  catch (YAML::ParserException& e)
   {
-    ParameterDescriptor desc;
-    desc.read_only = true;
-    desc.description =
-      "List of bidirectional (input + output) stations that this workcell "
-      "interacts with.";
-    this->declare_parameter(
-      "bidirectional_station_names", std::vector<std::string>{}, desc);
-    const auto bidirectional_station_names =
-      this->get_parameter("bidirectional_station_names").as_string_array();
-    for (const auto& n : bidirectional_station_names)
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Failed to parse task_input_station_map parameter: (%s)",
+      e.what());
+  }
+
+  const auto task_output_station_map =
+    this->get_parameter("task_output_station_map").as_string();
+  try
+  {
+    YAML::Node node = YAML::Load(task_output_station_map);
+    for (const auto& n : node)
     {
-      this->_io_stations.emplace_back(
-        nexus_orchestrator_msgs::build<WorkcellStation>()
-          .name(n)
-          .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
+      this->_task_to_output_station_map.emplace(
+        n.first.as<std::string>(),
+        n.second.as<std::string>());
     }
+  }
+  catch (YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Failed to parse task_output_station_map parameter: (%s)",
+      e.what());
   }
 
   this->_register_workcell_client =
@@ -1023,7 +1026,37 @@ void WorkcellOrchestrator::_register()
   }
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
-  req->description.io_stations = this->_io_stations;
+
+  std::unordered_set<std::string> input_stations;
+  for (const auto& input_it : _task_to_input_station_map)
+  {
+    input_stations.insert(input_it.second);
+  }
+  for (const auto& output_it : _task_to_output_station_map)
+  {
+    if (input_stations.find(output_it.second) == input_stations.end())
+    {
+      req->description.io_stations.emplace_back(
+        nexus_orchestrator_msgs::build<WorkcellStation>()
+          .name(output_it.second)
+          .io_type(WorkcellStation::IO_TYPE_OUTPUT));
+      continue;
+    }
+
+    req->description.io_stations.emplace_back(
+      nexus_orchestrator_msgs::build<WorkcellStation>()
+        .name(output_it.second)
+        .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
+    input_stations.erase(output_it.second);
+  }
+  for (const auto& input : input_stations)
+  {
+    req->description.io_stations.emplace_back(
+      nexus_orchestrator_msgs::build<WorkcellStation>()
+        .name(input)
+        .io_type(WorkcellStation::IO_TYPE_INPUT));
+  }
+
   this->_ongoing_register = this->_register_workcell_client->async_send_request(
     req,
     register_cb);

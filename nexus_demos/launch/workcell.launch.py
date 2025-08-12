@@ -17,7 +17,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.actions import LifecycleNode
-from launch_ros.parameter_descriptions import Parameter
+from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 import launch
@@ -103,14 +103,8 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
-    input_station_names = LaunchConfiguration("input_station_names")
-    output_station_names = LaunchConfiguration("output_station_names")
-    bidirectional_station_names = LaunchConfiguration("bidirectional_station_names")
-
-    def get_list_from_str(s: str) -> List[str]:
-        if not s:
-            return []
-        return [item.strip() for item in s.split(',') if item.strip()]
+    task_input_station_map = LaunchConfiguration("task_input_station_map")
+    task_output_station_map = LaunchConfiguration("task_output_station_map")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -151,70 +145,46 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{"autostart": True}],
     )
 
-    stations_params = []
-    input_stations = get_list_from_str(input_station_names.perform(context))
-    if input_stations:
-        stations_params.append(Parameter("input_station_names", input_stations))
-    output_stations = get_list_from_str(output_station_names.perform(context))
-    if output_stations:
-        stations_params.append(Parameter("output_station_names", output_stations))
-    bidirectional_stations = get_list_from_str(bidirectional_station_names.perform(context))
-    if bidirectional_stations:
-        stations_params.append(Parameter("bidirectional_station_names", bidirectional_stations))
-
     workcell_orchestrator_node = LifecycleNode(
         name=workcell_id_str,
         namespace="",
         package="nexus_workcell_orchestrator",
         executable="nexus_workcell_orchestrator",
-        parameters=[
-            Parameter(
-                "capabilities",
-                [
-                    "nexus::capabilities::DetectionCapability",
-                    "nexus::capabilities::DispenseItemCapability",
-                    "nexus::capabilities::ExecuteTrajectoryCapability",
-                    "nexus::capabilities::GripperCapability",
-                    "nexus::capabilities::PlanMotionCapability",
-                ]
-            ),
-            Parameter("bt_path", bt_path),
-            Parameter("task_checker_plugin", task_checker_plugin),
-            Parameter("max_jobs", max_jobs),
-            Parameter(
-                "hardware_nodes",
-                [
-                    workcell_id.perform(context) + "_mock_dispenser",
-                    workcell_id.perform(context) + "_mock_gripper",
-                    workcell_id.perform(context) + "_mock_product_detector",
-                ],
-            ),
-            Parameter(
-                "dispensers",
-                [workcell_id.perform(context) + "_mock_dispenser"],
-            ),
-            Parameter(
-                "dispenser_properties",
-                [str(dispenser_properties.perform(context))],
-            ),
-            Parameter(
-                "grippers",
-                [workcell_id.perform(context) + "_mock_gripper"],
-            ),
-            Parameter(
-                "detectors",
-                [
-                    workcell_id.perform(context) + "_mock_product_detector"
-                ],
-            ),
-            Parameter(
-                "robot_name",
-                "abb_irb1300",
-            ),
-            Parameter("gripper_max_effort", 0.0),
-            Parameter("remap_task_types", remap_task_types),
-            Parameter("bt_logging_blocklist", bt_logging_blocklist),
-        ] + stations_params,
+        parameters=[{
+            "capabilities": [
+                "nexus::capabilities::DetectionCapability",
+                "nexus::capabilities::DispenseItemCapability",
+                "nexus::capabilities::ExecuteTrajectoryCapability",
+                "nexus::capabilities::GripperCapability",
+                "nexus::capabilities::PlanMotionCapability",
+            ],
+            "bt_path": bt_path,
+            "task_checker_plugin": task_checker_plugin,
+            "max_jobs": max_jobs,
+            "hardware_nodes": [
+                workcell_id.perform(context) + "_mock_dispenser",
+                workcell_id.perform(context) + "_mock_gripper",
+                workcell_id.perform(context) + "_mock_product_detector",
+            ],
+            "dispensers": [
+                workcell_id.perform(context) + "_mock_dispenser"
+            ],
+            "dispenser_properties": [
+                str(dispenser_properties.perform(context))
+            ],
+            "grippers": [
+                workcell_id.perform(context) + "_mock_gripper"
+            ],
+            "detectors": [
+                workcell_id.perform(context) + "_mock_product_detector"
+            ],
+            "robot_name": "abb_irb1300",
+            "gripper_max_effort": 0.0,
+            "remap_task_types": ParameterValue(remap_task_types, value_type=str),
+            "bt_logging_blocklist": bt_logging_blocklist,
+            "task_input_station_map": ParameterValue(task_input_station_map, value_type=str),
+            "task_output_station_map": ParameterValue(task_output_station_map, value_type=str),
+        }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
 
@@ -423,19 +393,14 @@ def generate_launch_description():
             description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         DeclareLaunchArgument(
-            "input_station_names",
+            "task_input_station_map",
             default_value="",
-            description="Comma-separated list of input station names for this workcell",
+            description="A yaml containing a dictionary of task types and input station names",
         ),
         DeclareLaunchArgument(
-            "output_station_names",
+            "task_output_station_map",
             default_value="",
-            description="Comma-separated list of output station names for this workcell",
-        ),
-        DeclareLaunchArgument(
-            "bidirectional_station_names",
-            default_value="",
-            description="Comma-separated list of bidirectional station names for this workcell",
+            description="A yaml containing a dictionary of task types and output station names",
         ),
         OpaqueFunction(function = launch_setup)
     ])
