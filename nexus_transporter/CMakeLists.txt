@@ -24,6 +24,7 @@ set(dep_pkgs
   rmf_api_msgs
   rmf_building_map_msgs
   rmf_dispenser_msgs
+  rmf_ingestor_msgs
   rmf_task_msgs
   rmf_task_ros2
   rmf_traffic
@@ -137,6 +138,7 @@ target_link_libraries(nexus_builtin_transporters
     ${nexus_transporter_msgs_TARGETS}
     ${rmf_building_map_msgs_TARGETS}
     ${rmf_dispenser_msgs_TARGETS}
+    ${rmf_ingestor_msgs_TARGETS}
     ${rmf_task_msgs_TARGETS}
     ${std_msgs_TARGETS}
 )

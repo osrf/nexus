@@ -19,6 +19,7 @@
 
 #include "bid_transporter.hpp"
 #include "context.hpp"
+#include "create_transporter_task.hpp"
 #include "exceptions.hpp"
 #include "execute_task.hpp"
 #include "for_each_task.hpp"
@@ -510,6 +511,20 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
       });
     });
 
+  bt_factory->registerBuilder<CreateTransporterTask>("CreateTransporterTask",
+    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<CreateTransporterTask>(name, config,
+        this->shared_from_this(), ctx);
+    });
+
+  bt_factory->registerBuilder<UnpackTransporterTask>("UnpackTransporterTask",
+    [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<UnpackTransporterTask>(name, config,
+        this->shared_from_this());
+    });
+
   bt_factory->registerBuilder<BidTransporter>("BidTransporter",
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
@@ -724,6 +739,18 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
     task.task_id =
       this->_generate_task_id(work_order_id, step.process_id(), step_index++);
     task.type = step.process_id();
+    const auto& input_items = step.input_items();
+    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
+    if (input_items.size() > 0)
+    {
+      task.input_item_id = input_items[0].guid();
+    }
+    const auto& output_items = step.output_items();
+    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
+    if (output_items.size() > 0)
+    {
+      task.output_item_id = output_items[0].guid();
+    }
 
     // Inject metadata into payload for workcell.
     YAML::Node processed_step = step.yaml;
