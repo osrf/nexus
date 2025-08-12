@@ -41,6 +41,7 @@ namespace nexus::system_orchestrator {
 class TransporterRequest : public common::ActionClientBtNode<rclcpp_lifecycle::LifecycleNode*,
     endpoints::TransportAction::ActionType>
 {
+public: using TransportationRequest = nexus_transporter_msgs::msg::TransportationRequest;
 public: using ActionType = endpoints::TransportAction::ActionType;
 
 public: static BT::PortsList providedPorts();
@@ -63,8 +64,8 @@ protected: std::optional<endpoints::TransportAction::ActionType::Goal> make_goal
 protected: void on_feedback(endpoints::TransportAction::ActionType::Feedback::ConstSharedPtr) override;
 
 private: std::shared_ptr<Context> _ctx;
+private: nexus_transporter_msgs::msg::TransportationRequest _request;
 private: std::string _transporter;
-private: std::string _destination;
 };
 
 }
