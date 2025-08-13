@@ -93,9 +93,26 @@ def launch_setup(context, *args, **kwargs):
     max_jobs = "2"
     max_workcell_jobs = "1"
     transporter_plugin = "nexus_transporter::MockTransporter"
+
+    workcell_1_task_output_station_map = """{
+        place_on_conveyor: workcell_1_left,
+        invalid_place_on_conveyor: workcell_1_left
+    }"""
+    workcell_2_task_input_station_map = """{
+        pick_from_conveyor: workcell_2_right
+    }"""
+
     if (use_rmf_transporter.perform(context).lower() == "true"):
         transporter_plugin = "nexus_transporter::RmfTransporter"
         rviz_config_filename = "nexus_panel_rmf.rviz"
+
+        workcell_1_task_output_station_map = """{
+            place_on_conveyor: workcell_1_front,
+            invalid_place_on_conveyor: workcell_1_front
+        }"""
+        workcell_2_task_input_station_map = """{
+            pick_from_conveyor: workcell_2_front
+        }"""
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(
@@ -129,11 +146,6 @@ def launch_setup(context, *args, **kwargs):
             ),
         ],
     )
-
-    workcell_1_task_output_station_map = """{
-        place_on_conveyor: workcell_1_front,
-        invalid_place_on_conveyor: workcell_1_front
-    }"""
 
     launch_workcell_1 = GroupAction(
         actions=[
@@ -183,10 +195,6 @@ def launch_setup(context, *args, **kwargs):
             )
         ],
     )
-
-    workcell_2_task_input_station_map = """{
-        pick_from_conveyor: workcell_2_front
-    }"""
 
     launch_workcell_2 = GroupAction(
         actions=[
