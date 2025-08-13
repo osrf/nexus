@@ -33,6 +33,7 @@
 #include <nexus_common/pausable_sequence.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_description.hpp>
+#include <nexus_orchestrator_msgs/msg/workcell_station.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
