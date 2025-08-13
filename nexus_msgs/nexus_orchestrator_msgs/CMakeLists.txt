@@ -24,6 +24,7 @@ set(msg_files
   "msg/WorkcellState.msg"
   "msg/WorkcellStation.msg"
   "msg/WorkcellTask.msg"
+  "msg/WorkcellTaskDescription.msg"
   "msg/WorkOrder.msg"
   "msg/WorkOrderState.msg"
 )
