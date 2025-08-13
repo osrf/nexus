@@ -144,6 +144,26 @@ std::optional<std::string> Context::get_workcell_task_input_station(
   return input_station_it->second;
 }
 
+Context& Context::set_workcell_task_output_station(
+  const std::string& task_id, const std::string& output_station_name)
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  _workcell_task_output_stations[task_id] = output_station_name;
+  return *this;
+}
+
+std::optional<std::string> Context::get_workcell_task_output_station(
+  const std::string& task_id) const
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto output_station_it = _workcell_task_output_stations.find(task_id);
+  if (output_station_it == _workcell_task_output_stations.end())
+  {
+    return std::nullopt;
+  }
+  return output_station_it->second;
+}
+
 Context& Context::set_workcell_sessions(
   const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
 {

@@ -87,6 +87,13 @@ public:
   std::optional<std::string> get_workcell_task_input_station(
     const std::string& task_id) const;
 
+  Context& set_workcell_task_output_station(
+    const std::string& task_id,
+    const std::string& output_station_name);
+
+  std::optional<std::string> get_workcell_task_output_station(
+    const std::string& task_id) const;
+
   Context& set_workcell_sessions(
     const std::unordered_map<std::string,
     std::shared_ptr<WorkcellSession>>& sessions);
@@ -154,9 +161,10 @@ private:
   std::unordered_map<std::string, std::string> _workcell_task_assignments = {};
 
   /**
-   * Map of task ids and their input station names.
+   * Map of task ids and their input and output station names.
    */
   std::unordered_map<std::string, std::string> _workcell_task_input_stations = {};
+  std::unordered_map<std::string, std::string> _workcell_task_output_stations = {};
 
   /**
    * Map of workcell ids and their sessions.

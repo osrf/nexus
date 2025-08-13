@@ -72,6 +72,7 @@ public:
     std::string task_id;
     std::string workcell_id;
     std::optional<std::string> input_station;
+    std::optional<std::string> output_station;
   };
 
 private:

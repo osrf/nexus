@@ -667,6 +667,12 @@ void SystemOrchestrator::_init_job(
               task_id,
               maybe_assignment->input_station.value());
           }
+          if (maybe_assignment->output_station.has_value())
+          {
+            job.ctx->set_workcell_task_output_station(
+              task_id,
+              maybe_assignment->output_station.value());
+          }
           auto task_state = TaskState();
           task_state.workcell_id = maybe_assignment->workcell_id;
           task_state.task_id = task_id;
@@ -1109,6 +1115,7 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
     {
       std::string assigned;
       std::optional<std::string> input_station = std::nullopt;
+      std::optional<std::string> output_station = std::nullopt;
       for (const auto& [wc_id, result] : results)
       {
         if (!result.success)
@@ -1130,6 +1137,15 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
               wc_id.c_str(),
               result.resp->input_station.c_str());
           }
+          if (!result.resp->output_station.empty())
+          {
+            output_station = result.resp->output_station;
+            RCLCPP_INFO(
+              this->get_logger(),
+              "Assigned task to [%s] with output [%s]",
+              wc_id.c_str(),
+              result.resp->output_station.c_str());
+          }
         }
       }
       if (assigned.empty())
@@ -1143,7 +1159,9 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         RCLCPP_INFO(
           this->get_logger(), "Task [%s] assigned to workcell [%s]",
           task.task_id.c_str(), assigned.c_str());
-        on_done(WorkcellTaskAssignment{task.task_id, assigned, input_station});
+        on_done(
+          WorkcellTaskAssignment{
+            task.task_id, assigned, input_station, output_station});
       }
     });
 }
