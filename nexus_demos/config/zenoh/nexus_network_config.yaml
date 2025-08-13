@@ -61,7 +61,7 @@ workcell_orchestrators:
     allow:
       publishers: ["workcell_3/workcell_state"]
       subscribers: []
-      service_servers: ["workcell_3/is_task_doable", "workcell_3/queue_task", "workcell_3/remove_pending_task", "workcell_3/get_state", "workcell_3/change_state"]
+      service_servers: ["/workcell_3/is_task_doable", "/workcell_3/queue_task", "/workcell_3/remove_pending_task", "/workcell_3/get_state", "/workcell_3/change_state", "/workcell_3/signal", "/workcell_3/pause"]
       service_clients: ["/register_workcell"]
       action_servers: ["workcell_3/request"]
       action_clients: []

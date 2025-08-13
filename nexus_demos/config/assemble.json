@@ -1,0 +1,50 @@
+{
+  "workInstructionName": "Pick and Place",
+  "steps": [
+    {
+      "processId": "make_part",
+      "outputItems": [
+        {
+          "guid": "productA",
+          "metadata": {
+            "quantity": 1,
+            "state": "state_1"
+          }
+        }
+      ]
+    },
+    {
+      "processId": "add_component_to_part",
+      "inputItems": [
+        {
+          "guid": "productA",
+          "metadata": {
+            "quantity": 1,
+            "state": "state_1"
+          }
+        }
+      ],
+      "outputItems": [
+        {
+          "guid": "productA",
+          "metadata": {
+            "quantity": 1,
+            "state": "state_2"
+          }
+        }
+      ]
+    },
+    {
+      "processId": "complete_part",
+      "inputItems": [
+        {
+          "guid": "productA",
+          "metadata": {
+            "quantity": 1,
+            "state": "state_2"
+          }
+        }
+      ]
+    }
+  ]
+}

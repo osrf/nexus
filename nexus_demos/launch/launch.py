@@ -47,14 +47,18 @@ def launch_setup(context, *args, **kwargs):
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot1_ip = LaunchConfiguration("robot1_ip")
     robot2_ip = LaunchConfiguration("robot2_ip")
+    robot3_ip = LaunchConfiguration("robot3_ip")
     run_workcell_1 = LaunchConfiguration("run_workcell_1")
     workcell_1_remap_task_types = LaunchConfiguration("workcell_1_remap_task_types")
     run_workcell_2 = LaunchConfiguration("run_workcell_2")
     workcell_2_remap_task_types = LaunchConfiguration("workcell_2_remap_task_types")
+    run_workcell_3 = LaunchConfiguration("run_workcell_3")
+    workcell_3_remap_task_types = LaunchConfiguration("workcell_3_remap_task_types")
 
     inter_workcell_domain_id = 0
     workcell_1_domain_id = 0
     workcell_2_domain_id = 0
+    workcell_3_domain_id = 0
     log_msg = ""
 
     if "ROS_DOMAIN_ID" in os.environ:
@@ -69,21 +73,26 @@ def launch_setup(context, *args, **kwargs):
         log_msg += "Using the zenoh bridge\n"
         workcell_1_domain_id = inter_workcell_domain_id + 1
         workcell_2_domain_id = inter_workcell_domain_id + 2
+        workcell_3_domain_id = inter_workcell_domain_id + 3
     else:
         log_msg += "Not using zenoh bridge\n"
         if (
             run_workcell_1.perform(context).lower() == "true"
             and run_workcell_2.perform(context).lower() == "true"
+            and run_workcell_3.perform(context).lower() == "true"
         ):
-            print("To run both workcells, enable the Zenoh Bridge")
+            print("To run all three workcells, enable the Zenoh Bridge")
             sys.exit(1)
         workcell_1_domain_id = inter_workcell_domain_id
         workcell_2_domain_id = inter_workcell_domain_id
+        workcell_3_domain_id = inter_workcell_domain_id
     log_msg += f"Inter-workcell has ROS_DOMAIN_ID {inter_workcell_domain_id}\n"
     if run_workcell_1.perform(context).lower() == "true":
         log_msg += f"Workcell 1 has ROS_DOMAIN_ID {workcell_1_domain_id}\n"
     if run_workcell_2.perform(context).lower() == "true":
         log_msg += f"Workcell 2 has ROS_DOMAIN_ID {workcell_2_domain_id}\n"
+    if run_workcell_3.perform(context).lower() == "true":
+        log_msg += f"Workcell 3 has ROS_DOMAIN_ID {workcell_3_domain_id}\n"
 
     main_bt_filename = "main.xml"
     remap_task_types = """{
@@ -185,7 +194,8 @@ def launch_setup(context, *args, **kwargs):
     )
 
     workcell_2_task_input_station_map = """{
-        pick_from_conveyor: workcell_2_front
+        pick_from_conveyor: workcell_2_front,
+        add_component_to_part: workcell_2_front
     }"""
 
     launch_workcell_2 = GroupAction(
@@ -237,11 +247,65 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    workcell_3_task_input_station_map = """{
+        complete_part: workcell_3_right
+    }"""
+
+    launch_workcell_3 = GroupAction(
+        actions=[
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_demos"),
+                            "launch",
+                            "workcell.launch.py",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "workcell_id": "workcell_2",
+                    "bt_path": (
+                        FindPackageShare("nexus_demos"),
+                        "/config/workcell_3_bts",
+                    ),
+                    "remap_task_types": workcell_3_remap_task_types,
+                    "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
+                    "max_jobs": max_workcell_jobs,
+                    "ros_domain_id": str(workcell_3_domain_id),
+                    "headless": headless,
+                    "use_zenoh_bridge": use_zenoh_bridge,
+                    "controller_config_package": "nexus_demos",
+                    "planner_config_package": "nexus_demos",
+                    "planner_config_file": "abb_irb1300_planner_params.yaml",
+                    "support_package": "abb_irb1300_support",
+                    "robot_xacro_file": "irb1300_10_115.xacro",
+                    "moveit_config_package": "abb_irb1300_10_115_moveit_config",
+                    "moveit_config_file": "abb_irb1300_10_115.srdf.xacro",
+                    "controllers_file": "abb_irb1300_controllers.yaml",
+                    "tf_publisher_launch_file": "workcell_3_tf.launch.py",
+                    "sku_detection_params_file": "product_detector_config.yaml",
+                    "dispenser_properties": "productB",
+                    "use_fake_hardware": use_fake_hardware,
+                    "robot_ip": robot3_ip,
+                    "zenoh_config_package": "nexus_demos",
+                    "zenoh_config_filename": "config/zenoh/workcell_3.json5",
+                    # TODO(ac): use a single source of truth that defines the IO
+                    # station of workcells, positions, and probably even
+                    # connecting navigation graphs that transporters will use.
+                    "task_input_station_map": workcell_3_task_input_station_map,
+                }.items(),
+                condition=IfCondition(run_workcell_3),
+            )
+        ],
+    )
+
     return [
         LogInfo(msg=log_msg),
         launch_inter_workcell,
         launch_workcell_1,
         launch_workcell_2,
+        launch_workcell_3,
     ]
 
 
@@ -279,7 +343,12 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "robot2_ip",
                 default_value="",
-                description="The IP address of workcell 1 robot when use_fake_hardware is False.",
+                description="The IP address of workcell 2 robot when use_fake_hardware is False.",
+            ),
+            DeclareLaunchArgument(
+                "robot3_ip",
+                default_value="",
+                description="The IP address of workcell 3 robot when use_fake_hardware is False.",
             ),
             DeclareLaunchArgument(
                 "run_workcell_1",
@@ -300,6 +369,16 @@ def generate_launch_description():
                 "workcell_2_remap_task_types",
                 default_value="",
                 description="Yaml string describing task type remaps of workcell_2.",
+            ),
+            DeclareLaunchArgument(
+                "run_workcell_3",
+                default_value="true",
+                description="Whether to run workcell_3",
+            ),
+            DeclareLaunchArgument(
+                "workcell_3_remap_task_types",
+                default_value="",
+                description="Yaml string describing task type remaps of workcell_3.",
             ),
             SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
             OpaqueFunction(function=launch_setup),
