@@ -37,16 +37,6 @@ BT::NodeStatus CreateTransporterTask::tick()
     std::terminate();
   }
 
-  const auto maybe_destination = this->getInput<std::string>("destination");
-  if (!maybe_destination)
-  {
-    RCLCPP_ERROR(
-      node->get_logger(), "%s: [destination] param is required",
-      this->name().c_str());
-    return BT::NodeStatus::FAILURE;
-  }
-  const auto& destination = maybe_destination.value();
-
   const auto workcell_task = this->getInput<WorkcellTask>("workcell_task");
   if (!workcell_task)
   {
@@ -54,6 +44,19 @@ BT::NodeStatus CreateTransporterTask::tick()
       this->_ctx->get_node().get_logger(), "%s: [workcell_task] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
+  }
+
+  const auto input_station =
+    this->_ctx->get_workcell_task_input_station(workcell_task->task_id);
+  if (input_station == std::nullopt)
+  {
+    RCLCPP_INFO(
+      this->_ctx->get_node().get_logger(),
+      "%s: task [%s] requires no input",
+      this->name().c_str(),
+      workcell_task->task_id.c_str());
+    // Task requires no input, do nothing
+    return BT::NodeStatus::SUCCESS;
   }
 
   // Get the source as the location of the input SKU
@@ -71,7 +74,7 @@ BT::NodeStatus CreateTransporterTask::tick()
     // The item cannot be found, fail
     return BT::NodeStatus::FAILURE;
   }
-  if (sku_position.value() == destination)
+  if (sku_position.value() == input_station.value())
   {
     // The item is already in its destination, do nothing
     return BT::NodeStatus::SUCCESS;
@@ -90,11 +93,11 @@ BT::NodeStatus CreateTransporterTask::tick()
   );
   result->destinations.emplace_back(
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
-      .name(destination)
+      .name(input_station.value())
       .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
       .params("")
   );
-  
+
   this->setOutput("result", result);
   return BT::NodeStatus::SUCCESS;
 }

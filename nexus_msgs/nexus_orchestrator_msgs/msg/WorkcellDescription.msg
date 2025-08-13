@@ -19,6 +19,3 @@ string[] capabilities
 
 # A list of I/O stations for the workcell
 WorkcellStation[] io_stations
-
-# A list of supported tasks and their descriptions
-WorkcellTaskDescription[] task_descriptions

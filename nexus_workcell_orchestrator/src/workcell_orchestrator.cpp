@@ -53,8 +53,6 @@ namespace nexus::workcell_orchestrator {
 using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 using WorkcellRequest = endpoints::WorkcellRequestAction::ActionType;
 using WorkcellStation = nexus_orchestrator_msgs::msg::WorkcellStation;
-using WorkcellTaskDescription =
-  nexus_orchestrator_msgs::msg::WorkcellTaskDescription;
 
 using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
@@ -167,7 +165,7 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
 
   // TODO(ac): use a single source of truth that defines the IO station of
   // workcells, positions, and probably even connecting navigation graphs that
-  // transporters will use.
+  // transporters will use. These mappings might even need to change at runtime.
   {
     ParameterDescriptor desc;
     desc.read_only = true;
@@ -1057,23 +1055,6 @@ void WorkcellOrchestrator::_register()
       nexus_orchestrator_msgs::build<WorkcellStation>()
         .name(input)
         .io_type(WorkcellStation::IO_TYPE_INPUT));
-  }
-
-  for (const auto& task_type : this->_bt_store.list_bt())
-  {
-    WorkcellTaskDescription desc;
-    desc.type = task_type;
-    if (this->_task_to_input_station_map.find(task_type) !=
-      this->_task_to_input_station_map.end())
-    {
-      desc.input_station = this->_task_to_input_station_map[task_type];
-    }
-    if (this->_task_to_output_station_map.find(task_type) !=
-      this->_task_to_output_station_map.end())
-    {
-      desc.output_station = this->_task_to_output_station_map[task_type];
-    }
-    req->description.task_descriptions.push_back(desc);
   }
 
   this->_ongoing_register = this->_register_workcell_client->async_send_request(

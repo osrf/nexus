@@ -124,6 +124,26 @@ std::optional<std::string> Context::get_workcell_task_assignment(
   return assignment_it->second;
 }
 
+Context& Context::set_workcell_task_input_station(
+  const std::string& task_id, const std::string& input_station_name)
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  _workcell_task_input_stations[task_id] = input_station_name;
+  return *this;
+}
+
+std::optional<std::string> Context::get_workcell_task_input_station(
+  const std::string& task_id) const
+{
+  std::lock_guard<std::mutex> lock(_mutex);
+  auto input_station_it = _workcell_task_input_stations.find(task_id);
+  if (input_station_it == _workcell_task_input_stations.end())
+  {
+    return std::nullopt;
+  }
+  return input_station_it->second;
+}
+
 Context& Context::set_workcell_sessions(
   const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
 {

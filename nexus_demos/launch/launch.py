@@ -130,10 +130,15 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # workcell_1_task_output_station_map = """{
+    #     place_on_amr: workcell_1_front,
+    #     place_on_conveyor: workcell_1_left,
+    #     invalid_place_on_conveyor: workcell_1_left
+    # }"""
     workcell_1_task_output_station_map = """{
-        place_on_amr: workcell_1_front,
-        place_on_conveyor: workcell_1_left,
-        invalid_place_on_conveyor: workcell_1_left
+        place_on_amr: workcell_1,
+        place_on_conveyor: workcell_1,
+        invalid_place_on_conveyor: workcell_1
     }"""
 
     launch_workcell_1 = GroupAction(
@@ -185,9 +190,13 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # workcell_2_task_input_station_map = """{
+    #     pick_from_amr: workcell_2_front,
+    #     pick_from_conveyor: workcell_2_right
+    # }"""
     workcell_2_task_input_station_map = """{
-        pick_from_amr: workcell_2_front,
-        pick_from_conveyor: workcell_2_right
+        pick_from_amr: workcell_2,
+        pick_from_conveyor: workcell_2
     }"""
 
     launch_workcell_2 = GroupAction(
