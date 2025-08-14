@@ -40,7 +40,7 @@ class InvalidPlaceOnConveyorTest(NexusTestCase):
         subprocess.Popen('pkill -9 -f zenoh', shell=True)
 
         self.proc = managed_process(
-            ("ros2", "launch", "nexus_demos", "launch.py", "workcell_1_remap_task_types:=\"invalid_place_on_conveyor: [place_on_conveyor]\""),
+            ("ros2", "launch", "nexus_demos", "launch.py", "workcell_1_remap_task_types:='invalid_place_on_conveyor: [place_on_conveyor]'"),
         )
         self.proc.__enter__()
         print("waiting for nodes to be ready...", file=sys.stderr)
