@@ -33,6 +33,7 @@
 #include <nexus_common/pausable_sequence.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_description.hpp>
+#include <nexus_orchestrator_msgs/msg/workcell_station.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
@@ -52,6 +53,7 @@ namespace nexus::workcell_orchestrator {
 
 using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 using WorkcellRequest = endpoints::WorkcellRequestAction::ActionType;
+using WorkcellStation = nexus_orchestrator_msgs::msg::WorkcellStation;
 
 using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
@@ -160,6 +162,65 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     desc.description =
       "A list of BT node names whose state changes should not be logged.";
     this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
+  }
+
+  // TODO(ac): use a single source of truth that defines the IO station of
+  // workcells, positions, and probably even connecting navigation graphs that
+  // transporters will use. These mappings might even need to change at runtime.
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "A yaml containing a dictionary of task types and input station names.";
+    this->declare_parameter("task_input_station_map", "", desc);
+  }
+  {
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "A yaml containing a dictionary of task types and output station names.";
+    this->declare_parameter("task_output_station_map", "", desc);
+  }
+
+  std::unordered_map<std::string, WorkcellStation> io_stations;
+  const auto task_input_station_map =
+    this->get_parameter("task_input_station_map").as_string();
+  try
+  {
+    YAML::Node node = YAML::Load(task_input_station_map);
+    for (const auto& n : node)
+    {
+      this->_task_to_input_station_map.emplace(
+        n.first.as<std::string>(),
+        n.second.as<std::string>());
+    }
+  }
+  catch (YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Failed to parse task_input_station_map parameter: (%s)",
+      e.what());
+  }
+
+  const auto task_output_station_map =
+    this->get_parameter("task_output_station_map").as_string();
+  try
+  {
+    YAML::Node node = YAML::Load(task_output_station_map);
+    for (const auto& n : node)
+    {
+      this->_task_to_output_station_map.emplace(
+        n.first.as<std::string>(),
+        n.second.as<std::string>());
+    }
+  }
+  catch (YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Failed to parse task_output_station_map parameter: (%s)",
+      e.what());
   }
 
   this->_register_workcell_client =
@@ -966,6 +1027,37 @@ void WorkcellOrchestrator::_register()
   }
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
+
+  std::unordered_set<std::string> input_stations;
+  for (const auto& input_it : _task_to_input_station_map)
+  {
+    input_stations.insert(input_it.second);
+  }
+  for (const auto& output_it : _task_to_output_station_map)
+  {
+    if (input_stations.find(output_it.second) == input_stations.end())
+    {
+      req->description.io_stations.emplace_back(
+        nexus_orchestrator_msgs::build<WorkcellStation>()
+          .name(output_it.second)
+          .io_type(WorkcellStation::IO_TYPE_OUTPUT));
+      continue;
+    }
+
+    req->description.io_stations.emplace_back(
+      nexus_orchestrator_msgs::build<WorkcellStation>()
+        .name(output_it.second)
+        .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
+    input_stations.erase(output_it.second);
+  }
+  for (const auto& input : input_stations)
+  {
+    req->description.io_stations.emplace_back(
+      nexus_orchestrator_msgs::build<WorkcellStation>()
+        .name(input)
+        .io_type(WorkcellStation::IO_TYPE_INPUT));
+  }
+
   this->_ongoing_register = this->_register_workcell_client->async_send_request(
     req,
     register_cb);
@@ -1056,6 +1148,16 @@ void WorkcellOrchestrator::_handle_task_doable(
   {
     auto task = this->_task_parser.parse_task(req->task);
     resp->success = this->_task_checker->is_task_doable(task);
+    if (_task_to_input_station_map.find(task.type) !=
+      _task_to_input_station_map.end())
+    {
+      resp->input_station = _task_to_input_station_map[task.type];
+    }
+    if (_task_to_output_station_map.find(task.type) !=
+      _task_to_output_station_map.end())
+    {
+      resp->output_station = _task_to_output_station_map[task.type];
+    }
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");

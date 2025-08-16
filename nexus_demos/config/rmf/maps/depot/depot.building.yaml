@@ -63,8 +63,8 @@ levels:
       - [46, 48, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
       - [48, 45, {bidirectional: [4, false], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
       - [14, 39, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 0], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
-      - [17, 16, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 1], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
-      - [18, 17, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 2], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [49, 50, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 1], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
+      - [51, 52, {bidirectional: [4, true], demo_mock_floor_name: [1, ""], demo_mock_lift_name: [1, ""], graph_idx: [2, 2], mutex: [1, ""], orientation: [1, ""], speed_limit: [3, 0]}]
     layers:
       {}
     measurements:
@@ -86,9 +86,9 @@ levels:
       - [147.02600000000001, 233.02699999999999, 0, ""]
       - [225.309, 46.283999999999999, 0, deliveryRobotCharger1, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot1], spawn_robot_type: [1, DeliveryRobot]}]
       - [240.38200000000001, 284.73700000000002, 0, deliveryRobotCharger2, {is_charger: [4, true], is_holding_point: [4, true], is_parking_spot: [4, true], spawn_robot_name: [1, deliveryRobot2], spawn_robot_type: [1, DeliveryRobot]}]
-      - [180.55500000000001, 208.523, 0, workcell_1, {dropoff_ingestor: [1, workcell_1], is_holding_point: [4, false], is_parking_spot: [4, false], mutex: [1, workcell_1], pickup_dispenser: [1, workcell_1]}]
-      - [120.56100000000001, 208.73599999999999, 0, workcell_2, {dropoff_ingestor: [1, workcell_2], is_holding_point: [4, false], is_parking_spot: [4, false], mutex: [1, workcell_2], pickup_dispenser: [1, workcell_2]}]
-      - [60.567999999999998, 208.94900000000001, 0, workcell_3, {dropoff_ingestor: [1, workcell_3], mutex: [1, workcell_3], pickup_dispenser: [1, workcell_3]}]
+      - [180.55500000000001, 208.523, 0, workcell_1_front, {dropoff_ingestor: [1, workcell_1_front], is_holding_point: [4, false], is_parking_spot: [4, false], mutex: [1, workcell_1], pickup_dispenser: [1, workcell_1_front]}]
+      - [120.56100000000001, 208.73599999999999, 0, workcell_2_front, {dropoff_ingestor: [1, workcell_2_front], is_holding_point: [4, false], is_parking_spot: [4, false], mutex: [1, workcell_2], pickup_dispenser: [1, workcell_2_front]}]
+      - [60.567999999999998, 208.94900000000001, 0, workcell_3_front, {dropoff_ingestor: [1, workcell_3_front], mutex: [1, workcell_3], pickup_dispenser: [1, workcell_3_front]}]
       - [60.780999999999999, 98.109999999999999, 0, workcell_6, {dropoff_ingestor: [1, workcell_6], mutex: [1, workcell_6], pickup_dispenser: [1, workcell_6]}]
       - [120.56100000000001, 98.748000000000005, 0, workcell_5, {dropoff_ingestor: [1, workcell_5], mutex: [1, workcell_5], pickup_dispenser: [1, workcell_5]}]
       - [225.733, 250.20699999999999, 0, ""]
@@ -119,5 +119,9 @@ levels:
       - [225.50700000000001, 141.53899999999999, 0, ""]
       - [203.21899999999999, 163.523, 0, "", {is_holding_point: [4, true]}]
       - [202.70699999999999, 141.55199999999999, 0, "", {is_holding_point: [4, true]}]
+      - [167.166, 227.19, 0, workcell_1_left, {dropoff_ingestor: [1, workcell_1_left], pickup_dispenser: [1, workcell_1_left]}]
+      - [138.40100000000001, 227.33699999999999, 0, workcell_2_right, {dropoff_ingestor: [1, workcell_2_right], pickup_dispenser: [1, workcell_2_right]}]
+      - [76.055000000000007, 228.33099999999999, 0, workcell_3_right, {dropoff_ingestor: [1, workcell_3_right], pickup_dispenser: [1, workcell_3_right]}]
+      - [102.84999999999999, 228.37, 0, workcell_2_left, {dropoff_ingestor: [1, workcell_2_left], pickup_dispenser: [1, workcell_2_left]}]
 lifts: {}
 name: depot
