@@ -1,0 +1,8 @@
+workInstructionName: "Pick from conveyor"
+steps:
+  - processId: "pick_from_conveyor"
+    inputItems:
+      - guid: "productA"
+        metadata:
+          quantity: 1
+          state: "state_1"
