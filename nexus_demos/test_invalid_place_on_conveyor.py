@@ -85,4 +85,3 @@ class InvalidPlaceOnConveyorTest(NexusTestCase):
 
         results = await goal_handle.get_result_async()
         self.assertEqual(results.status, GoalStatus.STATUS_ABORTED)
-
