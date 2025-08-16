@@ -18,6 +18,7 @@ set(dependencies
   lifecycle_msgs
   rclcpp
   rclcpp_action
+  rclcpp_components
   rclcpp_lifecycle
   rmf_utils
   std_srvs
@@ -40,6 +41,7 @@ target_link_libraries(${library_name} PUBLIC
   ${lifecycle_msgs_TARGETS}
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
+  rclcpp_components::component
   rclcpp_lifecycle::rclcpp_lifecycle
   rmf_utils::rmf_utils
   ${std_srvs_TARGETS}
@@ -54,8 +56,28 @@ target_link_libraries(lifecycle_manager
   ${library_name}
 )
 
+# Add lifecycle manager component
+add_library(lifecycle_manager_component SHARED
+  src/lifecycle_manager_node.cpp
+)
+
+target_link_libraries(lifecycle_manager_component PRIVATE
+  ${library_name}
+  rclcpp::rclcpp
+  rclcpp_components::component
+)
+
+target_compile_features(lifecycle_manager_component INTERFACE cxx_std_17)
+
+rclcpp_components_register_node(lifecycle_manager_component
+  PLUGIN "nexus::lifecycle_manager::LifecycleManagerNode"
+  EXECUTABLE lifecycle_manager_node
+  EXECUTOR SingleThreadedExecutor
+)
+
 install(TARGETS
   ${library_name}
+  lifecycle_manager_component
   EXPORT ${library_name}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

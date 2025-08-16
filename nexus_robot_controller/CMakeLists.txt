@@ -12,6 +12,7 @@ set(executable_name robot_controller_server)
 set(dependencies
   controller_manager
   rclcpp
+  rclcpp_components
   rclcpp_lifecycle
   realtime_tools
   std_msgs
@@ -34,7 +35,26 @@ target_link_libraries(${library_name} PUBLIC
 add_executable(${executable_name} src/robot_controller_server_node.cpp)
 target_link_libraries(${executable_name} ${library_name})
 
-install(TARGETS ${library_name}
+# Component
+add_library(robot_controller_server_component SHARED
+  src/robot_controller_server_component.cpp
+)
+
+target_link_libraries(robot_controller_server_component PRIVATE
+  ${library_name}
+  rclcpp::rclcpp
+  rclcpp_components::component
+)
+
+target_compile_features(robot_controller_server_component INTERFACE cxx_std_17)
+
+rclcpp_components_register_node(robot_controller_server_component
+  PLUGIN "nexus::robot_controller_server::RobotControllerServerComponent"
+  EXECUTABLE robot_controller_server_component_node
+  EXECUTOR SingleThreadedExecutor
+)
+
+install(TARGETS ${library_name} robot_controller_server_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

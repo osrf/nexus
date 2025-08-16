@@ -200,7 +200,6 @@ void MockDetector::fill_tf_msgs(
     tf.header.frame_id = frame_id_;
     tf.child_frame_id = detection.id + "_" + std::to_string(i+1);
     tf.transform.translation.x = detection.bbox.center.position.x;
-    tf.transform.translation.x = detection.bbox.center.position.x;
     tf.transform.translation.y = detection.bbox.center.position.y;
     tf.transform.translation.z = detection.bbox.center.position.z;
     tf.transform.rotation = detection.bbox.center.orientation;

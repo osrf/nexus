@@ -17,6 +17,7 @@ set (dependencies
   moveit_ros_planning_interface
   rclcpp
   rclcpp_action
+  rclcpp_components
   rclcpp_lifecycle
   tf2
   tf2_ros
@@ -48,6 +49,27 @@ target_link_libraries(${EXECUTABLE_NAME}
   ${MOTION_PLAN_CACHE_LIBRARY_NAME}
 )
 
+# Component
+add_library(motion_planner_server_component SHARED
+  src/motion_planner_server_component.cpp
+  src/motion_planner_server.cpp
+)
+
+target_link_libraries(motion_planner_server_component PRIVATE
+  nexus_endpoints::nexus_endpoints
+  ${MOTION_PLAN_CACHE_LIBRARY_NAME}
+  rclcpp::rclcpp
+  rclcpp_components::component
+)
+
+target_compile_features(motion_planner_server_component INTERFACE cxx_std_17)
+
+rclcpp_components_register_node(motion_planner_server_component
+  PLUGIN "nexus::motion_planner::MotionPlannerServerComponent"
+  EXECUTABLE motion_planner_server_component_node
+  EXECUTOR SingleThreadedExecutor
+)
+
 # Test executable
 add_executable(test_request src/test_request.cpp)
 target_link_libraries(test_request
@@ -59,6 +81,14 @@ target_link_libraries(test_request
 )
 
 #===============================================================================
+install(TARGETS
+    ${MOTION_PLAN_CACHE_LIBRARY_NAME}
+    motion_planner_server_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 install(TARGETS
     ${EXECUTABLE_NAME}
     test_request
