@@ -117,7 +117,7 @@ def launch_setup(context, *args, **kwargs):
                 output: workcell_1_front
             },
             invalid_place_on_conveyor: {
-                output: workcell_2_front
+                output: workcell_1_front
             }
         }"""
         remap_workcell_2_task_input_output_stations = """{

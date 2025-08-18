@@ -179,7 +179,7 @@ def launch_setup(context, *args, **kwargs):
             ],
             "robot_name": "abb_irb1300",
             "gripper_max_effort": 0.0,
-            "remap_task_types": ParameterValue(remap_task_types, value_type=str),
+            "remap_task_types": remap_task_types,
             "bt_logging_blocklist": bt_logging_blocklist,
             "remap_task_input_output_stations": ParameterValue(remap_task_input_output_stations, value_type=str),
         }],
