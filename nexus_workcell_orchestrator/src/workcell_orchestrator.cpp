@@ -171,55 +171,44 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "A yaml containing a dictionary of task types and input station names.";
-    this->declare_parameter("task_input_station_map", "", desc);
-  }
-  {
-    ParameterDescriptor desc;
-    desc.read_only = true;
-    desc.description =
-      "A yaml containing a dictionary of task types and output station names.";
-    this->declare_parameter("task_output_station_map", "", desc);
+      "A yaml containing a dictionary of remapping task types and input/output station names.";
+    this->declare_parameter("remap_task_input_output_stations", "", desc);
   }
 
   std::unordered_map<std::string, WorkcellStation> io_stations;
-  const auto task_input_station_map =
-    this->get_parameter("task_input_station_map").as_string();
+  const auto remap_task_input_output_stations =
+    this->get_parameter("remap_task_input_output_stations").as_string();
+  if (!remap_task_input_output_stations.empty())
+  {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "remap_task_input_output_stations: %s",
+      remap_task_input_output_stations.c_str());
+  }
   try
   {
-    YAML::Node node = YAML::Load(task_input_station_map);
+    YAML::Node node = YAML::Load(remap_task_input_output_stations);
     for (const auto& n : node)
     {
-      this->_task_to_input_station_map.emplace(
-        n.first.as<std::string>(),
-        n.second.as<std::string>());
+      if (n.second["input"] && !n.second["input"].as<std::string>().empty())
+      {
+        this->_task_to_input_station_map.emplace(
+          n.first.as<std::string>(),
+          n.second["input"].as<std::string>());
+      }
+      if (n.second["output"] && !n.second["output"].as<std::string>().empty())
+      {
+        this->_task_to_output_station_map.emplace(
+          n.first.as<std::string>(),
+          n.second["output"].as<std::string>());
+      }
     }
   }
   catch (YAML::ParserException& e)
   {
     RCLCPP_ERROR(
       this->get_logger(),
-      "Failed to parse task_input_station_map parameter: (%s)",
-      e.what());
-  }
-
-  const auto task_output_station_map =
-    this->get_parameter("task_output_station_map").as_string();
-  try
-  {
-    YAML::Node node = YAML::Load(task_output_station_map);
-    for (const auto& n : node)
-    {
-      this->_task_to_output_station_map.emplace(
-        n.first.as<std::string>(),
-        n.second.as<std::string>());
-    }
-  }
-  catch (YAML::ParserException& e)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "Failed to parse task_output_station_map parameter: (%s)",
+      "Failed to parse remap_task_input_output_stations parameter: (%s)",
       e.what());
   }
 

@@ -103,8 +103,7 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
-    task_input_station_map = LaunchConfiguration("task_input_station_map")
-    task_output_station_map = LaunchConfiguration("task_output_station_map")
+    remap_task_input_output_stations = LaunchConfiguration("remap_task_input_output_stations")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -182,8 +181,7 @@ def launch_setup(context, *args, **kwargs):
             "gripper_max_effort": 0.0,
             "remap_task_types": ParameterValue(remap_task_types, value_type=str),
             "bt_logging_blocklist": bt_logging_blocklist,
-            "task_input_station_map": ParameterValue(task_input_station_map, value_type=str),
-            "task_output_station_map": ParameterValue(task_output_station_map, value_type=str),
+            "remap_task_input_output_stations": ParameterValue(remap_task_input_output_stations, value_type=str),
         }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -393,14 +391,9 @@ def generate_launch_description():
             description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         DeclareLaunchArgument(
-            "task_input_station_map",
+            "remap_task_input_output_stations",
             default_value="",
-            description="A yaml containing a dictionary of task types and input station names",
-        ),
-        DeclareLaunchArgument(
-            "task_output_station_map",
-            default_value="",
-            description="A yaml containing a dictionary of task types and output station names",
+            description="A yaml containing a dictionary of remapping task types and input/output station names. By default the workcell name is used if the work order expects an input or output station",
         ),
         OpaqueFunction(function = launch_setup)
     ])

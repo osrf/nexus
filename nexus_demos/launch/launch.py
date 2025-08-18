@@ -94,24 +94,36 @@ def launch_setup(context, *args, **kwargs):
     max_workcell_jobs = "1"
     transporter_plugin = "nexus_transporter::MockTransporter"
 
-    workcell_1_task_output_station_map = """{
-        place_on_conveyor: workcell_1_left,
-        invalid_place_on_conveyor: workcell_1_left
+    remap_workcell_1_task_input_output_stations = """{
+        place_on_conveyor: {
+            output: workcell_1_left
+        },
+        invalid_place_on_conveyor: {
+            output: workcell_1_left
+        }
     }"""
-    workcell_2_task_input_station_map = """{
-        pick_from_conveyor: workcell_2_right
+    remap_workcell_2_task_input_output_stations = """{
+        pick_from_conveyor: {
+            input: workcell_2_right
+        }
     }"""
 
     if (use_rmf_transporter.perform(context).lower() == "true"):
         transporter_plugin = "nexus_transporter::RmfTransporter"
         rviz_config_filename = "nexus_panel_rmf.rviz"
 
-        workcell_1_task_output_station_map = """{
-            place_on_conveyor: workcell_1_front,
-            invalid_place_on_conveyor: workcell_1_front
+        remap_workcell_1_task_input_output_stations = """{
+            place_on_conveyor: {
+                output: workcell_1_front
+            },
+            invalid_place_on_conveyor: {
+                output: workcell_2_front
+            }
         }"""
-        workcell_2_task_input_station_map = """{
-            pick_from_conveyor: workcell_2_front
+        remap_workcell_2_task_input_output_stations = """{
+            pick_from_conveyor: {
+                input: workcell_2_front
+            }
         }"""
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
@@ -189,7 +201,7 @@ def launch_setup(context, *args, **kwargs):
                     # TODO(ac): use a single source of truth that defines the IO
                     # station of workcells, positions, and probably even
                     # connecting navigation graphs that transporters will use.
-                    "task_output_station_map": workcell_1_task_output_station_map,
+                    "remap_task_input_output_stations": remap_workcell_1_task_input_output_stations,
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -238,7 +250,7 @@ def launch_setup(context, *args, **kwargs):
                     # TODO(ac): use a single source of truth that defines the IO
                     # station of workcells, positions, and probably even
                     # connecting navigation graphs that transporters will use.
-                    "task_input_station_map": workcell_2_task_input_station_map,
+                    "remap_task_input_output_stations": remap_workcell_2_task_input_output_stations,
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )
