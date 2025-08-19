@@ -41,22 +41,10 @@ BT::NodeStatus CreateTransporterTask::tick()
   if (!workcell_task)
   {
     RCLCPP_ERROR(
-      this->_ctx->get_node().get_logger(), "%s: [workcell_task] port is required",
+      this->_ctx->get_node().get_logger(),
+      "%s: [workcell_task] port is required",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
-  }
-
-  const auto input_station =
-    this->_ctx->get_workcell_task_input_station(workcell_task->task_id);
-  if (input_station == std::nullopt)
-  {
-    RCLCPP_INFO(
-      this->_ctx->get_node().get_logger(),
-      "%s: task [%s] requires no input",
-      this->name().c_str(),
-      workcell_task->task_id.c_str());
-    // Task requires no input, do nothing
-    return BT::NodeStatus::SUCCESS;
   }
 
   // Get the source as the location of the input SKU
@@ -66,15 +54,37 @@ BT::NodeStatus CreateTransporterTask::tick()
     // and a nullopt transportation task
     return BT::NodeStatus::SUCCESS;
   }
+
+  const auto maybe_workcell_id =
+    this->_ctx->get_workcell_task_assignment(workcell_task->task_id);
+  if (!maybe_workcell_id.has_value())
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(),
+      "%s: no workcell found assigned to task [%s], this should not happen "
+      "and is a bug.",
+      this->name().c_str(),
+      workcell_task->task_id.c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  const auto maybe_input_station =
+    this->_ctx->get_workcell_task_input_station(workcell_task->task_id);
+  const std::string input_station_name =
+    maybe_input_station.has_value()
+    ? maybe_input_station.value()
+    : maybe_workcell_id.value();
+
   // TODO(luca) Implement a node that tracks the location of SKUs and query it
   // for the location, rather than using a context variable
-  const auto sku_position = this->_ctx->get_sku_location(workcell_task->input_item_id);
+  const auto sku_position =
+    this->_ctx->get_sku_location(workcell_task->input_item_id);
   if (sku_position == std::nullopt)
   {
     // The item cannot be found, fail
     return BT::NodeStatus::FAILURE;
   }
-  if (sku_position.value() == input_station.value())
+  if (sku_position.value() == input_station_name)
   {
     // The item is already in its destination, do nothing
     return BT::NodeStatus::SUCCESS;
@@ -93,7 +103,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   );
   result->destinations.emplace_back(
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
-      .name(input_station.value())
+      .name(input_station_name)
       .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
       .params("")
   );
@@ -113,7 +123,8 @@ BT::NodeStatus UnpackTransporterTask::tick()
     std::terminate();
   }
 
-  const auto maybe_request = this->getInput<std::optional<TransportationRequest>>("input");
+  const auto maybe_request =
+    this->getInput<std::optional<TransportationRequest>>("input");
   if (!maybe_request)
   {
     RCLCPP_ERROR(
