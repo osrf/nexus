@@ -31,6 +31,7 @@
 #include <nexus_capabilities/utils.hpp>
 #include <nexus_common/logging.hpp>
 #include <nexus_common/pausable_sequence.hpp>
+#include <nexus_common/models/work_order.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_description.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_station.hpp>
@@ -1137,16 +1138,23 @@ void WorkcellOrchestrator::_handle_task_doable(
   {
     auto task = this->_task_parser.parse_task(req->task);
     resp->success = this->_task_checker->is_task_doable(task);
-    if (_task_to_input_station_map.find(task.type) !=
-      _task_to_input_station_map.end())
+
+    const auto step = nexus::common::WorkOrder::Step(task.data);
+    if (step.input_items().size() > 0)
     {
-      resp->input_station = _task_to_input_station_map[task.type];
+      resp->input_station =
+        _task_to_input_station_map.find(task.type) ==
+        _task_to_input_station_map.end()
+        ? this->get_name() : _task_to_input_station_map[task.type];
     }
-    if (_task_to_output_station_map.find(task.type) !=
-      _task_to_output_station_map.end())
+    if (step.output_items().size() > 0)
     {
-      resp->output_station = _task_to_output_station_map[task.type];
+      resp->output_station =
+        _task_to_output_station_map.find(task.type) ==
+        _task_to_output_station_map.end()
+        ? this->get_name() : _task_to_output_station_map[task.type];
     }
+
     if (resp->success)
     {
       RCLCPP_DEBUG(this->get_logger(), "Workcell can perform task");
