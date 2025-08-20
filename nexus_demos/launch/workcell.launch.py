@@ -17,7 +17,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.actions import LifecycleNode
-from launch_ros.parameter_descriptions import Parameter
+from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 import launch
@@ -102,7 +102,8 @@ def launch_setup(context, *args, **kwargs):
     # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
-    bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
+    bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
+    remap_task_input_output_stations = LaunchConfiguration("remap_task_input_output_stations")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -148,54 +149,40 @@ def launch_setup(context, *args, **kwargs):
         namespace="",
         package="nexus_workcell_orchestrator",
         executable="nexus_workcell_orchestrator",
-        parameters=[
-            Parameter(
-                "capabilities",
-                [
-                    "nexus::capabilities::DetectionCapability",
-                    "nexus::capabilities::DispenseItemCapability",
-                    "nexus::capabilities::ExecuteTrajectoryCapability",
-                    "nexus::capabilities::GripperCapability",
-                    "nexus::capabilities::PlanMotionCapability",
-                ]
-            ),
-            Parameter("bt_path", bt_path),
-            Parameter("task_checker_plugin", task_checker_plugin),
-            Parameter("max_jobs", max_jobs),
-            Parameter(
-                "hardware_nodes",
-                [
-                    workcell_id.perform(context) + "_mock_dispenser",
-                    workcell_id.perform(context) + "_mock_gripper",
-                    workcell_id.perform(context) + "_mock_product_detector",
-                ],
-            ),
-            Parameter(
-                "dispensers",
-                [workcell_id.perform(context) + "_mock_dispenser"],
-            ),
-            Parameter(
-                "dispenser_properties",
-                [str(dispenser_properties.perform(context))],
-            ),
-            Parameter(
-                "grippers",
-                [workcell_id.perform(context) + "_mock_gripper"],
-            ),
-            Parameter(
-                "detectors",
-                [
-                    workcell_id.perform(context) + "_mock_product_detector"
-                ],
-            ),
-            Parameter(
-                "robot_name",
-                "abb_irb1300",
-            ),
-            Parameter("gripper_max_effort", 0.0),
-            Parameter("remap_task_types", remap_task_types),
-            Parameter("bt_logging_blocklist", bt_logging_blocklist),
-        ],
+        parameters=[{
+            "capabilities": [
+                "nexus::capabilities::DetectionCapability",
+                "nexus::capabilities::DispenseItemCapability",
+                "nexus::capabilities::ExecuteTrajectoryCapability",
+                "nexus::capabilities::GripperCapability",
+                "nexus::capabilities::PlanMotionCapability",
+            ],
+            "bt_path": bt_path,
+            "task_checker_plugin": task_checker_plugin,
+            "max_jobs": max_jobs,
+            "hardware_nodes": [
+                workcell_id.perform(context) + "_mock_dispenser",
+                workcell_id.perform(context) + "_mock_gripper",
+                workcell_id.perform(context) + "_mock_product_detector",
+            ],
+            "dispensers": [
+                workcell_id.perform(context) + "_mock_dispenser"
+            ],
+            "dispenser_properties": [
+                str(dispenser_properties.perform(context))
+            ],
+            "grippers": [
+                workcell_id.perform(context) + "_mock_gripper"
+            ],
+            "detectors": [
+                workcell_id.perform(context) + "_mock_product_detector"
+            ],
+            "robot_name": "abb_irb1300",
+            "gripper_max_effort": 0.0,
+            "remap_task_types": remap_task_types,
+            "bt_logging_blocklist": bt_logging_blocklist,
+            "remap_task_input_output_stations": ParameterValue(remap_task_input_output_stations, value_type=str),
+        }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
 
@@ -402,6 +389,11 @@ def generate_launch_description():
             "remap_task_types",
             default_value="",
             description="A yaml containing a dictionary of task types and an array of remaps",
+        ),
+        DeclareLaunchArgument(
+            "remap_task_input_output_stations",
+            default_value="",
+            description="A yaml containing a dictionary of remapping task types and input/output station names. By default the workcell name is used if the work order expects an input or output station",
         ),
         OpaqueFunction(function = launch_setup)
     ])

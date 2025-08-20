@@ -93,9 +93,38 @@ def launch_setup(context, *args, **kwargs):
     max_jobs = "2"
     max_workcell_jobs = "1"
     transporter_plugin = "nexus_transporter::MockTransporter"
+
+    remap_workcell_1_task_input_output_stations = """{
+        place_on_conveyor: {
+            output: workcell_1_left
+        },
+        invalid_place_on_conveyor: {
+            output: workcell_1_left
+        }
+    }"""
+    remap_workcell_2_task_input_output_stations = """{
+        pick_from_conveyor: {
+            input: workcell_2_right
+        }
+    }"""
+
     if (use_rmf_transporter.perform(context).lower() == "true"):
         transporter_plugin = "nexus_transporter::RmfTransporter"
         rviz_config_filename = "nexus_panel_rmf.rviz"
+
+        remap_workcell_1_task_input_output_stations = """{
+            place_on_conveyor: {
+                output: workcell_1_front
+            },
+            invalid_place_on_conveyor: {
+                output: workcell_1_front
+            }
+        }"""
+        remap_workcell_2_task_input_output_stations = """{
+            pick_from_conveyor: {
+                input: workcell_2_front
+            }
+        }"""
 
     log_msg += f"System Orchestrator will load : {main_bt_filename}\n"
     nexus_rviz_config = os.path.join(
@@ -169,6 +198,10 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot1_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_1.json5",
+                    # TODO(ac): use a single source of truth that defines the IO
+                    # station of workcells, positions, and probably even
+                    # connecting navigation graphs that transporters will use.
+                    "remap_task_input_output_stations": remap_workcell_1_task_input_output_stations,
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -214,6 +247,10 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot2_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_2.json5",
+                    # TODO(ac): use a single source of truth that defines the IO
+                    # station of workcells, positions, and probably even
+                    # connecting navigation graphs that transporters will use.
+                    "remap_task_input_output_stations": remap_workcell_2_task_input_output_stations,
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )

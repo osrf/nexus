@@ -5,7 +5,7 @@
       <Parallel success_threshold="-1">
         <Sequence>
           <!-- Create transport task, return success but a nullopt if it's not necessary -->
-          <CreateTransporterTask workcell_task="{task}" destination="{workcell}" result="{maybe_transport_task}"/>
+          <CreateTransporterTask workcell_task="{task}" result="{maybe_transport_task}"/>
           <IfThenElse>
             <!-- Return SUCCESS and populate transport task if transportation is necessary, FAILURE if not necessary -->
             <UnpackTransporterTask input="{maybe_transport_task}" output="{transport_task}" />

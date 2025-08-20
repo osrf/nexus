@@ -124,7 +124,11 @@ bool WorkcellRequest::on_result(
   // to the output station here and the workcell itself when WorkcellRequest is called.
   if (this->_task.output_item_id.size() > 0)
   {
-    this->_ctx->set_sku_location(this->_task, this->_workcell_id);
+    const auto output_station =
+      this->_ctx->get_workcell_task_output_station(this->_task.task_id);
+    this->_ctx->set_sku_location(
+      this->_task,
+      output_station.has_value() ? output_station.value() : this->_workcell_id);
   }
 
   const auto task_state = this->_ctx->get_task_state(this->_task.task_id);
