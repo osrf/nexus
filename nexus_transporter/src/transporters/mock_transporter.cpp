@@ -16,18 +16,16 @@
 */
 
 #include <rclcpp/rclcpp.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include <nexus_transporter/Transporter.hpp>
 
-#include <rmf_building_map_msgs/msg/building_map.hpp>
-
+#include <filesystem>
 #include <mutex>
 #include <thread>
 
 
 namespace nexus_transporter {
-
-using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
 
 //==============================================================================
 struct Location
@@ -67,9 +65,13 @@ struct MockTransporter3000
 };
 
 //==============================================================================
-std::string make_mock_transporter_name(const std::string& index_str)
+std::string make_mock_transporter_name(
+  const std::string& graph_name,
+  const std::string& level_name)
 {
-  return "mock_transporter_" + index_str;
+  std::stringstream ss;
+  ss << "mock_transporter_"  << graph_name << "_" << level_name;
+  return ss.str();
 }
 
 //==============================================================================
@@ -88,27 +90,113 @@ public:
       n->get_logger(),
       "Configuring MockTransporter...");
 
-    _nav_graph_names = n->declare_parameter(
-      "nav_graph_names",
-      std::vector<std::string>({"1"}));
-    if (_nav_graph_names.empty())
+    _nav_graph_files = n->declare_parameter(
+      "nav_graph_files",
+      std::vector<std::string>({}));
+    if (_nav_graph_files.empty())
     {
       RCLCPP_ERROR(
         n->get_logger(),
-        "nav_graph_names is required"
+        "nav_graph_files is required"
       );
       return false;
     }
 
+    std::unordered_map<std::string, std::unordered_map<std::string, Location>>
+      mock_transporter_name_to_destinations_map;
+
     std::stringstream ss;
-    for (const auto& i : _nav_graph_names)
+    for (const auto& f : _nav_graph_files)
     {
-      ss << i << ", ";
+      const YAML::Node graph_config = YAML::LoadFile(f);
+      if (!graph_config)
+      {
+        RCLCPP_ERROR(
+          n->get_logger(),
+          "failed to load graph from [%s], skipping...",
+          f.c_str());
+        continue;
+      }
+      const YAML::Node levels = graph_config["levels"];
+      if (!levels || !levels.IsMap())
+      {
+        RCLCPP_ERROR(
+          n->get_logger(),
+          "graph [%s] has invalid levels, skipping...",
+          f.c_str());
+        continue;
+      }
+      for (const auto& level : levels)
+      {
+        const std::string mock_transporter_name =
+          make_mock_transporter_name(
+            std::filesystem::path(f).stem().string(),
+            level.first.as<std::string>());
+        mock_transporter_name_to_destinations_map.insert(
+          {mock_transporter_name, {}});
+
+        const YAML::Node vertices = level.second["vertices"];
+        if (!vertices || !vertices.IsSequence())
+        {
+          continue;
+        }
+
+        for (const auto& vertex : vertices)
+        {
+          if (!vertex.IsSequence() || vertex.size() < 3 || !vertex[2].IsMap() ||
+            !vertex[2]["name"])
+          {
+            continue;
+          }
+          const std::string wp_name = vertex[2]["name"].as<std::string>();
+          if (wp_name.empty())
+          {
+            continue;
+          }
+          mock_transporter_name_to_destinations_map[mock_transporter_name]
+          .insert({
+            wp_name,
+            Location(
+              vertex[0].as<double>(), vertex[1].as<double>(), wp_name)
+          });
+        }
+      }
+
+      ss << f << ", ";
     }
     RCLCPP_INFO(
       n->get_logger(),
-      "MockTransporter nav_graph_names set to [%s]",
+      "MockTransporter nav_graph_files set to [%s]",
       ss.str().c_str());
+
+    {
+      std::lock_guard<std::mutex> lock(_mutex);
+      for (const auto& it : mock_transporter_name_to_destinations_map)
+      {
+        if (it.second.empty())
+        {
+          continue;
+        }
+
+        std::stringstream dest_ss;
+        for (const auto& dest_it : it.second)
+        {
+          dest_ss << dest_it.first << ", ";
+        }
+        RCLCPP_INFO(
+          n->get_logger(),
+          "Adding a new MockTransporter3000 [%s] with destinations [%s]",
+          it.first.c_str(), dest_ss.str().c_str());
+
+        _transporters.insert({
+          it.first,
+          MockTransporter3000(
+            it.first,
+            it.second.begin()->second,
+            it.second,
+            std::nullopt)});
+      }
+    }
 
     _travel_duration_seconds_per_destination =
       n->declare_parameter("travel_duration_seconds_per_destination", 2);
@@ -118,92 +206,6 @@ public:
       _travel_duration_seconds_per_destination);
 
     _node = node;
-
-    const auto transient_qos =
-      rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
-
-    _building_map_sub = n->create_subscription<BuildingMap>(
-      "/map",
-      transient_qos,
-      [&](BuildingMap::SharedPtr msg)
-      {
-        auto n = _node.lock();
-        if (!n)
-        {
-          return;
-        }
-        if (_building_map)
-        {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Received new building map after mock transporters have been "
-            "initialized. Mock transporters will not be updated to avoid "
-            "interrupting any ongoing operations. If an update is necessary, "
-            "please restart the MockTransporter plugin.");
-          return;
-        }
-
-        _building_map = msg;
-
-        std::unordered_map<std::string, std::unordered_map<std::string, Location>>
-          nav_graph_to_destinations_map;
-        for (const auto& n : _nav_graph_names)
-        {
-          nav_graph_to_destinations_map.insert({n, {}});
-        }
-
-        for (const auto& level : _building_map->levels)
-        {
-          for (const auto& graph : level.nav_graphs)
-          {
-            if (nav_graph_to_destinations_map.find(graph.name) ==
-              nav_graph_to_destinations_map.end())
-            {
-              continue;
-            }
-
-            for (const auto& v : graph.vertices)
-            {
-              if (!v.name.empty())
-              {
-                nav_graph_to_destinations_map[graph.name].insert({
-                  v.name,
-                  Location(v.x, v.y, v.name)});
-              }
-            }
-          }
-        }
-
-        std::lock_guard<std::mutex> lock(_mutex);
-        for (const auto& nd : nav_graph_to_destinations_map)
-        {
-          if (nd.second.empty())
-          {
-            continue;
-          }
-
-          std::stringstream ss;
-          for (const auto& it : nd.second)
-          {
-            ss << it.first << ", ";
-          }
-          RCLCPP_INFO(
-            n->get_logger(),
-            "Adding a new MockTransporter3000 with destinations [%s]",
-            ss.str().c_str());
-
-          const std::string transporter_name =
-            make_mock_transporter_name(nd.first);
-          _transporters.insert({
-            transporter_name,
-            MockTransporter3000(
-              transporter_name,
-              nd.second.begin()->second,
-              nd.second,
-              std::nullopt)});
-        }
-      });
-
     _ready = true;
     RCLCPP_INFO(
       n->get_logger(),
@@ -480,17 +482,11 @@ private:
   /// errors
   bool _ready = false;
   /// The nav graphs that represent mock transporters
-  std::vector<std::string> _nav_graph_names;
+  std::vector<std::string> _nav_graph_files;
   /// The mocked travel duration to each destination
   int _travel_duration_seconds_per_destination;
-  /// RMF building map
-  BuildingMap::SharedPtr _building_map = nullptr;
   /// All the instances of MockTransporter, based on the navigation graph names
   std::unordered_map<std::string, MockTransporter3000> _transporters;
-
-  /// Building map subscription to retrieve navigation graphs
-  rclcpp::Subscription<rmf_building_map_msgs::msg::BuildingMap>::SharedPtr
-    _building_map_sub = nullptr;
 
   std::thread _thread;
   std::mutex _mutex;

@@ -134,6 +134,7 @@ target_link_libraries(nexus_builtin_transporters
     nlohmann_json
     pluginlib::pluginlib
     rmf_api_msgs::rmf_api_msgs
+    yaml-cpp::yaml-cpp
     ${geometry_msgs_TARGETS}
     ${nexus_transporter_msgs_TARGETS}
     ${rmf_building_map_msgs_TARGETS}
