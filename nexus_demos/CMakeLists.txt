@@ -16,6 +16,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(rmf_dispenser_msgs REQUIRED)
+find_package(rmf_ingestor_msgs REQUIRED)
 find_package(rmf_task_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -134,6 +135,7 @@ target_link_libraries(rmf_task_canceller_component PRIVATE
   nlohmann_json::nlohmann_json
   ${nexus_orchestrator_msgs_TARGETS}
   ${rmf_dispenser_msgs_TARGETS}
+  ${rmf_ingestor_msgs_TARGETS}
   ${rmf_task_msgs_TARGETS}
 )
 target_compile_features(rmf_task_canceller_component INTERFACE cxx_std_17)

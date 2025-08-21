@@ -25,6 +25,7 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rclpy</depend>
   <depend>rmf_dispenser_msgs</depend>
+  <depend>rmf_ingestor_msgs</depend>
   <depend>rmf_fleet_msgs</depend>
   <depend>rmf_task_msgs</depend>
   <depend>std_srvs</depend>

@@ -22,6 +22,8 @@
 
 #include <rmf_dispenser_msgs/msg/dispenser_request.hpp>
 #include <rmf_dispenser_msgs/msg/dispenser_result.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_request.hpp>
+#include <rmf_ingestor_msgs/msg/ingestor_result.hpp>
 #include <rmf_task_msgs/msg/api_request.hpp>
 #include <rmf_task_msgs/msg/api_response.hpp>
 
@@ -31,6 +33,8 @@ namespace nexus_demos {
 using RMFApiRequest = rmf_task_msgs::msg::ApiRequest;
 using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
 using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
+using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
+using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
 using WorkcellState = nexus_orchestrator_msgs::msg::WorkcellState;
 using WorkOrderState = nexus_orchestrator_msgs::msg::WorkOrderState;
 
@@ -44,6 +48,8 @@ private:
   std::shared_ptr<rclcpp::Publisher<RMFApiRequest>> rmf_api_request_pub_;
   std::shared_ptr<rclcpp::Publisher<DispenserResult>> dispenser_result_pub_;
   std::shared_ptr<rclcpp::Subscription<DispenserRequest>> dispenser_request_sub_;
+  std::shared_ptr<rclcpp::Publisher<IngestorResult>> ingestor_result_pub_;
+  std::shared_ptr<rclcpp::Subscription<IngestorRequest>> ingestor_request_sub_;
   std::shared_ptr<rclcpp::Subscription<WorkcellState>> rmf_state_sub_;
   std::shared_ptr<rclcpp::Subscription<WorkOrderState>> wo_state_sub_;
 
