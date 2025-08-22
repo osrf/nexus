@@ -53,11 +53,28 @@ public: Task task;
 public: std::vector<std::string> errors;
 public: std::unique_ptr<common::BtLogging> bt_logging;
 public: std::unordered_set<std::string> signals;
-public: TaskState task_state;
+private: uint8_t task_status;
 public: uint64_t tick_count = 0;
+// Used to keep track of the last time the state was changed
+public: rclcpp::Time state_transition_time;
 
 public: Context(rclcpp_lifecycle::LifecycleNode& node)
-  : node(node) {}
+  : node(node), state_transition_time(node.now()) {}
+
+public: void set_task_status(uint8_t status)
+{
+  this->task_status = status;
+  this->state_transition_time = node.now();
+}
+
+public: TaskState get_task_state() const
+{
+  TaskState task_state;
+  task_state.task_id = this->task.task_id;
+  task_state.workcell_id = this->node.get_name();
+  task_state.status = this->task_status;
+  return task_state;
+}
 };
 
 } // namespace nexus
