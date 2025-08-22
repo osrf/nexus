@@ -16,18 +16,13 @@
   <depend>backward_ros</depend>
   <depend>lifecycle_msgs</depend>
   <depend>pluginlib</depend>
-  <depend>nexus_orchestrator_msgs</depend>
   <depend>nexus_transporter</depend>
-  <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>rclpy</depend>
-  <depend>rmf_dispenser_msgs</depend>
-  <depend>rmf_ingestor_msgs</depend>
   <depend>rmf_fleet_msgs</depend>
-  <depend>rmf_task_msgs</depend>
   <depend>std_srvs</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>

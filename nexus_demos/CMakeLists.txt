@@ -5,9 +5,7 @@ project(${PROJECT_NAME} VERSION 0.0.1)
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(nexus_endpoints REQUIRED)
-find_package(nexus_orchestrator_msgs REQUIRED)
 find_package(nexus_transporter REQUIRED)
-find_package(nlohmann_json REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(pluginlib REQUIRED)
@@ -15,9 +13,6 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(rmf_dispenser_msgs REQUIRED)
-find_package(rmf_ingestor_msgs REQUIRED)
-find_package(rmf_task_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
@@ -121,31 +116,6 @@ install(
   TARGETS
     mock_printer
     EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
-###############################################################################
-
-add_library(rmf_task_canceller_component SHARED src/rmf_task_canceller.cpp)
-target_link_libraries(rmf_task_canceller_component PRIVATE
-  rclcpp::rclcpp
-  rclcpp_components::component
-  nlohmann_json::nlohmann_json
-  ${nexus_orchestrator_msgs_TARGETS}
-  ${rmf_dispenser_msgs_TARGETS}
-  ${rmf_ingestor_msgs_TARGETS}
-  ${rmf_task_msgs_TARGETS}
-)
-target_compile_features(rmf_task_canceller_component INTERFACE cxx_std_17)
-rclcpp_components_register_node(rmf_task_canceller_component
-  PLUGIN "nexus_demos::RMFTaskCanceller"
-  EXECUTABLE rmf_task_canceller
-  EXECUTOR SingleThreadedExecutor)
-install(
-  TARGETS rmf_task_canceller_component
-  EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
