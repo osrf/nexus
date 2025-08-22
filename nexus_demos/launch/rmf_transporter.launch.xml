@@ -59,11 +59,6 @@
     </include>
   </group>
 
-  <!-- Temporary node to cancel RMF tasks if a workcell task fail -->
-  <node pkg="nexus_demos" exec="rmf_task_canceller" name="rmf_task_canceller" output="both">
-    <param name="rmf_workcell_name" value="rmf_nexus_transporter"/>
-  </node>
-
   <!-- Simulator launch -->
   <let name="gz_headless" if="$(var headless)" value="-s"/>
   <let name="gz_headless" unless="$(var headless)" value="" />

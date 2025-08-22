@@ -13,6 +13,7 @@ set(dep_pkgs
   backward_ros
   builtin_interfaces
   nexus_endpoints
+  nexus_orchestrator_msgs
   nexus_transporter_msgs
   geometry_msgs
   nlohmann_json
@@ -137,6 +138,7 @@ target_link_libraries(nexus_builtin_transporters
     yaml-cpp::yaml-cpp
     ${geometry_msgs_TARGETS}
     ${nexus_transporter_msgs_TARGETS}
+    ${nexus_orchestrator_msgs_TARGETS}
     ${rmf_building_map_msgs_TARGETS}
     ${rmf_dispenser_msgs_TARGETS}
     ${rmf_ingestor_msgs_TARGETS}
