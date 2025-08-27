@@ -67,6 +67,9 @@
   <test_depend>ament_index_cpp</test_depend>
   <test_depend>rcpputils</test_depend>
 
+  <!-- json2yaml edit -->
+  <exec_depend>python3-yaml</exec_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
