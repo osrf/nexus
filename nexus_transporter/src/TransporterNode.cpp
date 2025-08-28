@@ -399,7 +399,14 @@ auto TransporterNode::on_configure(const State& /*previous_state*/)
               geometry_msgs::msg::TransformStamped tf_msg;
               tf_msg.header.stamp =
               node ? node->get_clock()->now() : rclcpp::Clock().now();
-              tf_msg.header.frame_id = state.location.header.frame_id;
+              if (state.location.header.frame_id.empty())
+              {
+                tf_msg.header.frame_id = "world";
+              }
+              else
+              {
+                tf_msg.header.frame_id = state.location.header.frame_id;
+              }
               tf_msg.child_frame_id = state.transporter + "_" + state.model;
               tf_msg.transform.translation.x = state.location.pose.position.x;
               tf_msg.transform.translation.y = state.location.pose.position.y;
