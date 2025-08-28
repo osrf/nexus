@@ -20,6 +20,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
+#include <nexus_orchestrator_msgs/msg/workcell_state.hpp>
+#include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
 #include <nexus_transporter/Itinerary.hpp>
 #include <nexus_transporter/Transporter.hpp>
 #include <nexus_transporter_msgs/msg/destination.hpp>
@@ -46,14 +48,15 @@
 
 namespace nexus_transporter {
 
+using ApiRequest = rmf_task_msgs::msg::ApiRequest;
+using ApiResponse = rmf_task_msgs::msg::ApiResponse;
+using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
 using DispenserRequest = rmf_dispenser_msgs::msg::DispenserRequest;
 using DispenserResult = rmf_dispenser_msgs::msg::DispenserResult;
 using IngestorRequest = rmf_ingestor_msgs::msg::IngestorRequest;
 using IngestorResult = rmf_ingestor_msgs::msg::IngestorResult;
-using ApiRequest = rmf_task_msgs::msg::ApiRequest;
-using ApiResponse = rmf_task_msgs::msg::ApiResponse;
 using TaskStateUpdate = std_msgs::msg::String;
-using BuildingMap = rmf_building_map_msgs::msg::BuildingMap;
+using WorkOrderState = nexus_orchestrator_msgs::msg::WorkOrderState;
 
 class RmfTransporter : public Transporter
 {
@@ -111,7 +114,7 @@ private:
 
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
-  _cancellation_rmf_id_to_itinerary_id = {};
+  _cancellation_request_id_to_rmf_task_id = {};
 
   // Used for re-using past bid results
   // TODO: cleanup expired itineraries when new itineraries are requested
@@ -142,6 +145,13 @@ private:
     _mock_dispenser_request_sub = nullptr;
   rclcpp::Publisher<DispenserResult>::SharedPtr _mock_dispenser_result_pub =
     nullptr;
+
+  // Subscription to work order states to cancel any ongoing dispenser or
+  // ingestor requests
+  rclcpp::Subscription<WorkOrderState>::SharedPtr _wo_state_sub =
+    nullptr;
+  std::unordered_map<std::string, WorkOrderState::ConstSharedPtr>
+  _cancelled_wo = {};
 
   // TODO(ac): support ACTION_TRANSIT with a basic go-to-place.
   std::optional<std::string> _action_to_activity_category(uint8_t action)
@@ -252,18 +262,26 @@ private:
 
     ApiRequest msg;
     msg.json_msg = j.dump();
-    std::stringstream ss;
-    ss << "compose.nexus-transport-" << itinerary.id() << "-" <<
-      _generate_random_hex_string(5);
-    msg.request_id = ss.str();
+
+    const auto work_order_id = _get_work_order_id_from_rmf_task_id(
+      itinerary.id());
+    if (!work_order_id.has_value())
+    {
+      msg.request_id = _add_hex_string_to_work_order_id(itinerary.id());
+    }
+    else
+    {
+      msg.request_id = _add_hex_string_to_work_order_id(*work_order_id);
+    }
     return msg;
   }
 
   // From rmf_ros2/rmf_task_ros2/src/rmf_task_ros2/Dispatcher.cpp
-  std::string _generate_random_hex_string(const std::size_t length = 3)
+  std::string _generate_random_hex_string()
   {
     std::stringstream ss;
-    for (std::size_t i = 0; i < length; ++i)
+    // TODO(ac): parameterize length of hex string
+    for (std::size_t i = 0; i < 5; ++i)
     {
       std::random_device rd;
       std::mt19937 gen(rd());
@@ -277,12 +295,23 @@ private:
     return ss.str();
   }
 
-  std::string _generate_rmf_bidding_task_id(const std::string& job_id)
+  std::string _add_hex_string_to_work_order_id(
+    const std::string& work_order_id)
   {
-    std::stringstream ss;
-    ss << "compose.nexus-bidding-" << job_id << "-"
-      << _generate_random_hex_string(5);
-    return ss.str();
+    return work_order_id + "-" + _generate_random_hex_string();
+  }
+
+  std::optional<std::string> _get_work_order_id_from_rmf_task_id(
+    const std::string& rmf_task_id)
+  {
+    // TODO(ac): parameterize length of separator + hex string
+    int work_order_id_length = rmf_task_id.size() - 11;
+    if (work_order_id_length < 1)
+    {
+      return std::nullopt;
+    }
+
+    return rmf_task_id.substr(0, work_order_id_length);
   }
 
   void _conclude_bid(
@@ -371,6 +400,29 @@ private:
     _auctioneer->ready_for_next_bid();
   }
 
+  ApiRequest _generate_rmf_cancellation_api_request(
+    const std::string& rmf_task_id,
+    const std::string& request_id)
+  {
+    nlohmann::json cancel_json;
+    cancel_json["type"] = "cancel_task_request";
+    cancel_json["task_id"] = rmf_task_id;
+
+    return rmf_task_msgs::build<ApiRequest>()
+      .json_msg(cancel_json.dump())
+      .request_id(request_id);
+  }
+
+  void _cancel_rmf_task(
+    const std::string& rmf_task_id,
+    const std::string& request_id)
+  {
+    _api_request_pub->publish(
+      _generate_rmf_cancellation_api_request(rmf_task_id, request_id));
+    _cancellation_request_id_to_rmf_task_id.insert({request_id, rmf_task_id});
+    _rmf_task_id_to_ongoing_itinerary.erase(rmf_task_id);
+  }
+
 public:
 
   bool configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr& node) final
@@ -434,15 +486,20 @@ public:
       },
       std::make_shared<rmf_task_ros2::bidding::QuickestFinishEvaluator>());
 
+    const auto reliable_qos =
+      rclcpp::SystemDefaultsQoS().keep_last(10).reliable();
+    const auto transient_qos =
+      rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
+
     if (mock_dispenser)
     {
       _mock_dispenser_result_pub = _internal_node->create_publisher<DispenserResult>(
         "/dispenser_results",
-        10);
+        reliable_qos);
 
       _mock_dispenser_request_sub = _internal_node->create_subscription<DispenserRequest>(
         "/dispenser_requests",
-        100,
+        reliable_qos,
         [&](DispenserRequest::SharedPtr msg)
         {
           auto n = _node.lock();
@@ -453,6 +510,40 @@ public:
                       << std::endl;
             return;
           }
+
+          // Check if the AMR is processing a cancelled work order.
+          const auto work_order_id = _get_work_order_id_from_rmf_task_id(
+            msg->request_guid);
+          if (work_order_id.has_value() &&
+            _cancelled_wo.count(work_order_id.value()) > 0)
+          {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Received DispenserRequest message from %s for request_guid %s "
+              "and target_guid %s while the work order %s for this task has "
+              "been cancelled. Cancelling RMF task...",
+              msg->transporter_type.c_str(),
+              msg->request_guid.c_str(),
+              msg->target_guid.c_str(),
+              work_order_id.value().c_str());
+
+            DispenserResult dispenser_result_msg;
+            dispenser_result_msg.request_guid = msg->request_guid;
+            dispenser_result_msg.source_guid = msg->target_guid;
+            dispenser_result_msg.status = DispenserResult::FAILED;
+            _mock_dispenser_result_pub->publish(
+              std::move(dispenser_result_msg));
+
+            // Also cancel the RMF task.
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            std::stringstream ss;
+            ss << std::chrono::duration_cast<std::chrono::nanoseconds>
+              (now).count();
+            _cancel_rmf_task(msg->request_guid, ss.str());
+            _cancelled_wo.erase(work_order_id.value());
+            return;
+          }
+
           auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
           if (it == _rmf_task_id_to_ongoing_itinerary.end())
           {
@@ -484,16 +575,13 @@ public:
         });
     }
 
-    const auto transient_qos =
-      rclcpp::SystemDefaultsQoS().transient_local().keep_last(10).reliable();
-
     _api_request_pub = _internal_node->create_publisher<ApiRequest>(
       "/task_api_requests",
       transient_qos);
 
     _ingestor_result_pub = _internal_node->create_publisher<IngestorResult>(
       "/ingestor_results",
-      10);
+      reliable_qos);
 
     _api_response_sub = _internal_node->create_subscription<ApiResponse>(
       "/task_api_responses",
@@ -516,8 +604,8 @@ public:
 
         // Check for task cancellation first
         auto cancellation_it =
-        _cancellation_rmf_id_to_itinerary_id.find(msg->request_id);
-        if (cancellation_it != _cancellation_rmf_id_to_itinerary_id.end())
+        _cancellation_request_id_to_rmf_task_id.find(msg->request_id);
+        if (cancellation_it != _cancellation_request_id_to_rmf_task_id.end())
         {
           auto c = nlohmann::json::parse(msg->json_msg, nullptr, false);
           if (c.is_discarded() || !c.contains("success"))
@@ -525,7 +613,7 @@ public:
             RCLCPP_ERROR(
               n->get_logger(),
               "Invalid JSON in cancellation API response, RMF cancellation "
-              "[%s] for itinerary [%s] failed",
+              "[%s] for RMF task [%s] failed",
               msg->request_id.c_str(),
               cancellation_it->second.c_str());
             // Note(ac): assume that some form of manual intervention or manual
@@ -540,26 +628,26 @@ public:
             // cancellation or intervention.
             RCLCPP_ERROR(
               n->get_logger(),
-              "RMF cancellation [%s] for itinerary [%s] failed",
+              "RMF cancellation [%s] for RMF task [%s] failed",
               msg->request_id.c_str(),
               cancellation_it->second.c_str());
             return;
           }
 
           // Cancellation was successful
-          _cancellation_rmf_id_to_itinerary_id.erase(cancellation_it);
+          _cancellation_request_id_to_rmf_task_id.erase(cancellation_it);
           return;
         }
 
         // Warning about pending or failed cancellations
-        if (!_cancellation_rmf_id_to_itinerary_id.empty())
+        if (!_cancellation_request_id_to_rmf_task_id.empty())
         {
           std::stringstream ss;
-          for (auto it = _cancellation_rmf_id_to_itinerary_id.begin();
-          it != _cancellation_rmf_id_to_itinerary_id.end(); it++)
+          for (auto it = _cancellation_request_id_to_rmf_task_id.begin();
+          it != _cancellation_request_id_to_rmf_task_id.end(); it++)
           {
-            ss << "itinerary: [" << it->second << "], RMF: [" << it->first
-               << "]," << std::endl;
+            ss << "RMF task: [" << it->second << "], cancellation request: ["
+              << it->first << "]," << std::endl;
           }
           RCLCPP_WARN(
             n->get_logger(),
@@ -692,7 +780,7 @@ public:
     _ingestor_request_sub =
       _internal_node->create_subscription<IngestorRequest>(
       "/ingestor_requests",
-      100,
+      reliable_qos,
       [&](IngestorRequest::SharedPtr msg)
       {
         auto n = _node.lock();
@@ -703,6 +791,39 @@ public:
                     << std::endl;
           return;
         }
+
+        // Check if the AMR is processing a cancelled work order.
+        const auto work_order_id = _get_work_order_id_from_rmf_task_id(
+          msg->request_guid);
+        if (work_order_id.has_value() &&
+          _cancelled_wo.count(work_order_id.value()) > 0)
+        {
+          RCLCPP_INFO(
+            n->get_logger(),
+            "Received IngestorRequest message from %s for request_guid %s and "
+            "target_guid %s while the work order %s for this task has been "
+            "cancelled. Cancelling RMF task...",
+            msg->transporter_type.c_str(),
+            msg->request_guid.c_str(),
+            msg->target_guid.c_str(),
+            work_order_id.value().c_str());
+
+          IngestorResult ingestor_result_msg;
+          ingestor_result_msg.request_guid = msg->request_guid;
+          ingestor_result_msg.source_guid = msg->target_guid;
+          ingestor_result_msg.status = IngestorResult::FAILED;
+          _ingestor_result_pub->publish(std::move(ingestor_result_msg));
+
+          // Also cancel the RMF task.
+          auto now = std::chrono::steady_clock::now().time_since_epoch();
+          std::stringstream ss;
+          ss << std::chrono::duration_cast<std::chrono::nanoseconds>
+            (now).count();
+          _cancel_rmf_task(msg->request_guid, ss.str());
+          _cancelled_wo.erase(work_order_id.value());
+          return;
+        }
+
         auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
         if (it == _rmf_task_id_to_ongoing_itinerary.end())
         {
@@ -761,6 +882,36 @@ public:
           }
         }
       });
+
+    _wo_state_sub = _internal_node->create_subscription<WorkOrderState>(
+      "/work_order_states",
+      reliable_qos,
+      [&](WorkOrderState::ConstSharedPtr msg)
+      {
+        auto n = _node.lock();
+        if (!n)
+        {
+          std::cerr << "RmfTransporter::_wo_state_sub - invalid node"
+                    << std::endl;
+          return;
+        }
+
+        if (msg->id.empty())
+        {
+          return;
+        }
+        if (msg->state == WorkOrderState::STATE_CANCELLED ||
+          msg->state == WorkOrderState::STATE_FAILED)
+        {
+          _cancelled_wo[msg->id] = msg;
+          RCLCPP_INFO(
+            n->get_logger(),
+            "Adding work_order with id %s to cancelled list.",
+            msg->id.c_str()
+          );
+        }
+      }
+    );
 
     _ready = true;
     RCLCPP_INFO(
@@ -836,7 +987,7 @@ public:
     RCLCPP_DEBUG(n->get_logger(), "%s", request.value().dump(4).c_str());
     // TODO(ac): perform schema validation.
 
-    const auto rmf_task_id = _generate_rmf_bidding_task_id(job_id);
+    const auto rmf_task_id = _add_hex_string_to_work_order_id(job_id);
 
     const auto bid_notice =
       rmf_task_msgs::build<rmf_task_msgs::msg::BidNotice>()
@@ -925,19 +1076,9 @@ public:
         continue;
       }
 
-      nlohmann::json c;
-      c["type"] = "cancel_task_request";
-      c["task_id"] = it->first;
-
       std::stringstream ss;
       ss << "cancellation.nexus-" << itinerary.id() << "-" << it->first;
-
-      _cancellation_rmf_id_to_itinerary_id.insert({ss.str(), itinerary.id()});
-
-      ApiRequest msg;
-      msg.json_msg = c.dump();
-      msg.request_id = ss.str();
-      _api_request_pub->publish(msg);
+      _cancel_rmf_task(itinerary.id(), ss.str());
       return true;
     }
 

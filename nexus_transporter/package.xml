@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>nexus_endpoints</depend>
+  <depend>nexus_orchestrator_msgs</depend>
   <depend>nexus_transporter_msgs</depend>
 
   <depend>backward_ros</depend>

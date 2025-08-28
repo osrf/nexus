@@ -10,7 +10,7 @@
             <!-- Return SUCCESS and populate transport task if transportation is necessary, FAILURE if not necessary -->
             <UnpackTransporterTask input="{maybe_transport_task}" output="{transport_task}" />
             <Sequence>
-              <BidTransporter name="bid_transporterasdasd" transport_task="{transport_task}" result="{transporter}"/>
+              <BidTransporter name="bid_transporter" transport_task="{transport_task}" result="{transporter}"/>
               <TransporterRequest name="transporter_request" transport_task="{transport_task}" transporter="{transporter}" transporter_task_id="{transporter_task_id}"/>
             </Sequence>
             <AlwaysSuccess />
