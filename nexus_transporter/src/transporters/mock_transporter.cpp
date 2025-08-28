@@ -205,6 +205,13 @@ public:
       "MockTransporter travel_duration_seconds set to [%d].",
       _travel_duration_seconds_per_destination);
 
+    _world_frame =
+      n->declare_parameter("world_frame", "world");
+    RCLCPP_INFO(
+      n->get_logger(),
+      "MockTransporter world_frame set to [%s].",
+      _world_frame.c_str());
+
     _node = node;
     _ready = true;
     RCLCPP_INFO(
@@ -383,7 +390,7 @@ public:
         state.transporter = itinerary.transporter_name();
         state.model = "MockTransporter3000";
         state.task_id = itinerary.id();
-        state.location.header.frame_id = "world";
+        state.location.header.frame_id = _world_frame;
 
         {
           std::lock_guard<std::mutex> lock(_mutex);
@@ -485,6 +492,8 @@ private:
   std::vector<std::string> _nav_graph_files;
   /// The mocked travel duration to each destination
   int _travel_duration_seconds_per_destination;
+  /// World frame for location in feedback
+  std::string _world_frame;
   /// All the instances of MockTransporter, based on the navigation graph names
   std::unordered_map<std::string, MockTransporter3000> _transporters;
 
