@@ -114,7 +114,7 @@ private:
 
   // Used for cancellation only
   std::unordered_map<std::string, std::string>
-  _cancellation_rmf_id_to_itinerary_id = {};
+  _cancellation_request_id_to_rmf_task_id = {};
 
   // Used for re-using past bid results
   // TODO: cleanup expired itineraries when new itineraries are requested
@@ -413,6 +413,16 @@ private:
       .request_id(request_id);
   }
 
+  void _cancel_rmf_task(
+    const std::string& rmf_task_id,
+    const std::string& request_id)
+  {
+    _api_request_pub->publish(
+      _generate_rmf_cancellation_api_request(rmf_task_id, request_id));
+    _cancellation_request_id_to_rmf_task_id.insert({request_id, rmf_task_id});
+    _rmf_task_id_to_ongoing_itinerary.erase(rmf_task_id);
+  }
+
 public:
 
   bool configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr& node) final
@@ -529,14 +539,8 @@ public:
             std::stringstream ss;
             ss << std::chrono::duration_cast<std::chrono::nanoseconds>
               (now).count();
-            _api_request_pub->publish(
-              _generate_rmf_cancellation_api_request(
-                msg->request_guid, ss.str()));
-            _cancellation_rmf_id_to_itinerary_id.insert(
-              {ss.str(), msg->request_guid});
-
+            _cancel_rmf_task(msg->request_guid, ss.str());
             _cancelled_wo.erase(work_order_id.value());
-            _rmf_task_id_to_ongoing_itinerary.erase(msg->request_guid);
             return;
           }
 
@@ -600,8 +604,8 @@ public:
 
         // Check for task cancellation first
         auto cancellation_it =
-        _cancellation_rmf_id_to_itinerary_id.find(msg->request_id);
-        if (cancellation_it != _cancellation_rmf_id_to_itinerary_id.end())
+        _cancellation_request_id_to_rmf_task_id.find(msg->request_id);
+        if (cancellation_it != _cancellation_request_id_to_rmf_task_id.end())
         {
           auto c = nlohmann::json::parse(msg->json_msg, nullptr, false);
           if (c.is_discarded() || !c.contains("success"))
@@ -609,7 +613,7 @@ public:
             RCLCPP_ERROR(
               n->get_logger(),
               "Invalid JSON in cancellation API response, RMF cancellation "
-              "[%s] for itinerary [%s] failed",
+              "[%s] for RMF task [%s] failed",
               msg->request_id.c_str(),
               cancellation_it->second.c_str());
             // Note(ac): assume that some form of manual intervention or manual
@@ -624,26 +628,26 @@ public:
             // cancellation or intervention.
             RCLCPP_ERROR(
               n->get_logger(),
-              "RMF cancellation [%s] for itinerary [%s] failed",
+              "RMF cancellation [%s] for RMF task [%s] failed",
               msg->request_id.c_str(),
               cancellation_it->second.c_str());
             return;
           }
 
           // Cancellation was successful
-          _cancellation_rmf_id_to_itinerary_id.erase(cancellation_it);
+          _cancellation_request_id_to_rmf_task_id.erase(cancellation_it);
           return;
         }
 
         // Warning about pending or failed cancellations
-        if (!_cancellation_rmf_id_to_itinerary_id.empty())
+        if (!_cancellation_request_id_to_rmf_task_id.empty())
         {
           std::stringstream ss;
-          for (auto it = _cancellation_rmf_id_to_itinerary_id.begin();
-          it != _cancellation_rmf_id_to_itinerary_id.end(); it++)
+          for (auto it = _cancellation_request_id_to_rmf_task_id.begin();
+          it != _cancellation_request_id_to_rmf_task_id.end(); it++)
           {
-            ss << "itinerary: [" << it->second << "], RMF: [" << it->first
-               << "]," << std::endl;
+            ss << "RMF task: [" << it->second << "], cancellation request: ["
+              << it->first << "]," << std::endl;
           }
           RCLCPP_WARN(
             n->get_logger(),
@@ -815,14 +819,8 @@ public:
           std::stringstream ss;
           ss << std::chrono::duration_cast<std::chrono::nanoseconds>
             (now).count();
-          _api_request_pub->publish(
-            _generate_rmf_cancellation_api_request(
-              msg->request_guid, ss.str()));
-          _cancellation_rmf_id_to_itinerary_id.insert(
-            {ss.str(), msg->request_guid});
-
+          _cancel_rmf_task(msg->request_guid, ss.str());
           _cancelled_wo.erase(work_order_id.value());
-          _rmf_task_id_to_ongoing_itinerary.erase(msg->request_guid);
           return;
         }
 
@@ -1080,10 +1078,7 @@ public:
 
       std::stringstream ss;
       ss << "cancellation.nexus-" << itinerary.id() << "-" << it->first;
-
-      _api_request_pub->publish(
-        _generate_rmf_cancellation_api_request(it->first, ss.str()));
-      _cancellation_rmf_id_to_itinerary_id.insert({ss.str(), itinerary.id()});
+      _cancel_rmf_task(itinerary.id(), ss.str());
       return true;
     }
 
