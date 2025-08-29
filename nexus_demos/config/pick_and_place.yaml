@@ -1,0 +1,14 @@
+workInstructionName: "Pick and Place"
+steps:
+  - processId: "place_on_conveyor"
+    outputItems:
+      - guid: "productA"
+        metadata:
+          quantity: 1
+          state: "state_1"
+  - processId: "pick_from_conveyor"
+    inputItems:
+      - guid: "productA"
+        metadata:
+          quantity: 1
+          state: "state_1"

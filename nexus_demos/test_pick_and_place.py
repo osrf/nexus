@@ -68,7 +68,7 @@ class PickAndPlaceTest(NexusTestCase):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/place_on_conveyor.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/place_on_conveyor.yaml") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
         fb_fut = Future()
