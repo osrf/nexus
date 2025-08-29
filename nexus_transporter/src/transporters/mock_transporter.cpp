@@ -212,6 +212,13 @@ public:
       "MockTransporter world_frame set to [%s].",
       _world_frame.c_str());
 
+    _conveyor_mode =
+      n->declare_parameter("conveyor_mode", false);
+    RCLCPP_INFO(
+      n->get_logger(),
+      "MockTransporter conveyor_mode set to [%s].",
+      _conveyor_mode ? "true" : "false");
+
     _node = node;
     _ready = true;
     RCLCPP_INFO(
@@ -269,12 +276,15 @@ public:
       }
 
       lock.unlock();
+
+      const int destination_multiplier =
+        _conveyor_mode ? destinations.size() - 1 : destinations.size();
       completed_cb(Itinerary{
         id,
         destinations,
         t.second.name,
         now + rclcpp::Duration::from_seconds(
-          _travel_duration_seconds_per_destination * destinations.size()),
+          _travel_duration_seconds_per_destination * destination_multiplier),
         now + rclcpp::Duration::from_seconds(60.0)});
       return;
     }
@@ -394,8 +404,20 @@ public:
 
         {
           std::lock_guard<std::mutex> lock(_mutex);
-          const auto& transporter = _transporters.at(selected_transporter);
-          _transporters.at(selected_transporter).itinerary = itinerary;
+          auto& transporter = _transporters.at(selected_transporter);
+          transporter.itinerary = itinerary;
+
+          if (_conveyor_mode)
+          {
+            const auto& dest =
+              transporter.destinations_map.find(
+                itinerary.destinations().at(0).name);
+            transporter.current_location.x = dest->second.x;
+            transporter.current_location.y = dest->second.y;
+            transporter.current_location.name =
+              itinerary.destinations().at(0).name;
+          }
+
           curr_x = transporter.current_location.x;
           curr_y = transporter.current_location.y;
 
@@ -409,8 +431,11 @@ public:
         state.state = state.STATE_MOVING;
         _stop = false;
 
-        for (const auto& d : itinerary.destinations())
+        std::size_t destination_index = _conveyor_mode ? 1 : 0;
+        for (; destination_index < itinerary.destinations().size();
+          ++destination_index)
         {
+          const auto& d = itinerary.destinations().at(destination_index);
           double dx, dy;
           {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -494,6 +519,10 @@ private:
   int _travel_duration_seconds_per_destination;
   /// World frame for location in feedback
   std::string _world_frame;
+  /// Whether or not the mock transporter is operating like a conveyor, which
+  /// allows the transporter's location to start immediately at the first
+  /// destination
+  bool _conveyor_mode;
   /// All the instances of MockTransporter, based on the navigation graph names
   std::unordered_map<std::string, MockTransporter3000> _transporters;
 

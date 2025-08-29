@@ -184,6 +184,7 @@ def launch_setup(context, *args, **kwargs):
             {"transporter_plugin": transporter_plugin},
             {"nav_graph_files": [os.path.join(get_package_share_directory("nexus_demos"), "config", "rmf", "maps", "depot", "nav_graphs", "1.yaml")]},
             {"travel_duration_seconds_per_destination": 2},
+            {"conveyor_mode": True},
         ],
         condition=UnlessCondition(use_rmf_transporter),
     )
