@@ -52,7 +52,6 @@
 
 namespace nexus::workcell_orchestrator {
 
-using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 using WorkcellRequest = endpoints::WorkcellRequestAction::ActionType;
 using WorkcellStation = nexus_orchestrator_msgs::msg::WorkcellStation;
 
@@ -397,7 +396,7 @@ auto WorkcellOrchestrator::_configure(
       else
       {
         // we can just remove a task that is not running
-        if ((*it)->task_state.status != TaskState::STATUS_RUNNING)
+        if ((*it)->get_task_state().status != TaskState::STATUS_RUNNING)
         {
           this->_ctxs.erase(it);
         }
@@ -447,8 +446,6 @@ auto WorkcellOrchestrator::_configure(
             result);
           return;
         }
-        ctx->task_state.workcell_id = this->get_name();
-        ctx->task_state.task_id = ctx->task.task_id;
         ctx->bt = this->_create_bt(ctx);
         ctx->bt_logging = std::make_unique<common::BtLogging>(
           ctx->bt,
@@ -471,14 +468,14 @@ auto WorkcellOrchestrator::_configure(
 
       RCLCPP_INFO(this->get_logger(), "Queuing task [%s]",
       goal->task.task_id.c_str());
-      ctx->task_state.status = TaskState::STATUS_QUEUED;
+      ctx->set_task_status(TaskState::STATUS_QUEUED);
       auto fb = std::make_shared<WorkcellRequest::Feedback>();
-      fb->state = ctx->task_state;
+      fb->state = ctx->get_task_state();
       goal_handle->publish_feedback(fb);
 
       if (it == this->_ctxs.end())
       {
-        this->_ctxs.emplace_back(ctx);
+        this->_ctxs.emplace(ctx);
       }
     });
 
@@ -548,13 +545,11 @@ auto WorkcellOrchestrator::_configure(
           return;
         }
         const auto& ctx =
-        this->_ctxs.emplace_back(std::make_shared<Context>(*this));
-        ctx->task.task_id = req->task_id;
-        ctx->task_state.task_id = req->task_id;
-        ctx->task_state.workcell_id = this->get_name();
-        ctx->task_state.status = TaskState::STATUS_ASSIGNED;
+        this->_ctxs.emplace(std::make_shared<Context>(*this)).first;
+        (*ctx)->task.task_id = req->task_id;
+        (*ctx)->set_task_status(TaskState::STATUS_ASSIGNED);
         resp->success = true;
-        RCLCPP_INFO(this->get_logger(), "queued task %s", ctx->task.task_id.c_str());
+        RCLCPP_INFO(this->get_logger(), "queued task %s", (*ctx)->task.task_id.c_str());
       });
 
   this->_remove_pending_task_srv =
@@ -573,7 +568,7 @@ auto WorkcellOrchestrator::_configure(
           return ctx->task.task_id == req->task_id;
         });
         if (it == this->_ctxs.end() ||
-        (*it)->task_state.status != TaskState::STATUS_ASSIGNED)
+        (*it)->get_task_state().status != TaskState::STATUS_ASSIGNED)
         {
           resp->success = false;
           resp->message = "task does not exist or is not pending";
@@ -770,8 +765,9 @@ auto WorkcellOrchestrator::_configure(
 
 void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
 {
-  if (ctx->task_state.status == TaskState::STATUS_FINISHED ||
-    ctx->task_state.status == TaskState::STATUS_FAILED)
+  auto task_status = ctx->get_task_state().status;
+  if (task_status == TaskState::STATUS_FINISHED ||
+    task_status == TaskState::STATUS_FAILED)
   {
     RCLCPP_WARN(
       this->get_logger(), "Not executing task [%s] that is already finished",
@@ -783,7 +779,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
   const auto& goal_handle = ctx->goal_handle;
   ++ctx->tick_count;
 
-  if (ctx->task_state.status == TaskState::STATUS_ASSIGNED)
+  if (task_status == TaskState::STATUS_ASSIGNED)
   {
     // only print on first tick
     if (ctx->tick_count == 1)
@@ -796,16 +792,17 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
     return;
   }
 
-  if (ctx->task_state.status == TaskState::STATUS_QUEUED)
+  if (task_status == TaskState::STATUS_QUEUED)
   {
     RCLCPP_INFO(this->get_logger(), "Starting task [%s]", ctx->task.task_id.c_str());
-    ctx->task_state.status = TaskState::STATUS_RUNNING;
+    task_status = TaskState::STATUS_RUNNING;
+    ctx->set_task_status(task_status);
     auto fb = std::make_shared<WorkcellRequest::Feedback>();
-    fb->state = ctx->task_state;
+    fb->state = ctx->get_task_state();
     goal_handle->publish_feedback(fb);
   }
 
-  if (ctx->task_state.status == TaskState::STATUS_RUNNING)
+  if (task_status == TaskState::STATUS_RUNNING)
   {
     try
     {
@@ -843,7 +840,7 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
 
   RCLCPP_WARN(
     this->get_logger(), "Failed executing task [%s]: unexpected status [%u]",
-    ctx->task.task_id.c_str(), ctx->task_state.status);
+    ctx->task.task_id.c_str(), task_status);
   ctx->bt.haltTree();
   this->_handle_command_failed(ctx);
   return;
@@ -855,7 +852,7 @@ void WorkcellOrchestrator::_tick_all_bts()
   // so we  must cancel all tasks when an ongoing task is cancelled.
   for (const auto& ctx : this->_ctxs)
   {
-    if (ctx->task_state.status == TaskState::STATUS_RUNNING &&
+    if (ctx->get_task_state().status == TaskState::STATUS_RUNNING &&
       ctx->goal_handle->is_canceling())
     {
       RCLCPP_WARN(
@@ -877,7 +874,7 @@ void WorkcellOrchestrator::_tick_all_bts()
     }
 
     this->_tick_bt(*it);
-    const auto task_status = (*it)->task_state.status;
+    const auto task_status = (*it)->get_task_state().status;
 
     // cancel all other tasks when any task fails. note that the failing task is
     // removed from the list first because we don't want to cancel an already
@@ -906,8 +903,8 @@ void WorkcellOrchestrator::_tick_all_bts()
   if (this->_ctxs.size() > 0)
   {
     new_state.status = WorkcellState::STATUS_BUSY;
-    new_state.work_order_id = this->_ctxs.front()->task.work_order_id;
-    new_state.task_id = this->_ctxs.front()->task.task_id;
+    new_state.work_order_id = (*this->_ctxs.begin())->task.work_order_id;
+    new_state.task_id = (*this->_ctxs.begin())->task.task_id;
   }
   else if (this->_ctxs.size() == 0)
   {
@@ -1103,7 +1100,7 @@ void WorkcellOrchestrator::_handle_command_success(
   const std::shared_ptr<Context>& ctx)
 {
   RCLCPP_INFO(this->get_logger(), "Task finished successfully");
-  ctx->task_state.status = TaskState::STATUS_FINISHED;
+  ctx->set_task_status(TaskState::STATUS_FINISHED);
   auto result =
     std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();
   result->success = true;
@@ -1118,10 +1115,10 @@ void WorkcellOrchestrator::_handle_command_failed(
   const std::shared_ptr<Context>& ctx)
 {
   RCLCPP_ERROR(this->get_logger(), "Task failed");
-  ctx->task_state.status = TaskState::STATUS_FAILED;
+  ctx->set_task_status(TaskState::STATUS_FAILED);
   // Publish feedback.
   auto fb = std::make_shared<WorkcellRequest::Feedback>();
-  fb->state = ctx->task_state;
+  fb->state = ctx->get_task_state();
   ctx->goal_handle->publish_feedback(std::move(fb));
   // Abort the action request.
   auto result =
