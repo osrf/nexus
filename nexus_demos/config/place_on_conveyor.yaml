@@ -6,4 +6,3 @@ steps:
         metadata:
           quantity: 1
           state: "state_1"
-          
