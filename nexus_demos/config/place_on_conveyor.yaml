@@ -1,0 +1,8 @@
+workInstructionName: "Place on conveyor"
+steps:
+  - processId: "place_on_conveyor"
+    outputItems:
+      - guid: "productA"
+        metadata:
+          quantity: 1
+          state: "state_1"
