@@ -36,6 +36,8 @@
 
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
 
+#include <nexus_orchestrator_msgs/msg/task_state.hpp>
+
 #include <pluginlib/class_loader.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -47,13 +49,60 @@
 
 #include <optional>
 #include <memory>
+#include <set>
 #include <vector>
 
 namespace nexus::workcell_orchestrator {
 
+// bool is C1 < C2, smallest gets on top
+bool priority_comparator(std::shared_ptr<Context> c1, std::shared_ptr<Context> c2) {
+  using TaskState = nexus_orchestrator_msgs::msg::TaskState;
+  const auto s1 = c1->get_task_state().status;
+  const auto s2 = c2->get_task_state().status;
+  if (s1 == s2)
+  {
+    // For equal task state, prioritize earlier transition time to make sure
+    // tasks that started earlier are first in the queue
+    return c1->state_transition_time < c2->state_transition_time;
+  }
+  // An executing task will always have priority over a non executing task
+  if (s1 == TaskState::STATUS_RUNNING)
+  {
+    return true;
+  }
+  if (s1 == TaskState::STATUS_QUEUED)
+  {
+    if (s2 == TaskState::STATUS_RUNNING)
+    {
+      // Prioritize the running task
+      return false;
+    }
+    // Prioritize queued task
+    return true;
+  }
+  if (s1 == TaskState::STATUS_FINISHED || s1 == TaskState::STATUS_FAILED)
+  {
+    // Push to end of queue
+    return false;
+  }
+  if (s1 == TaskState::STATUS_ASSIGNED)
+  {
+    if (s2 == TaskState::STATUS_RUNNING || s2 == TaskState::STATUS_QUEUED)
+    {
+      // Prioritize tasks that have been requested or are running already
+      return false;
+    }
+    return true;
+  }
+  // Undefined, push to end
+  return false;
+}
+
 class WorkcellOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
+private: using TaskState = nexus_orchestrator_msgs::msg::TaskState;
+
 private: using CallbackReturn =
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
@@ -120,7 +169,7 @@ private: rclcpp::Service<endpoints::RemovePendingTaskService::ServiceType>::
   SharedPtr
     _remove_pending_task_srv;
 private: std::atomic<bool> _paused;
-private: std::list<std::shared_ptr<Context>> _ctxs;
+private: std::set<std::shared_ptr<Context>, decltype(priority_comparator)*> _ctxs{priority_comparator};
 private: std::shared_ptr<ContextManager> _ctx_mgr;
 private: std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{
     nullptr};
