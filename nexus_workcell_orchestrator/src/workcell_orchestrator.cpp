@@ -475,6 +475,8 @@ auto WorkcellOrchestrator::_configure(
       auto fb = std::make_shared<WorkcellRequest::Feedback>();
       fb->state = ctx->task_state;
       goal_handle->publish_feedback(fb);
+      ctx->task_state.messages.clear();
+      ctx->task_state.error_messages.clear();
 
       if (it == this->_ctxs.end())
       {
@@ -803,6 +805,8 @@ void WorkcellOrchestrator::_tick_bt(const std::shared_ptr<Context>& ctx)
     auto fb = std::make_shared<WorkcellRequest::Feedback>();
     fb->state = ctx->task_state;
     goal_handle->publish_feedback(fb);
+    ctx->task_state.messages.clear();
+    ctx->task_state.error_messages.clear();
   }
 
   if (ctx->task_state.status == TaskState::STATUS_RUNNING)
@@ -1123,6 +1127,8 @@ void WorkcellOrchestrator::_handle_command_failed(
   auto fb = std::make_shared<WorkcellRequest::Feedback>();
   fb->state = ctx->task_state;
   ctx->goal_handle->publish_feedback(std::move(fb));
+  ctx->task_state.messages.clear();
+  ctx->task_state.error_messages.clear();
   // Abort the action request.
   auto result =
     std::make_shared<endpoints::WorkcellRequestAction::ActionType::Result>();

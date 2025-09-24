@@ -6,8 +6,10 @@ string task_id
 
 TaskProgress progress
 
-# [OPTIONAL] message for debugging 
-string message
+# [OPTIONAL] messages for debugging
+string[] messages
+
+string[] error_messages
 
 uint8 status
 uint8 STATUS_NONE = 0
