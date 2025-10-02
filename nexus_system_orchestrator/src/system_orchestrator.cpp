@@ -495,8 +495,23 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [this, ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<WorkcellRequest>(name, config, *this, ctx,
-      [this, ctx](const auto&)
+      [this, ctx](const auto& task_states)
       {
+        // handle feedback internally in system orchestrator
+        for (const auto& it : task_states)
+        {
+          for (const auto& m : it.second.messages)
+          {
+            RCLCPP_INFO(
+              this->get_logger(), "%s: %s", it.first.c_str(), m.c_str());
+          }
+          for (const auto& em: it.second.error_messages)
+          {
+            RCLCPP_ERROR(
+              this->get_logger(), "%s: %s", it.first.c_str(), em.c_str());
+          }
+        }
+
         this->_publish_wo_feedback(*ctx);
         try
         {
