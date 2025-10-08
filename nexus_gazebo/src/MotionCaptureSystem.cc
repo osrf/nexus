@@ -109,7 +109,7 @@ void MotionCaptureSystem::PostUpdate(
 {
   if (_info.dt < std::chrono::steady_clock::duration::zero())
   {
-    ignwarn << "Detected jump back in time" << std::endl;
+    gzwarn << "Detected jump back in time" << std::endl;
   }
 
   if (_info.paused)
@@ -141,7 +141,7 @@ void MotionCaptureSystem::PostUpdate(
 
         if (this->trackers.count(_entity) == 0)
         {
-          ignmsg << "Creating Tracker: " << _rigid_body->Data() << std::endl;
+          gzmsg << "Creating Tracker: " << _rigid_body->Data() << std::endl;
           this->trackers.insert(
             {
               _entity,
