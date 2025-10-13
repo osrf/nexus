@@ -110,16 +110,14 @@ def activate_node(target_node: LifecycleNode, depend_node: LifecycleNode = None)
 def launch_setup(context, *args, **kwargs):
     ros_domain_id = LaunchConfiguration("ros_domain_id")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    use_rmf_transporter = LaunchConfiguration("use_rmf_transporter")
+    use_multiple_transporters = LaunchConfiguration("use_multiple_transporters")
     use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
-    transporter_plugin = LaunchConfiguration("transporter_plugin")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
     remap_task_types = LaunchConfiguration("remap_task_types")
-    nexus_rviz_config = LaunchConfiguration("nexus_rviz_config")
     system_orchestrator_bt_dir = LaunchConfiguration("system_orchestrator_bt_dir")
     max_jobs = LaunchConfiguration("max_jobs")
     building_map_file_path = LaunchConfiguration("building_map_file_path")
@@ -127,6 +125,13 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
+
+    rviz_config_filename = "nexus_panel.rviz"
+    if (use_multiple_transporters.perform(context).lower() == "true"):
+        rviz_config_filename = "nexus_panel_rmf.rviz"
+
+    nexus_rviz_config = os.path.join(
+        get_package_share_directory("nexus_demos"), "rviz", rviz_config_filename)
 
     system_orchestrator_node = LifecycleNode(
         name="system_orchestrator",
@@ -170,7 +175,7 @@ def launch_setup(context, *args, **kwargs):
                     "use_simulator": use_fake_hardware,
                     "headless": headless,
                 }.items(),
-                condition=IfCondition(use_rmf_transporter),
+                condition=IfCondition(use_multiple_transporters),
             )
         ],
     )
@@ -179,37 +184,35 @@ def launch_setup(context, *args, **kwargs):
         namespace="",
         package="nexus_transporter",
         executable="nexus_transporter_node",
-        name="transporter_node",
+        name="mock_transporter_node",
         parameters=[
-            {"transporter_plugin": transporter_plugin},
+            {"transporter_plugin": "nexus_transporter::MockTransporter"},
             {"nav_graph_files": [os.path.join(get_package_share_directory("nexus_demos"), "config", "rmf", "maps", "depot", "nav_graphs", "1.yaml")]},
             {"travel_duration_seconds_per_destination": 2},
             {"conveyor_mode": True},
         ],
-        condition=UnlessCondition(use_rmf_transporter),
     )
     activate_mock_transporter_node = GroupAction(
         [
             activate_node(mock_transporter_node),
         ],
-        condition=UnlessCondition(use_rmf_transporter),
     )
 
     rmf_transporter_node = LifecycleNode(
         namespace="",
         package="nexus_transporter",
         executable="nexus_transporter_node",
-        name="transporter_node",
+        name="rmf_transporter_node",
         parameters=[
-            {"transporter_plugin": transporter_plugin},
+            {"transporter_plugin": "nexus_transporter::RmfTransporter"},
         ],
-        condition=IfCondition(use_rmf_transporter),
+        condition=IfCondition(use_multiple_transporters),
     )
     activate_rmf_transporter_node = GroupAction(
         [
             activate_node(rmf_transporter_node),
         ],
-        condition=IfCondition(use_rmf_transporter),
+        condition=IfCondition(use_multiple_transporters),
     )
 
     mock_emergency_alarm_node = LifecycleNode(
@@ -223,7 +226,7 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="nexus_panel",
-        arguments=["-d", nexus_rviz_config.perform(context)],
+        arguments=["-d", nexus_rviz_config],
         condition=UnlessCondition(headless),
     )
 
@@ -288,9 +291,9 @@ def generate_launch_description():
                 description="Set True if running with real hardware.",
             ),
             DeclareLaunchArgument(
-                "use_rmf_transporter",
+                "use_multiple_transporters",
                 default_value="false",
-                description="Set true to rely on an Open-RMF managed fleet to transport material\
+                description="Set true to run multiple transporters including the Open-RMF managed fleet to transport material\
                 between workcells.",
             ),
             DeclareLaunchArgument(
@@ -307,11 +310,6 @@ def generate_launch_description():
                 name="zenoh_config_filename",
                 default_value="config/zenoh/system_orchestrator.json5",
                 description="Zenoh DDS bridge configuration filepath",
-            ),
-            DeclareLaunchArgument(
-                "transporter_plugin",
-                default_value="nexus_transporter::MockTransporter",
-                description="The transporter plugin to load by the TransporterNode",
             ),
             DeclareLaunchArgument(
                 "activate_system_orchestrator",
@@ -332,11 +330,6 @@ def generate_launch_description():
                 "remap_task_types",
                 default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
                 description="A yaml containing a dictionary of task types and an array of remaps",
-            ),
-            DeclareLaunchArgument(
-                "nexus_rviz_config",
-                default_value=os.path.join(get_package_share_directory("nexus_demos"), "rviz", "nexus_panel.rviz"),
-                description="Absolute path to an RViZ config file.",
             ),
             DeclareLaunchArgument(
                 "system_orchestrator_bt_dir",
