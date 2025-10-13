@@ -169,9 +169,9 @@ private: void _handle_task_doable(
 
 private: int _max_parallel_jobs = 1;
 
-private: std::unordered_map<std::string, std::string> _task_to_input_station_map;
+private: std::unordered_set<std::string> _input_stations = {};
 
-private: std::unordered_map<std::string, std::string> _task_to_output_station_map;
+private: std::unordered_set<std::string> _output_stations = {};
 };
 
 }

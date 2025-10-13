@@ -17,7 +17,6 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.actions import LifecycleNode
-from launch_ros.descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 import launch
@@ -35,7 +34,7 @@ from launch.actions import (
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 from typing import List
 
@@ -103,7 +102,8 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
-    remap_task_input_output_stations = LaunchConfiguration("remap_task_input_output_stations")
+    input_stations = LaunchConfiguration("input_stations")
+    output_stations = LaunchConfiguration("output_stations")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -181,7 +181,8 @@ def launch_setup(context, *args, **kwargs):
             "gripper_max_effort": 0.0,
             "remap_task_types": remap_task_types,
             "bt_logging_blocklist": bt_logging_blocklist,
-            "remap_task_input_output_stations": ParameterValue(remap_task_input_output_stations, value_type=str),
+            "input_stations": input_stations,
+            "output_stations": output_stations,
         }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -391,9 +392,14 @@ def generate_launch_description():
             description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         DeclareLaunchArgument(
-            "remap_task_input_output_stations",
+            "input_stations",
             default_value="",
-            description="A yaml containing a dictionary of remapping task types and input/output station names. By default the workcell name is used if the work order expects an input or output station",
+            description="Comma-delimitted list of input stations of this workcell",
+        ),
+        DeclareLaunchArgument(
+            "output_stations",
+            default_value="",
+            description="Comma-delimitted list of output stations of this workcell",
         ),
         OpaqueFunction(function = launch_setup)
     ])

@@ -33,6 +33,8 @@ struct Task
 public: std::string work_order_id;
 public: std::string task_id;
 public: std::string type;
+public: std::unordered_map<std::string, std::string> input_item_to_station_map;
+public: std::unordered_map<std::string, std::string> output_item_to_station_map;
 public: TaskData data;
 public: YAML::Node previous_results;
 };

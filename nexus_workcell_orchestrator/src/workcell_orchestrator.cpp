@@ -165,52 +165,40 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
   }
 
-  // TODO(ac): use a single source of truth that defines the IO station of
-  // workcells, positions, and probably even connecting navigation graphs that
-  // transporters will use. These mappings might even need to change at runtime.
+  const std::string delimiter = ",";
   {
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "A yaml containing a dictionary of remapping task types and input/output station names.";
-    this->declare_parameter("remap_task_input_output_stations", "", desc);
-  }
-
-  std::unordered_map<std::string, WorkcellStation> io_stations;
-  const auto remap_task_input_output_stations =
-    this->get_parameter("remap_task_input_output_stations").as_string();
-  if (!remap_task_input_output_stations.empty())
-  {
-    RCLCPP_INFO(
-      this->get_logger(),
-      "remap_task_input_output_stations: %s",
-      remap_task_input_output_stations.c_str());
-  }
-  try
-  {
-    YAML::Node node = YAML::Load(remap_task_input_output_stations);
-    for (const auto& n : node)
+      "Comma-delimitted list of input stations of this workcell";
+    auto input_stations_str =
+      this->get_parameter("input_stations").as_string();
+    if (!input_stations_str.empty())
     {
-      if (n.second["input"] && !n.second["input"].as<std::string>().empty())
+      std::size_t pos = 0;
+      while ((pos = input_stations_str.find(delimiter)) != std::string::npos)
       {
-        this->_task_to_input_station_map.emplace(
-          n.first.as<std::string>(),
-          n.second["input"].as<std::string>());
-      }
-      if (n.second["output"] && !n.second["output"].as<std::string>().empty())
-      {
-        this->_task_to_output_station_map.emplace(
-          n.first.as<std::string>(),
-          n.second["output"].as<std::string>());
+        this->_input_stations.insert(input_stations_str.substr(0, pos));
+        input_stations_str.erase(0, pos + delimiter.length());
       }
     }
   }
-  catch (YAML::ParserException& e)
   {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "Failed to parse remap_task_input_output_stations parameter: (%s)",
-      e.what());
+    ParameterDescriptor desc;
+    desc.read_only = true;
+    desc.description =
+      "Comma-delimitted list of output stations of this workcell";
+    auto output_stations_str =
+      this->get_parameter("output_stations").as_string();
+    if (!output_stations_str.empty())
+    {
+      std::size_t pos = 0;
+      while ((pos = output_stations_str.find(delimiter)) != std::string::npos)
+      {
+        this->_output_stations.insert(output_stations_str.substr(0, pos));
+        output_stations_str.erase(0, pos + delimiter.length());
+      }
+    }
   }
 
   this->_register_workcell_client =
@@ -1022,33 +1010,29 @@ void WorkcellOrchestrator::_register()
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
 
-  std::unordered_set<std::string> input_stations;
-  for (const auto& input_it : _task_to_input_station_map)
+  std::unordered_set<std::string> tmp_input_stations = this->_input_stations;
+  for (const auto& os : this->_output_stations)
   {
-    input_stations.insert(input_it.second);
-  }
-  for (const auto& output_it : _task_to_output_station_map)
-  {
-    if (input_stations.find(output_it.second) == input_stations.end())
+    if (tmp_input_stations.find(os) == tmp_input_stations.end())
     {
       req->description.io_stations.emplace_back(
         nexus_orchestrator_msgs::build<WorkcellStation>()
-          .name(output_it.second)
+          .name(os)
           .io_type(WorkcellStation::IO_TYPE_OUTPUT));
       continue;
     }
 
     req->description.io_stations.emplace_back(
       nexus_orchestrator_msgs::build<WorkcellStation>()
-        .name(output_it.second)
+        .name(os)
         .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
-    input_stations.erase(output_it.second);
+    tmp_input_stations.erase(os);
   }
-  for (const auto& input : input_stations)
+  for (const auto& is : tmp_input_stations)
   {
     req->description.io_stations.emplace_back(
       nexus_orchestrator_msgs::build<WorkcellStation>()
-        .name(input)
+        .name(is)
         .io_type(WorkcellStation::IO_TYPE_INPUT));
   }
 
@@ -1144,22 +1128,6 @@ void WorkcellOrchestrator::_handle_task_doable(
   {
     auto task = this->_task_parser.parse_task(req->task);
     resp->success = this->_task_checker->is_task_doable(task);
-
-    const auto step = nexus::common::WorkOrder::Step(task.data);
-    if (step.input_items().size() > 0)
-    {
-      resp->input_station =
-        _task_to_input_station_map.find(task.type) ==
-        _task_to_input_station_map.end()
-        ? this->get_name() : _task_to_input_station_map[task.type];
-    }
-    if (step.output_items().size() > 0)
-    {
-      resp->output_station =
-        _task_to_output_station_map.find(task.type) ==
-        _task_to_output_station_map.end()
-        ? this->get_name() : _task_to_output_station_map[task.type];
-    }
 
     if (resp->success)
     {

@@ -8,12 +8,6 @@ WorkcellTask task
 # True if the task can be performed
 bool success
 
-# Name of the input station for this task, if any.
-string input_station
-
-# Name of the output station for this task, if any.
-string output_station
-
 # An estimate of how long it will take the workcell to perform
 # this task
 builtin_interfaces/Time estimated_finish_time

@@ -27,10 +27,24 @@ namespace nexus::workcell_orchestrator {
 Task TaskParser::parse_task(
   const nexus_orchestrator_msgs::msg::WorkcellTask& workcell_task)
 {
+  std::unordered_map<std::string, std::string> input_item_to_station_map;
+  for (const auto& item : workcell_task.inputs)
+  {
+    input_item_to_station_map[item.item_id] = item.station_id;
+  }
+
+  std::unordered_map<std::string, std::string> output_item_to_station_map;
+  for (const auto& item : workcell_task.outputs)
+  {
+    output_item_to_station_map[item.item_id] = item.station_id;
+  }
+
   return Task{
     workcell_task.work_order_id,
     workcell_task.task_id,
     workcell_task.type,
+    std::move(input_item_to_station_map),
+    std::move(output_item_to_station_map),
     YAML::Load(workcell_task.payload),
     YAML::Load(workcell_task.previous_results),
   };
