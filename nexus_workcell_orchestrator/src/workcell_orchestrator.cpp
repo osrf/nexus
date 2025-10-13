@@ -1172,8 +1172,7 @@ void WorkcellOrchestrator::_handle_task_doable(
         this->_input_stations.end())
       {
         stations_valid = false;
-        // TODO(ac): change to DEBUG
-        RCLCPP_INFO(
+        RCLCPP_DEBUG(
           this->get_logger(), "Invalid input station [%s] for item [%s]",
           station_name.c_str(),
           input.first.c_str());
@@ -1199,8 +1198,7 @@ void WorkcellOrchestrator::_handle_task_doable(
         this->_output_stations.end())
       {
         stations_valid = false;
-        // TODO(ac): change to DEBUG
-        RCLCPP_INFO(
+        RCLCPP_DEBUG(
           this->get_logger(), "Invalid output station [%s] for item [%s]",
           station_name.c_str(),
           output.first.c_str());
