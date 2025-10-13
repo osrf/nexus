@@ -47,13 +47,23 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  // Get the source as the location of the input SKU
-  if (workcell_task->input_item_id.size() == 0)
+  if (workcell_task->inputs.empty())
   {
     // We actually don't need to transport anything here, just return success
     // and a nullopt transportation task
     return BT::NodeStatus::SUCCESS;
   }
+
+  // TODO(ac): support tasks that require more than 1 inputs
+  if (workcell_task->inputs.size() > 1)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(),
+      "%s: only support creating transporter tasks for one input",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  const auto input = workcell_task->inputs[0];
 
   const auto maybe_workcell_id =
     this->_ctx->get_workcell_task_assignment(workcell_task->task_id);
@@ -68,28 +78,15 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  const auto input_station =
-    this->_ctx->get_workcell_task_input_station(workcell_task->task_id);
-  if (!input_station.has_value())
-  {
-    RCLCPP_ERROR(
-      this->_ctx->get_node().get_logger(),
-      "%s: workcell task [%s] expects inputs, however none was provided.",
-      this->name().c_str(),
-      workcell_task->task_id.c_str());
-    return BT::NodeStatus::FAILURE;
-  }
-
   // TODO(luca) Implement a node that tracks the location of SKUs and query it
   // for the location, rather than using a context variable
-  const auto sku_position =
-    this->_ctx->get_sku_location(workcell_task->input_item_id);
+  const auto sku_position = this->_ctx->get_sku_location(input.item_id);
   if (sku_position == std::nullopt)
   {
     // The item cannot be found, fail
     return BT::NodeStatus::FAILURE;
   }
-  if (sku_position.value() == input_station.value())
+  if (sku_position.value() == input.station_id)
   {
     // The item is already in its destination, do nothing
     return BT::NodeStatus::SUCCESS;
@@ -108,7 +105,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   );
   result->destinations.emplace_back(
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
-      .name(input_station.value())
+      .name(input.station_id)
       .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
       .params("")
   );

@@ -124,46 +124,6 @@ std::optional<std::string> Context::get_workcell_task_assignment(
   return assignment_it->second;
 }
 
-Context& Context::set_workcell_task_input_station(
-  const std::string& task_id, const std::string& input_station_name)
-{
-  std::lock_guard<std::mutex> lock(_mutex);
-  _workcell_task_input_stations[task_id] = input_station_name;
-  return *this;
-}
-
-std::optional<std::string> Context::get_workcell_task_input_station(
-  const std::string& task_id) const
-{
-  std::lock_guard<std::mutex> lock(_mutex);
-  auto input_station_it = _workcell_task_input_stations.find(task_id);
-  if (input_station_it == _workcell_task_input_stations.end())
-  {
-    return std::nullopt;
-  }
-  return input_station_it->second;
-}
-
-Context& Context::set_workcell_task_output_station(
-  const std::string& task_id, const std::string& output_station_name)
-{
-  std::lock_guard<std::mutex> lock(_mutex);
-  _workcell_task_output_stations[task_id] = output_station_name;
-  return *this;
-}
-
-std::optional<std::string> Context::get_workcell_task_output_station(
-  const std::string& task_id) const
-{
-  std::lock_guard<std::mutex> lock(_mutex);
-  auto output_station_it = _workcell_task_output_stations.find(task_id);
-  if (output_station_it == _workcell_task_output_stations.end())
-  {
-    return std::nullopt;
-  }
-  return output_station_it->second;
-}
-
 Context& Context::set_workcell_sessions(
   const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
 {
@@ -314,9 +274,10 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
 
 void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
 {
-  if (task.output_item_id.size() > 0)
+  for (const auto& item : task.outputs)
   {
-    this->sku_locations[task.output_item_id] = workcell;
+    this->sku_locations[item.item_id] =
+      item.station_id.empty() ? workcell : item.station_id;
   }
 }
 

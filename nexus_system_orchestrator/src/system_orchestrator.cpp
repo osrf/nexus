@@ -33,6 +33,7 @@
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_common/pausable_sequence.hpp>
 #include <nexus_common/sync_service_client.hpp>
+#include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/task_progress.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_description.hpp>
@@ -650,7 +651,7 @@ void SystemOrchestrator::_init_job(
     this->_assign_all_tasks(job.ctx->get_tasks(),
       [this, &job, goal_handle,
       work_order_id](const std::unordered_map<std::string,
-      std::optional<WorkcellTaskAssignment>>& maybe_task_assignments)
+      std::optional<std::string>>& maybe_task_assignments)
       {
         // We iterate through all the task assignments and exit early if any task
         // was not successfully assigned.
@@ -673,23 +674,9 @@ void SystemOrchestrator::_init_job(
         for (const auto& [task_id, maybe_assignment] : maybe_task_assignments)
         {
           // Task assignments are valid, they have been checked in the previous loop
-          job.ctx->set_workcell_task_assignment(
-            task_id,
-            maybe_assignment->workcell_id);
-          if (maybe_assignment->input_station.has_value())
-          {
-            job.ctx->set_workcell_task_input_station(
-              task_id,
-              maybe_assignment->input_station.value());
-          }
-          if (maybe_assignment->output_station.has_value())
-          {
-            job.ctx->set_workcell_task_output_station(
-              task_id,
-              maybe_assignment->output_station.value());
-          }
+          job.ctx->set_workcell_task_assignment(task_id, *maybe_assignment);
           auto task_state = TaskState();
-          task_state.workcell_id = maybe_assignment->workcell_id;
+          task_state.workcell_id = *maybe_assignment;
           task_state.task_id = task_id;
           auto req =
           std::make_shared<endpoints::QueueWorkcellTaskService::ServiceType::Request>();
@@ -702,14 +689,14 @@ void SystemOrchestrator::_init_job(
             // bids will not arrive before the earlier bids if the underlying middleware
             // uses tcp (and that calls from the same client uses the same tcp stream).
             const auto resp =
-              this->_workcell_sessions.at(maybe_assignment->workcell_id)
+              this->_workcell_sessions.at(*maybe_assignment)
               ->queue_task_client->send_request(req);
             if (!resp->success)
             {
               RCLCPP_ERROR(this->get_logger(),
               "Failed to assign task [%s] to workcell [%s]: %s",
               task_id.c_str(),
-              maybe_assignment->workcell_id.c_str(), resp->message.c_str());
+              maybe_assignment->c_str(), resp->message.c_str());
               this->_halt_fail_and_remove_job(work_order_id);
               return;
             }
@@ -718,7 +705,7 @@ void SystemOrchestrator::_init_job(
           {
             RCLCPP_ERROR(this->get_logger(),
             "Failed to assign task [%s] to workcell [%s]: %s", task_id.c_str(),
-            maybe_assignment->workcell_id.c_str(), e.what());
+            maybe_assignment->c_str(), e.what());
             this->_halt_fail_and_remove_job(work_order_id);
             return;
           }
@@ -769,17 +756,23 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
     task.task_id =
       this->_generate_task_id(work_order_id, step.process_id(), step_index++);
     task.type = step.process_id();
-    const auto& input_items = step.input_items();
-    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
-    if (input_items.size() > 0)
+
+    using ItemAtStation = nexus_orchestrator_msgs::msg::ItemAtStation;
+    for (const auto& input_item : step.input_items())
     {
-      task.input_item_id = input_items[0].guid();
+      const auto& station = input_item.station();
+      task.inputs.emplace_back(
+        nexus_orchestrator_msgs::build<ItemAtStation>()
+          .item_id(input_item.guid())
+          .station_id(station.has_value() ? *station : ""));
     }
-    const auto& output_items = step.output_items();
-    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
-    if (output_items.size() > 0)
+    for (const auto& output_item : step.output_items())
     {
-      task.output_item_id = output_items[0].guid();
+      const auto& station = output_item.station();
+      task.outputs.emplace_back(
+        nexus_orchestrator_msgs::build<ItemAtStation>()
+          .item_id(output_item.guid())
+          .station_id(station.has_value() ? *station : ""));
     }
 
     // Inject metadata into payload for workcell.
@@ -1103,7 +1096,7 @@ bool SystemOrchestrator::_bt_filename_valid(const std::string& bt_filename) cons
 }
 
 void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
-  std::function<void(const std::optional<WorkcellTaskAssignment>&)> on_done)
+  std::function<void(const std::optional<std::string>&)> on_done)
 {
   using IsTaskDoableService = endpoints::IsTaskDoableService::ServiceType;
 
@@ -1129,8 +1122,6 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
     results)
     {
       std::string assigned;
-      std::optional<std::string> input_station = std::nullopt;
-      std::optional<std::string> output_station = std::nullopt;
       for (const auto& [wc_id, result] : results)
       {
         if (!result.success)
@@ -1143,24 +1134,6 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         {
           // TODO(kp): assign based on some heuristics
           assigned = wc_id;
-          if (!result.resp->input_station.empty())
-          {
-            input_station = result.resp->input_station;
-            RCLCPP_INFO(
-              this->get_logger(),
-              "Assigned task to [%s] with input [%s]",
-              wc_id.c_str(),
-              result.resp->input_station.c_str());
-          }
-          if (!result.resp->output_station.empty())
-          {
-            output_station = result.resp->output_station;
-            RCLCPP_INFO(
-              this->get_logger(),
-              "Assigned task to [%s] with output [%s]",
-              wc_id.c_str(),
-              result.resp->output_station.c_str());
-          }
         }
       }
       if (assigned.empty())
@@ -1174,9 +1147,7 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         RCLCPP_INFO(
           this->get_logger(), "Task [%s] assigned to workcell [%s]",
           task.task_id.c_str(), assigned.c_str());
-        on_done(
-          WorkcellTaskAssignment{
-            task.task_id, assigned, input_station, output_station});
+        on_done(assigned);
       }
     });
 }
@@ -1184,16 +1155,16 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
 void SystemOrchestrator::_assign_all_tasks(
   const std::vector<WorkcellTask>& tasks,
   std::function<void(const std::unordered_map<std::string,
-  std::optional<WorkcellTaskAssignment>>&)> on_done)
+  std::optional<std::string>>&)> on_done)
 {
   auto num_tasks = tasks.size();
   auto task_assignments = std::make_shared<std::unordered_map<std::string,
-      std::optional<WorkcellTaskAssignment>>>();
+      std::optional<std::string>>>();
   for (const auto& task : tasks)
   {
     this->_assign_workcell_task(task,
       [on_done, num_tasks, task_assignments, task](
-        const std::optional<WorkcellTaskAssignment>& assigned)
+        const std::optional<std::string>& assigned)
       {
         task_assignments->emplace(task.task_id, assigned);
         if (task_assignments->size() == num_tasks)
