@@ -46,7 +46,7 @@ class ParallelPickAndPlaceRmfTest(NexusTestCase):
                 "nexus_demos",
                 "launch.py",
                 "sim_update_rate:=10000",
-                "use_rmf_transporter:=true"
+                "use_multiple_transporters:=true"
             ),
         )
         self.proc.__enter__()
