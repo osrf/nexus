@@ -47,7 +47,7 @@ class ParallelWoTest(NexusTestCase):
 
         await self.wait_for_workcells("workcell_1", "workcell_2")
         print("all workcells are ready")
-        await self.wait_for_transporters("transporter_node")
+        await self.wait_for_transporters("mock_transporter_node")
         print("all transporters are ready")
 
         # create action client to send work order
