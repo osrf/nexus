@@ -14,7 +14,6 @@
   <depend>rclrs</depend>
 
   <test_depend>abb_irb910sc_support</test_depend>
-  <test_depend>nexus_assets</test_depend>
 
   <export>
     <build_type>ament_cargo</build_type>
