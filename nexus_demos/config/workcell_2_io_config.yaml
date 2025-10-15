@@ -1,0 +1,6 @@
+pick_from_conveyor:
+  inputs: [workcell_2_right]
+  outputs: []
+pick_from_amr:
+  inputs: [workcell_2_front]
+  outputs: []

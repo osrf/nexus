@@ -15,6 +15,7 @@
 import os
 import sys
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -158,8 +159,7 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot1_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_1.json5",
-                    "input_stations": "workcell_1_left,workcell_1_front",
-                    "output_stations": "workcell_1_left,workcell_1_front",
+                    "task_io_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_1_io_config.yaml"),
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -205,8 +205,7 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot2_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_2.json5",
-                    "input_stations": "workcell_2_right,workcell_2_front",
-                    "output_stations": "workcell_2_right,workcell_2_front",
+                    "task_io_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_2_io_config.yaml"),
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )

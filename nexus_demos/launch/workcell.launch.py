@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
 from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.actions import LifecycleNode
@@ -102,8 +100,7 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
-    input_stations = LaunchConfiguration("input_stations")
-    output_stations = LaunchConfiguration("output_stations")
+    task_io_config_file_path = LaunchConfiguration("task_io_config_file_path")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -181,8 +178,7 @@ def launch_setup(context, *args, **kwargs):
             "gripper_max_effort": 0.0,
             "remap_task_types": remap_task_types,
             "bt_logging_blocklist": bt_logging_blocklist,
-            "input_stations": input_stations,
-            "output_stations": output_stations,
+            "task_io_config_file_path": task_io_config_file_path,
         }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -392,14 +388,9 @@ def generate_launch_description():
             description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         DeclareLaunchArgument(
-            "input_stations",
+            "task_io_config_file_path",
             default_value="",
-            description="Comma-delimitted list of input stations of this workcell",
-        ),
-        DeclareLaunchArgument(
-            "output_stations",
-            default_value="",
-            description="Comma-delimitted list of output stations of this workcell",
+            description="Path to a yaml containing a dictionary of task names to the names of their input and output stations",
         ),
         OpaqueFunction(function = launch_setup)
     ])

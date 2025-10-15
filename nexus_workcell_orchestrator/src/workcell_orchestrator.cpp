@@ -169,15 +169,9 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "Comma-delimitted list of input stations of this workcell";
-    this->declare_parameter("input_stations", "", desc);
-  }
-  {
-    ParameterDescriptor desc;
-    desc.read_only = true;
-    desc.description =
-      "Comma-delimitted list of output stations of this workcell";
-    this->declare_parameter("output_stations", "", desc);
+      "Path to a yaml containing a dictionary of task names to the names of "
+      "their input and output stations";
+    this->declare_parameter("task_io_config_file_path", "", desc);
   }
 
   this->_register_workcell_client =
@@ -221,48 +215,51 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     }
   }
 
-  const std::string delimiter = ",";
-  auto input_stations_str = this->get_parameter("input_stations").as_string();
+  auto task_io_config_file_path =
+    this->get_parameter("task_io_config_file_path").as_string();
+  if (task_io_config_file_path.empty())
+  {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Parameter task_io_config_file_path was not defined, all supported "
+      "workcell tasks are expected to not have input or output stations");
+  }
   std::stringstream input_ss;
-  if (!input_stations_str.empty())
-  {
-    std::size_t pos = 0;
-    while ((pos = input_stations_str.find(delimiter)) != std::string::npos)
-    {
-      const std::string input_station = input_stations_str.substr(0, pos);
-      this->_input_stations.insert(input_station);
-      input_ss << input_station << ",";
-      input_stations_str.erase(0, pos + delimiter.length());
-    }
-    if (!input_stations_str.empty())
-    {
-      this->_input_stations.insert(input_stations_str);
-      input_ss << input_stations_str;
-    }
-  }
-  RCLCPP_INFO(
-    this->get_logger(), "Input stations: [%s]", input_ss.str().c_str());
-
   std::stringstream output_ss;
-  auto output_stations_str = this->get_parameter("output_stations").as_string();
-  if (!output_stations_str.empty())
+  try
   {
-    std::size_t pos = 0;
-    while ((pos = output_stations_str.find(delimiter)) != std::string::npos)
+    const YAML::Node task_io_config = YAML::LoadFile(task_io_config_file_path);
+    for (const auto& t_it : task_io_config)
     {
-      const std::string output_station = output_stations_str.substr(0, pos);
-      this->_output_stations.insert(output_station);
-      output_ss << output_station << ",";
-      output_stations_str.erase(0, pos + delimiter.length());
-    }
-    if (!output_stations_str.empty())
-    {
-      this->_output_stations.insert(output_stations_str);
-      output_ss << output_stations_str;
+      const auto desc =
+        nexus_orchestrator_msgs::build<WorkcellTaskDescription>()
+          .task_type(t_it.first.as<std::string>())
+          .input_stations(t_it.second["inputs"].as<std::vector<std::string>>())
+          .output_stations(t_it.second["outputs"].as<std::vector<std::string>>());
+      for (const auto in : desc.input_stations)
+      {
+        this->_active_input_stations.insert(in);
+        input_ss << in << ",";
+      }
+      for (const auto out : desc.output_stations)
+      {
+        this->_active_output_stations.insert(out);
+        output_ss << out << ",";
+      }
+
+      _task_description_map[desc.task_type] = desc;
     }
   }
+  catch(YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(), "Failed to parse task_io_config_file_path parameter: (%s)",
+      e.what());
+  }
   RCLCPP_INFO(
-    this->get_logger(), "Output stations: [%s]", output_ss.str().c_str());
+    this->get_logger(), "Active input stations: [%s]", input_ss.str().c_str());
+  RCLCPP_INFO(
+    this->get_logger(), "Active output stations: [%s]", output_ss.str().c_str());
 
   this->_register_timer = this->create_wall_timer(REGISTER_TICK_RATE,
       [this]()
@@ -1032,8 +1029,9 @@ void WorkcellOrchestrator::_register()
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
 
-  std::unordered_set<std::string> tmp_input_stations = this->_input_stations;
-  for (const auto& os : this->_output_stations)
+  std::unordered_set<std::string> tmp_input_stations =
+    this->_active_input_stations;
+  for (const auto& os : this->_active_output_stations)
   {
     if (tmp_input_stations.find(os) == tmp_input_stations.end())
     {
@@ -1150,6 +1148,27 @@ void WorkcellOrchestrator::_handle_task_doable(
   {
     auto task = this->_task_parser.parse_task(req->task);
 
+    const auto task_desc_it = this->_task_description_map.find(task.type);
+    if (task_desc_it == this->_task_description_map.end() &&
+      !task.input_item_to_station_map.empty() &&
+      !task.output_item_to_station_map.empty())
+    {
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "No I/O stations defined for task type [%s], even though I/O items are "
+        "expected. Rejecting.",
+        task.type.c_str());
+      resp->success = false;
+      return;
+    }
+
+    const std::unordered_set<std::string> task_input_stations(
+      task_desc_it->second.input_stations.begin(),
+      task_desc_it->second.input_stations.end());
+    const std::unordered_set<std::string> task_output_stations(
+      task_desc_it->second.output_stations.begin(),
+      task_desc_it->second.output_stations.end());
+
     // TODO(ac): migrate these station checks to a more comprehensive task
     // checker
     bool stations_valid = true;
@@ -1159,22 +1178,13 @@ void WorkcellOrchestrator::_handle_task_doable(
       {
         break;
       }
-
-      const std::string station_name = input.second;
-      // We assume empty station names mean we should use the workcell name
-      // as the station name.
-      if (station_name.empty())
-      {
-        continue;
-      }
-
-      if (this->_input_stations.find(station_name) ==
-        this->_input_stations.end())
+      if (task_input_stations.find(input.second) ==
+        task_input_stations.end())
       {
         stations_valid = false;
         RCLCPP_DEBUG(
           this->get_logger(), "Invalid input station [%s] for item [%s]",
-          station_name.c_str(),
+          input.second.c_str(),
           input.first.c_str());
       }
     }
@@ -1193,14 +1203,13 @@ void WorkcellOrchestrator::_handle_task_doable(
       {
         continue;
       }
-
-      if (this->_output_stations.find(station_name) ==
-        this->_output_stations.end())
+      if (task_output_stations.find(output.second) ==
+        task_output_stations.end())
       {
         stations_valid = false;
         RCLCPP_DEBUG(
           this->get_logger(), "Invalid output station [%s] for item [%s]",
-          station_name.c_str(),
+          output.second.c_str(),
           output.first.c_str());
       }
     }
