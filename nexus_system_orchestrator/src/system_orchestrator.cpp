@@ -677,6 +677,18 @@ void SystemOrchestrator::_init_job(
           job.ctx->set_workcell_task_assignment(
             task_id,
             maybe_assignment->workcell_id);
+          if (!maybe_assignment->details->inputs.empty())
+          {
+            job.ctx->set_workcell_task_inputs(
+              task_id,
+              maybe_assignment->details->inputs);
+          }
+          if (!maybe_assignment->details->outputs.empty())
+          {
+            job.ctx->set_workcell_task_outputs(
+              task_id,
+              maybe_assignment->details->outputs);
+          }
           auto task_state = TaskState();
           task_state.workcell_id = maybe_assignment->workcell_id;
           task_state.task_id = task_id;
@@ -761,11 +773,11 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
       this->_generate_task_id(work_order_id, step.process_id(), step_index++);
     task.type = step.process_id();
 
-    for (const auto ii : step.input_items())
+    for (const auto& ii : step.input_items())
     {
       task.input_item_ids.push_back(ii.guid());
     }
-    for (const auto oi : step.output_items())
+    for (const auto& oi : step.output_items())
     {
       task.output_item_ids.push_back(oi.guid());
     }
@@ -1100,8 +1112,7 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
       std::string>>();
   std::unordered_map<std::string,
     common::BatchServiceReq<IsTaskDoableService>> batch;
-  auto req =
-    std::make_shared<endpoints::IsTaskDoableService::ServiceType::Request>();
+  auto req = std::make_shared<IsTaskDoableService::Request>();
   req->task = task;
   for (const auto& [wc_id, s] : this->_workcell_sessions)
   {
@@ -1116,7 +1127,8 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
     common::BatchServiceResult<IsTaskDoableService>>&
     results)
     {
-      std::string assigned;
+      std::optional<std::string> assigned = std::nullopt;
+      IsTaskDoableService::Response::SharedPtr resp = nullptr;
       for (const auto& [wc_id, result] : results)
       {
         if (!result.success)
@@ -1129,23 +1141,23 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         {
           // TODO(kp): assign based on some heuristics
           assigned = wc_id;
+          resp  = result.resp;
           break;
         }
       }
-      if (assigned.empty())
+
+      if (!assigned.has_value() || !resp)
       {
         RCLCPP_ERROR(this->get_logger(),
         "No workcell is able perform task [%s]", task.task_id.c_str());
         on_done(std::nullopt);
+        return;
       }
-      else
-      {
-        RCLCPP_INFO(
-          this->get_logger(), "Task [%s] assigned to workcell [%s]",
-          task.task_id.c_str(), assigned.c_str());
-        on_done(WorkcellTaskAssignment{
-          task.task_id, assigned, result->resp->inputs, result->resp->outputs});
-      }
+
+      RCLCPP_INFO(
+        this->get_logger(), "Task [%s] assigned to workcell [%s]",
+        task.task_id.c_str(), assigned->c_str());
+      on_done(WorkcellTaskAssignment{task.task_id, *assigned, resp});
     });
 }
 

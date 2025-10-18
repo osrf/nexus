@@ -73,8 +73,7 @@ public:
   {
     std::string task_id;
     std::string workcell_id;
-    std::vector<ItemAtStation> inputs;
-    std::vector<ItemAtStation> outputs;
+    endpoints::IsTaskDoableService::ServiceType::Response::SharedPtr details;
   };
 
 private:

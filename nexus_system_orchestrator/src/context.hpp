@@ -144,8 +144,9 @@ public:
   std::optional<std::vector<std::string>> get_task_queued_signals(
     const std::string& task_id) const;
 
-  // Given a task, update the location of its output items to the workcell
-  void set_sku_location(const WorkcellTask& task);
+  // Given a task, update the location of its output items to the previously
+  // assigned output station, otherwise to the workcell itself.
+  void set_sku_location(const WorkcellTask& task, const std::string& workcell);
 
   std::optional<std::string> get_sku_location(const std::string& sku) const;
 

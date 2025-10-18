@@ -128,26 +128,42 @@ Context& Context::set_workcell_task_inputs(
   const std::string& task_id,
   const std::vector<ItemAtStation>& inputs)
 {
-
+  std::lock_guard<std::mutex> lock(_mutex);
+  _workcell_task_input_stations[task_id] = inputs;
+  return *this;
 }
 
-std::vector<ItemAtStation> Context::get_workcell_task_inputs(
-  const std::string& task_id) const
+std::vector<nexus_orchestrator_msgs::msg::ItemAtStation>
+Context::get_workcell_task_inputs(const std::string& task_id) const
 {
-
+  std::lock_guard<std::mutex> lock(_mutex);
+  const auto it = _workcell_task_input_stations.find(task_id);
+  if (it == _workcell_task_input_stations.end())
+  {
+    return {};
+  }
+  return it->second;
 }
 
 Context& Context::set_workcell_task_outputs(
   const std::string& task_id,
   const std::vector<ItemAtStation>& outputs)
 {
-
+  std::lock_guard<std::mutex> lock(_mutex);
+  _workcell_task_output_stations[task_id] = outputs;
+  return *this;
 }
 
-std::vector<ItemAtStation> Context::get_workcell_task_outputs(
-  const std::string& task_id) const
+std::vector<nexus_orchestrator_msgs::msg::ItemAtStation>
+Context::get_workcell_task_outputs(const std::string& task_id) const
 {
-
+  std::lock_guard<std::mutex> lock(_mutex);
+  const auto it = _workcell_task_output_stations.find(task_id);
+  if (it == _workcell_task_output_stations.end())
+  {
+    return {};
+  }
+  return it->second;
 }
 
 Context& Context::set_workcell_sessions(
@@ -298,11 +314,21 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
   return it->second;
 }
 
-void Context::set_sku_location(const WorkcellTask& task)
+void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
 {
-  for (const auto& item_it : task.output_item_to_station_map)
+  std::unordered_map<std::string, std::string> item_id_to_station_id_map;
+  for (const auto& output : this->get_workcell_task_outputs(task.task_id))
   {
-    this->sku_locations[item_it.first] = item_it.second;
+    item_id_to_station_id_map[output.item_id] = output.station_id;
+  }
+
+  for (const auto& item_id : task.output_item_ids)
+  {
+    const auto it = item_id_to_station_id_map.find(item_id);
+    // TODO(ac): avoid assumptions that the workcell name is where the SKU is
+    // if undefined.
+    this->sku_locations[item_id] = it == item_id_to_station_id_map.end() ?
+      workcell : it->second;
   }
 }
 
