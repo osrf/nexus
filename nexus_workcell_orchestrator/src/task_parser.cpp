@@ -31,6 +31,8 @@ Task TaskParser::parse_task(
     workcell_task.work_order_id,
     workcell_task.task_id,
     workcell_task.type,
+    workcell_task.input_item_ids,
+    workcell_task.output_item_ids,
     YAML::Load(workcell_task.payload),
     YAML::Load(workcell_task.previous_results),
   };

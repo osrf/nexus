@@ -165,52 +165,13 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
     this->declare_parameter("bt_logging_blocklist", std::vector<std::string>{}, desc);
   }
 
-  // TODO(ac): use a single source of truth that defines the IO station of
-  // workcells, positions, and probably even connecting navigation graphs that
-  // transporters will use. These mappings might even need to change at runtime.
   {
     ParameterDescriptor desc;
     desc.read_only = true;
     desc.description =
-      "A yaml containing a dictionary of remapping task types and input/output station names.";
-    this->declare_parameter("remap_task_input_output_stations", "", desc);
-  }
-
-  std::unordered_map<std::string, WorkcellStation> io_stations;
-  const auto remap_task_input_output_stations =
-    this->get_parameter("remap_task_input_output_stations").as_string();
-  if (!remap_task_input_output_stations.empty())
-  {
-    RCLCPP_INFO(
-      this->get_logger(),
-      "remap_task_input_output_stations: %s",
-      remap_task_input_output_stations.c_str());
-  }
-  try
-  {
-    YAML::Node node = YAML::Load(remap_task_input_output_stations);
-    for (const auto& n : node)
-    {
-      if (n.second["input"] && !n.second["input"].as<std::string>().empty())
-      {
-        this->_task_to_input_station_map.emplace(
-          n.first.as<std::string>(),
-          n.second["input"].as<std::string>());
-      }
-      if (n.second["output"] && !n.second["output"].as<std::string>().empty())
-      {
-        this->_task_to_output_station_map.emplace(
-          n.first.as<std::string>(),
-          n.second["output"].as<std::string>());
-      }
-    }
-  }
-  catch (YAML::ParserException& e)
-  {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "Failed to parse remap_task_input_output_stations parameter: (%s)",
-      e.what());
+      "Path to a yaml containing a dictionary of task names to the names of "
+      "their input and output stations";
+    this->declare_parameter("task_io_config_file_path", "", desc);
   }
 
   this->_register_workcell_client =
@@ -253,6 +214,52 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
       }
     }
   }
+
+  auto task_io_config_file_path =
+    this->get_parameter("task_io_config_file_path").as_string();
+  if (task_io_config_file_path.empty())
+  {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Parameter task_io_config_file_path was not defined, all supported "
+      "workcell tasks are expected to not have input or output stations");
+  }
+  std::stringstream input_ss;
+  std::stringstream output_ss;
+  try
+  {
+    const YAML::Node task_io_config = YAML::LoadFile(task_io_config_file_path);
+    for (const auto& t_it : task_io_config)
+    {
+      const auto desc =
+        nexus_orchestrator_msgs::build<WorkcellTaskDescription>()
+          .task_type(t_it.first.as<std::string>())
+          .input_stations(t_it.second["inputs"].as<std::vector<std::string>>())
+          .output_stations(t_it.second["outputs"].as<std::vector<std::string>>());
+      for (const auto& in : desc.input_stations)
+      {
+        this->_active_input_stations.insert(in);
+        input_ss << in << ",";
+      }
+      for (const auto& out : desc.output_stations)
+      {
+        this->_active_output_stations.insert(out);
+        output_ss << out << ",";
+      }
+
+      _task_description_map[desc.task_type] = desc;
+    }
+  }
+  catch(YAML::ParserException& e)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(), "Failed to parse task_io_config_file_path parameter: (%s)",
+      e.what());
+  }
+  RCLCPP_INFO(
+    this->get_logger(), "Active input stations: [%s]", input_ss.str().c_str());
+  RCLCPP_INFO(
+    this->get_logger(), "Active output stations: [%s]", output_ss.str().c_str());
 
   this->_register_timer = this->create_wall_timer(REGISTER_TICK_RATE,
       [this]()
@@ -1022,33 +1029,30 @@ void WorkcellOrchestrator::_register()
   req->description.capabilities = caps;
   req->description.workcell_id = this->get_name();
 
-  std::unordered_set<std::string> input_stations;
-  for (const auto& input_it : _task_to_input_station_map)
+  std::unordered_set<std::string> tmp_input_stations =
+    this->_active_input_stations;
+  for (const auto& os : this->_active_output_stations)
   {
-    input_stations.insert(input_it.second);
-  }
-  for (const auto& output_it : _task_to_output_station_map)
-  {
-    if (input_stations.find(output_it.second) == input_stations.end())
+    if (tmp_input_stations.find(os) == tmp_input_stations.end())
     {
       req->description.io_stations.emplace_back(
         nexus_orchestrator_msgs::build<WorkcellStation>()
-          .name(output_it.second)
+          .name(os)
           .io_type(WorkcellStation::IO_TYPE_OUTPUT));
       continue;
     }
 
     req->description.io_stations.emplace_back(
       nexus_orchestrator_msgs::build<WorkcellStation>()
-        .name(output_it.second)
+        .name(os)
         .io_type(WorkcellStation::IO_TYPE_BIDIRECTIONAL));
-    input_stations.erase(output_it.second);
+    tmp_input_stations.erase(os);
   }
-  for (const auto& input : input_stations)
+  for (const auto& is : tmp_input_stations)
   {
     req->description.io_stations.emplace_back(
       nexus_orchestrator_msgs::build<WorkcellStation>()
-        .name(input)
+        .name(is)
         .io_type(WorkcellStation::IO_TYPE_INPUT));
   }
 
@@ -1143,23 +1147,40 @@ void WorkcellOrchestrator::_handle_task_doable(
   try
   {
     auto task = this->_task_parser.parse_task(req->task);
-    resp->success = this->_task_checker->is_task_doable(task);
 
-    const auto step = nexus::common::WorkOrder::Step(task.data);
-    if (step.input_items().size() > 0)
+    const auto task_desc_it = this->_task_description_map.find(task.type);
+    if (task_desc_it == this->_task_description_map.end() &&
+      (!task.input_item_ids.empty() || !task.output_item_ids.empty()))
     {
-      resp->input_station =
-        _task_to_input_station_map.find(task.type) ==
-        _task_to_input_station_map.end()
-        ? this->get_name() : _task_to_input_station_map[task.type];
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "No I/O stations defined for task type [%s], even though I/O items are "
+        "expected. Rejecting.",
+        task.type.c_str());
+      resp->success = false;
+      return;
     }
-    if (step.output_items().size() > 0)
+
+    const std::unordered_set<std::string> task_input_stations(
+      task_desc_it->second.input_stations.begin(),
+      task_desc_it->second.input_stations.end());
+    const std::unordered_set<std::string> task_output_stations(
+      task_desc_it->second.output_stations.begin(),
+      task_desc_it->second.output_stations.end());
+
+    bool stations_valid = true;
+    if ((task.input_item_ids.empty() != task_input_stations.empty()) ||
+      (task.output_item_ids.empty() != task_output_stations.empty()))
     {
-      resp->output_station =
-        _task_to_output_station_map.find(task.type) ==
-        _task_to_output_station_map.end()
-        ? this->get_name() : _task_to_output_station_map[task.type];
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "I/O stations defined for task type [%s] do not match expected I/O "
+        "from task. Rejecting.",
+        task.type.c_str());
+      stations_valid = false;
     }
+
+    resp->success = stations_valid && this->_task_checker->is_task_doable(task);
 
     if (resp->success)
     {

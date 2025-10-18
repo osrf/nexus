@@ -1,0 +1,9 @@
+place_on_conveyor:
+  inputs: []
+  outputs: [workcell_1_left]
+invalid_place_on_conveyor:
+  inputs: []
+  outputs: [workcell_1_left]
+place_on_amr:
+  inputs: []
+  outputs: [workcell_1_front]

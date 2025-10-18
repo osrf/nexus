@@ -33,6 +33,8 @@ struct Task
 public: std::string work_order_id;
 public: std::string task_id;
 public: std::string type;
+public: std::vector<std::string> input_item_ids;
+public: std::vector<std::string> output_item_ids;
 public: TaskData data;
 public: YAML::Node previous_results;
 };
