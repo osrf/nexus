@@ -27,6 +27,7 @@
 #include <nexus_common/task_remapper.hpp>
 #include <nexus_endpoints.hpp>
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
+#include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
 
@@ -49,6 +50,7 @@ class SystemOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
 public:
+  using ItemAtStation = nexus_orchestrator_msgs::msg::ItemAtStation;
   using WorkOrderAction = nexus::endpoints::WorkOrderAction;
   using WorkOrderActionType = WorkOrderAction::ActionType;
   using WorkOrderGoalHandle =
@@ -66,6 +68,14 @@ public:
     const rclcpp_lifecycle::State& previous) override;
 
   CallbackReturn on_cleanup(const rclcpp_lifecycle::State& previous) override;
+
+  struct WorkcellTaskAssignment
+  {
+    std::string task_id;
+    std::string workcell_id;
+    std::vector<ItemAtStation> inputs;
+    std::vector<ItemAtStation> outputs;
+  };
 
 private:
   std::unordered_map<std::string, Job> _jobs;
@@ -177,21 +187,22 @@ private:
    * Send bid requests and assign the task to the most suitable workcell.
    * Currently this always assign to the first workcell that accepts the bid.
    *
-   * @param on_done Called with the assigned workcell ID or std::nullopt if no
+   * @param on_done Called with the workcell assignment or std::nullopt if no
    *   workcell is able to perform the task.
    */
 private: void _assign_workcell_task(const WorkcellTask& task,
-    std::function<void(const std::optional<std::string>& assigned_wc)> on_done);
+    std::function<void(const std::optional<WorkcellTaskAssignment>&
+    assigned_wc)> on_done);
 
   /**
    * Batch assign tasks to workcells.
    *
-   * @param on_done Called with the map of task ids and their assigned workcell
-   * ids when all tasks have been assigned.
+   * @param on_done Called with the map of task ids and their workcell
+   *   assignments when all tasks have been assigned.
    */
 private: void _assign_all_tasks(const std::vector<WorkcellTask>& tasks,
     std::function<void(const std::unordered_map<std::string,
-    std::optional<std::string>>&)> on_done);
+    std::optional<WorkcellTaskAssignment>>&)> on_done);
 
 private: WorkOrderState _get_wo_state(const Job& job)
   const;

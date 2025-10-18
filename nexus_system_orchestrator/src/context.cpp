@@ -124,6 +124,32 @@ std::optional<std::string> Context::get_workcell_task_assignment(
   return assignment_it->second;
 }
 
+Context& Context::set_workcell_task_inputs(
+  const std::string& task_id,
+  const std::vector<ItemAtStation>& inputs)
+{
+
+}
+
+std::vector<ItemAtStation> Context::get_workcell_task_inputs(
+  const std::string& task_id) const
+{
+
+}
+
+Context& Context::set_workcell_task_outputs(
+  const std::string& task_id,
+  const std::vector<ItemAtStation>& outputs)
+{
+
+}
+
+std::vector<ItemAtStation> Context::get_workcell_task_outputs(
+  const std::string& task_id) const
+{
+
+}
+
 Context& Context::set_workcell_sessions(
   const std::unordered_map<std::string, std::shared_ptr<WorkcellSession>>& sessions)
 {
@@ -272,12 +298,11 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
   return it->second;
 }
 
-void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
+void Context::set_sku_location(const WorkcellTask& task)
 {
-  for (const auto& item : task.outputs)
+  for (const auto& item_it : task.output_item_to_station_map)
   {
-    this->sku_locations[item.item_id] =
-      item.station_id.empty() ? workcell : item.station_id;
+    this->sku_locations[item_it.first] = item_it.second;
   }
 }
 

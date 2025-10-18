@@ -87,7 +87,7 @@ def launch_setup(context, *args, **kwargs):
 
     main_bt_filename = "main.xml"
     remap_task_types = """{
-                        pick_and_place: [place_on_conveyor, pick_from_conveyor],
+                        pick_and_place: [place_on_amr, place_on_conveyor, pick_from_amr, pick_from_conveyor],
                     }"""
     max_jobs = "2"
     max_workcell_jobs = "1"

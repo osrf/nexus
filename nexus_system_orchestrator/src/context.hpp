@@ -23,6 +23,7 @@
 #include <nexus_common/task_remapper.hpp>
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_endpoints.hpp>
+#include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -41,6 +42,7 @@ namespace nexus::system_orchestrator {
 class Context
 {
 public:
+  using ItemAtStation = nexus_orchestrator_msgs::msg::ItemAtStation;
   using WorkOrder = common::WorkOrder;
   using WorkOrderGoalHandle =
     rclcpp_action::ServerGoalHandle<nexus::endpoints::WorkOrderAction::ActionType>;
@@ -79,6 +81,20 @@ public:
 
   std::optional<std::string> get_workcell_task_assignment(
     const std::string& workcell_task_id) const;
+
+  Context& set_workcell_task_inputs(
+    const std::string& task_id,
+    const std::vector<ItemAtStation>& inputs);
+
+  std::vector<ItemAtStation> get_workcell_task_inputs(
+    const std::string& task_id) const;
+
+  Context& set_workcell_task_outputs(
+    const std::string& task_id,
+    const std::vector<ItemAtStation>& outputs);
+
+  std::vector<ItemAtStation> get_workcell_task_outputs(
+    const std::string& task_id) const;
 
   Context& set_workcell_sessions(
     const std::unordered_map<std::string,
@@ -129,7 +145,7 @@ public:
     const std::string& task_id) const;
 
   // Given a task, update the location of its output items to the workcell
-  void set_sku_location(const WorkcellTask& task, const std::string& workcell);
+  void set_sku_location(const WorkcellTask& task);
 
   std::optional<std::string> get_sku_location(const std::string& sku) const;
 
@@ -169,6 +185,12 @@ private:
    * Map of workcell task ids and their queued signals.
    */
   std::unordered_map<std::string, std::vector<std::string>> _queued_signals;
+
+  /**
+   * Map of task ids and their inputs and outputs.
+   */
+  std::unordered_map<std::string, std::vector<ItemAtStation>> _workcell_task_input_stations = {};
+  std::unordered_map<std::string, std::vector<ItemAtStation>> _workcell_task_output_stations = {};
 
   mutable std::mutex _mutex;
 };

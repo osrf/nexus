@@ -236,12 +236,12 @@ WorkcellOrchestrator::WorkcellOrchestrator(const rclcpp::NodeOptions& options)
           .task_type(t_it.first.as<std::string>())
           .input_stations(t_it.second["inputs"].as<std::vector<std::string>>())
           .output_stations(t_it.second["outputs"].as<std::vector<std::string>>());
-      for (const auto in : desc.input_stations)
+      for (const auto& in : desc.input_stations)
       {
         this->_active_input_stations.insert(in);
         input_ss << in << ",";
       }
-      for (const auto out : desc.output_stations)
+      for (const auto& out : desc.output_stations)
       {
         this->_active_output_stations.insert(out);
         output_ss << out << ",";
@@ -1150,8 +1150,7 @@ void WorkcellOrchestrator::_handle_task_doable(
 
     const auto task_desc_it = this->_task_description_map.find(task.type);
     if (task_desc_it == this->_task_description_map.end() &&
-      !task.input_item_to_station_map.empty() &&
-      !task.output_item_to_station_map.empty())
+      (!task.input_item_ids.empty() || !task.output_item_ids.empty()))
     {
       RCLCPP_DEBUG(
         this->get_logger(),
@@ -1169,49 +1168,16 @@ void WorkcellOrchestrator::_handle_task_doable(
       task_desc_it->second.output_stations.begin(),
       task_desc_it->second.output_stations.end());
 
-    // TODO(ac): migrate these station checks to a more comprehensive task
-    // checker
     bool stations_valid = true;
-    for (const auto& input : task.input_item_to_station_map)
+    if ((task.input_item_ids.empty() != task_input_stations.empty()) ||
+      (task.output_item_ids.empty() != task_output_stations.empty()))
     {
-      if (!stations_valid)
-      {
-        break;
-      }
-      if (task_input_stations.find(input.second) ==
-        task_input_stations.end())
-      {
-        stations_valid = false;
-        RCLCPP_DEBUG(
-          this->get_logger(), "Invalid input station [%s] for item [%s]",
-          input.second.c_str(),
-          input.first.c_str());
-      }
-    }
-
-    for (const auto& output : task.output_item_to_station_map)
-    {
-      if (!stations_valid)
-      {
-        break;
-      }
-
-      const std::string station_name = output.second;
-      // We assume empty station names mean we should use the workcell name
-      // as the station name.
-      if (station_name.empty())
-      {
-        continue;
-      }
-      if (task_output_stations.find(output.second) ==
-        task_output_stations.end())
-      {
-        stations_valid = false;
-        RCLCPP_DEBUG(
-          this->get_logger(), "Invalid output station [%s] for item [%s]",
-          output.second.c_str(),
-          output.first.c_str());
-      }
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "I/O stations defined for task type [%s] do not match expected I/O "
+        "from task. Rejecting.",
+        task.type.c_str());
+      stations_valid = false;
     }
 
     resp->success = stations_valid && this->_task_checker->is_task_doable(task);

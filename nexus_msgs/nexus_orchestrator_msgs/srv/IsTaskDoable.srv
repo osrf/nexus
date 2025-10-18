@@ -8,6 +8,10 @@ WorkcellTask task
 # True if the task can be performed
 bool success
 
+ItemAtStation[] inputs
+
+ItemAtStation[] outputs
+
 # An estimate of how long it will take the workcell to perform
 # this task
 builtin_interfaces/Time estimated_finish_time

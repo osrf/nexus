@@ -49,15 +49,6 @@ public:
     }
     return std::nullopt;
   }
-
-  std::optional<std::string> station() const
-  {
-    if (this->yaml["station"])
-    {
-      return this->yaml["station"].as<std::string>();
-    }
-    return std::nullopt;
-  }
 };
 
 }  // namespace nexus::common

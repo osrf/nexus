@@ -47,7 +47,7 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  if (workcell_task->inputs.empty())
+  if (workcell_task->input_item_to_station_map.empty())
   {
     // We actually don't need to transport anything here, just return success
     // and a nullopt transportation task
@@ -55,7 +55,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   }
 
   // TODO(ac): support tasks that require more than 1 inputs
-  if (workcell_task->inputs.size() > 1)
+  if (workcell_task->input_item_to_station_map.size() > 1)
   {
     RCLCPP_ERROR(
       this->_ctx->get_node().get_logger(),
@@ -63,7 +63,7 @@ BT::NodeStatus CreateTransporterTask::tick()
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
-  const auto input = workcell_task->inputs[0];
+  const auto input = workcell_task->input_item_to_station_map.begin().first;
 
   const auto maybe_workcell_id =
     this->_ctx->get_workcell_task_assignment(workcell_task->task_id);

@@ -9,8 +9,7 @@
           "metadata": {
             "quantity": 1,
             "state": "state_1"
-          },
-          "station": "workcell_1_left"
+          }
         }
       ]
     },
@@ -22,8 +21,7 @@
           "metadata": {
             "quantity": 1,
             "state": "state_1"
-          },
-          "station": "workcell_2_right"
+          }
         }
       ]
     }
