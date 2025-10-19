@@ -123,7 +123,7 @@ bool WorkcellRequest::on_result(
   // TODO(luca) When output stations are available, set the location of the SKU
   // to the output station here and the workcell itself when WorkcellRequest is
   // called.
-  if (!this->_task.output_item_ids.empty())
+  if (!this->_task.output_items.empty())
   {
     this->_ctx->set_sku_location(this->_task, this->_workcell_id);
   }

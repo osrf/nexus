@@ -58,7 +58,7 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  if (workcell_task->input_item_ids.empty())
+  if (workcell_task->input_items.empty())
   {
     // We actually don't need to transport anything here, just return success
     // and a nullopt transportation task
@@ -66,16 +66,16 @@ BT::NodeStatus CreateTransporterTask::tick()
   }
 
   // TODO(ac): support tasks that require more than 1 inputs
-  if (workcell_task->input_item_ids.size() > 1)
+  if (workcell_task->input_items.size() > 1)
   {
     RCLCPP_ERROR(
       this->_ctx->get_node().get_logger(),
-      "%s: only support creating transporter tasks for one input",
+      "%s: only support creating transporter tasks for one input per step",
       this->name().c_str());
     return BT::NodeStatus::FAILURE;
   }
 
-  const auto input_item_id = workcell_task->input_item_ids[0];
+  const auto input_item_id = workcell_task->input_items[0].item_id;
   const auto designated_inputs =
     this->_ctx->get_workcell_task_inputs(workcell_task->task_id);
   if (designated_inputs.empty())
@@ -93,7 +93,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   {
     if (input.item_id == input_item_id)
     {
-      input_station_id = input.station_id;
+      input_station_id = input.assignment.station_id;
       break;
     }
   }

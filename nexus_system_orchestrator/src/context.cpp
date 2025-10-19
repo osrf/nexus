@@ -319,15 +319,15 @@ void Context::set_sku_location(const WorkcellTask& task, const std::string& work
   std::unordered_map<std::string, std::string> item_id_to_station_id_map;
   for (const auto& output : this->get_workcell_task_outputs(task.task_id))
   {
-    item_id_to_station_id_map[output.item_id] = output.station_id;
+    item_id_to_station_id_map[output.item_id] = output.assignment.station_id;
   }
 
-  for (const auto& item_id : task.output_item_ids)
+  for (const auto& items : task.output_items)
   {
-    const auto it = item_id_to_station_id_map.find(item_id);
+    const auto it = item_id_to_station_id_map.find(items.item_id);
     // TODO(ac): avoid assumptions that the workcell name is where the SKU is
     // if undefined.
-    this->sku_locations[item_id] = it == item_id_to_station_id_map.end() ?
+    this->sku_locations[items.item_id] = it == item_id_to_station_id_map.end() ?
       workcell : it->second;
   }
 }

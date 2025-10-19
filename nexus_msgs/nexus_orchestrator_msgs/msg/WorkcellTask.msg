@@ -7,9 +7,9 @@ string task_id
 # Type of the task
 string type
 
-string[] input_item_ids
+ItemDescription[] input_items
 
-string[] output_item_ids
+ItemDescription[] output_items
 
 # YAML of the payload data
 string payload

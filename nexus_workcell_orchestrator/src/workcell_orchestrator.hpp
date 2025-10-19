@@ -173,10 +173,6 @@ private: void _handle_task_doable(
 
 private: int _max_parallel_jobs = 1;
 
-private: std::unordered_set<std::string> _active_input_stations = {};
-
-private: std::unordered_set<std::string> _active_output_stations = {};
-
 private: std::unordered_map<std::string, WorkcellTaskDescription> _task_description_map;
 };
 

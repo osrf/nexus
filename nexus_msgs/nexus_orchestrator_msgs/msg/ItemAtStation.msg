@@ -1,3 +1,5 @@
+# Identifier of the item
 string item_id
 
-string station_id
+# Station assignment based on the type of the item
+ItemTypeToStationAssignment assignment

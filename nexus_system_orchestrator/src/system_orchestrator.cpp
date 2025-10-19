@@ -33,6 +33,7 @@
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_common/pausable_sequence.hpp>
 #include <nexus_common/sync_service_client.hpp>
+#include <nexus_orchestrator_msgs/msg/item_description.hpp>
 #include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/task_progress.hpp>
@@ -775,11 +776,17 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
 
     for (const auto& ii : step.input_items())
     {
-      task.input_item_ids.push_back(ii.guid());
+      task.input_items.emplace_back(
+        nexus_orchestrator_msgs::build<nexus_orchestrator_msgs::msg::ItemDescription>()
+          .item_id(ii.guid())
+          .item_type(ii.type()));
     }
     for (const auto& oi : step.output_items())
     {
-      task.output_item_ids.push_back(oi.guid());
+      task.output_items.emplace_back(
+        nexus_orchestrator_msgs::build<nexus_orchestrator_msgs::msg::ItemDescription>()
+          .item_id(oi.guid())
+          .item_type(oi.type()));
     }
 
     // Inject metadata into payload for workcell.
@@ -885,13 +892,23 @@ void SystemOrchestrator::_handle_register_workcell(
   resp->success = true;
 
   std::stringstream ss;
-  for (const auto& station : added.first->second->description.io_stations)
+  for (const auto& task_desc : added.first->second->description.task_descriptions)
   {
-    ss << station.name << ",";
+    ss << task_desc.task_type << ":\ninputs:[";
+    for (const auto& in : task_desc.inputs)
+    {
+      ss << in.item_type << ": " << in.station_id << ", ";
+    }
+    ss << "]\noutputs:[";
+    for (const auto& out : task_desc.outputs)
+    {
+      ss << out.item_type << ": " << out.station_id << ", ";
+    }
+    ss << "]\n";
   }
   RCLCPP_INFO(
     this->get_logger(),
-    "Registered workcell [%s] with stations: [%s]",
+    "Registered workcell [%s] with task descriptions:\n%s",
     workcell_id.c_str(),
     ss.str().c_str());
 }
