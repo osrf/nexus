@@ -102,10 +102,10 @@ class PickAndPlaceRMFTest(NexusTestCase):
             self.assertEqual(len(msg.task_states), 2)
             state: TaskState = msg.task_states[0]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "1/place_on_conveyor/0")
+            self.assertEqual(state.task_id, "1/place_on_amr/0")
             state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "1/pick_from_conveyor/1")
+            self.assertEqual(state.task_id, "1/pick_from_amr/1")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)

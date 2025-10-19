@@ -390,7 +390,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "task_io_config_file_path",
             default_value="",
-            description="Path to a yaml containing a dictionary of task names to the names of their input and output stations",
+            description="Path to a yaml containing a dictionary of task names to the input and output item types and station assignments",
         ),
         OpaqueFunction(function = launch_setup)
     ])
