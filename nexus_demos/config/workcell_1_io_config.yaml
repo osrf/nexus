@@ -1,0 +1,24 @@
+place_on_conveyor:
+  inputs: []
+  outputs: [
+    {
+      type: product,
+      station: workcell_1_left
+    }
+  ]
+invalid_place_on_conveyor:
+  inputs: []
+  outputs: [
+    {
+      type: product,
+      station: workcell_1_left
+    }
+  ]
+place_on_amr:
+  inputs: []
+  outputs: [
+    {
+      type: product,
+      station: workcell_1_front
+    }
+  ]

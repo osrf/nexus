@@ -41,6 +41,11 @@ public:
     return this->yaml["guid"].as<std::string>();
   }
 
+  std::string type() const
+  {
+    return this->yaml["type"].as<std::string>();
+  }
+
   std::optional<MetaData> metadata() const
   {
     if (this->yaml["metadata"])
@@ -68,6 +73,11 @@ struct convert<nexus::common::Item>
     if (!node["guid"] || node["guid"].as<std::string>().empty())
     {
       throw std::invalid_argument("missing required [guid] field");
+    }
+
+    if (!node["type"] || node["type"].as<std::string>().empty())
+    {
+      throw std::invalid_argument("missing required [type] field");
     }
 
     data.yaml = node;

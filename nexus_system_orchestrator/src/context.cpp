@@ -124,44 +124,46 @@ std::optional<std::string> Context::get_workcell_task_assignment(
   return assignment_it->second;
 }
 
-Context& Context::set_workcell_task_input_station(
-  const std::string& task_id, const std::string& input_station_name)
+Context& Context::set_workcell_task_inputs(
+  const std::string& task_id,
+  const std::vector<ItemAtStation>& inputs)
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  _workcell_task_input_stations[task_id] = input_station_name;
+  _workcell_task_input_stations[task_id] = inputs;
   return *this;
 }
 
-std::optional<std::string> Context::get_workcell_task_input_station(
-  const std::string& task_id) const
+std::vector<nexus_orchestrator_msgs::msg::ItemAtStation>
+Context::get_workcell_task_inputs(const std::string& task_id) const
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  auto input_station_it = _workcell_task_input_stations.find(task_id);
-  if (input_station_it == _workcell_task_input_stations.end())
+  const auto it = _workcell_task_input_stations.find(task_id);
+  if (it == _workcell_task_input_stations.end())
   {
-    return std::nullopt;
+    return {};
   }
-  return input_station_it->second;
+  return it->second;
 }
 
-Context& Context::set_workcell_task_output_station(
-  const std::string& task_id, const std::string& output_station_name)
+Context& Context::set_workcell_task_outputs(
+  const std::string& task_id,
+  const std::vector<ItemAtStation>& outputs)
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  _workcell_task_output_stations[task_id] = output_station_name;
+  _workcell_task_output_stations[task_id] = outputs;
   return *this;
 }
 
-std::optional<std::string> Context::get_workcell_task_output_station(
-  const std::string& task_id) const
+std::vector<nexus_orchestrator_msgs::msg::ItemAtStation>
+Context::get_workcell_task_outputs(const std::string& task_id) const
 {
   std::lock_guard<std::mutex> lock(_mutex);
-  auto output_station_it = _workcell_task_output_stations.find(task_id);
-  if (output_station_it == _workcell_task_output_stations.end())
+  const auto it = _workcell_task_output_stations.find(task_id);
+  if (it == _workcell_task_output_stations.end())
   {
-    return std::nullopt;
+    return {};
   }
-  return output_station_it->second;
+  return it->second;
 }
 
 Context& Context::set_workcell_sessions(
@@ -314,9 +316,19 @@ std::optional<std::vector<std::string>> Context::get_task_queued_signals(
 
 void Context::set_sku_location(const WorkcellTask& task, const std::string& workcell)
 {
-  if (task.output_item_id.size() > 0)
+  std::unordered_map<std::string, std::string> item_id_to_station_id_map;
+  for (const auto& output : this->get_workcell_task_outputs(task.task_id))
   {
-    this->sku_locations[task.output_item_id] = workcell;
+    item_id_to_station_id_map[output.item_id] = output.assignment.station_id;
+  }
+
+  for (const auto& items : task.output_items)
+  {
+    const auto it = item_id_to_station_id_map.find(items.item_id);
+    // TODO(ac): avoid assumptions that the workcell name is where the SKU is
+    // if undefined.
+    this->sku_locations[items.item_id] = it == item_id_to_station_id_map.end() ?
+      workcell : it->second;
   }
 }
 
