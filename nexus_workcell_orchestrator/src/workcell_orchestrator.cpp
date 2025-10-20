@@ -57,7 +57,6 @@ using ItemTypeToStationAssignment =
   nexus_orchestrator_msgs::msg::ItemTypeToStationAssignment;
 using TaskState = nexus_orchestrator_msgs::msg::TaskState;
 using WorkcellRequest = endpoints::WorkcellRequestAction::ActionType;
-using WorkcellStation = nexus_orchestrator_msgs::msg::WorkcellStation;
 
 using rcl_interfaces::msg::ParameterDescriptor;
 using lifecycle_msgs::msg::State;
