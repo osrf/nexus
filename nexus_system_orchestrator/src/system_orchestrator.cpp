@@ -892,23 +892,19 @@ void SystemOrchestrator::_handle_register_workcell(
   resp->success = true;
 
   std::stringstream ss;
-  for (const auto& task_desc : added.first->second->description.task_descriptions)
+  ss << "inputs:\n  ";
+  for (const auto& input_desc : added.first->second->description.inputs)
   {
-    ss << task_desc.task_type << ":\ninputs:[";
-    for (const auto& in : task_desc.inputs)
-    {
-      ss << in.item_type << ": " << in.station_id << ", ";
-    }
-    ss << "]\noutputs:[";
-    for (const auto& out : task_desc.outputs)
-    {
-      ss << out.item_type << ": " << out.station_id << ", ";
-    }
-    ss << "]\n";
+    ss << input_desc.item_type << ": " << input_desc.station_id << ", ";
+  }
+  ss << "\noutputs:\n  ";
+  for (const auto& output_desc : added.first->second->description.outputs)
+  {
+    ss << output_desc.item_type << ": " << output_desc.station_id << ", ";
   }
   RCLCPP_INFO(
     this->get_logger(),
-    "Registered workcell [%s] with task descriptions:\n%s",
+    "Registered workcell [%s] with item types mapped to stations:\n%s",
     workcell_id.c_str(),
     ss.str().c_str());
 }

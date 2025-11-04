@@ -159,7 +159,7 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot1_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_1.json5",
-                    "task_io_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_1_io_config.yaml"),
+                    "io_stations_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_1_io_config.yaml"),
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -205,7 +205,7 @@ def launch_setup(context, *args, **kwargs):
                     "robot_ip": robot2_ip,
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_config_filename": "config/zenoh/workcell_2.json5",
-                    "task_io_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_2_io_config.yaml"),
+                    "io_stations_config_file_path": os.path.join(get_package_share_directory("nexus_demos"), "config", "workcell_2_io_config.yaml"),
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )

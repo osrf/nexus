@@ -100,7 +100,7 @@ def launch_setup(context, *args, **kwargs):
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
     # pass to this node.
     bt_logging_blocklist: List[str] = ["IsPauseTriggered"]
-    task_io_config_file_path = LaunchConfiguration("task_io_config_file_path")
+    io_stations_config_file_path = LaunchConfiguration("io_stations_config_file_path")
 
     workcell_id_str = workcell_id.perform(context)
 
@@ -178,7 +178,7 @@ def launch_setup(context, *args, **kwargs):
             "gripper_max_effort": 0.0,
             "remap_task_types": remap_task_types,
             "bt_logging_blocklist": bt_logging_blocklist,
-            "task_io_config_file_path": task_io_config_file_path,
+            "io_stations_config_file_path": io_stations_config_file_path,
         }],
         arguments=['--ros-args', '--log-level', 'info'],
     )
@@ -388,9 +388,9 @@ def generate_launch_description():
             description="A yaml containing a dictionary of task types and an array of remaps",
         ),
         DeclareLaunchArgument(
-            "task_io_config_file_path",
+            "io_stations_config_file_path",
             default_value="",
-            description="Path to a yaml containing a dictionary of task names to the input and output item types and station assignments",
+            description="Path to a yaml containing a dictionary of station names to input and output item types",
         ),
         OpaqueFunction(function = launch_setup)
     ])

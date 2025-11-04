@@ -6,7 +6,7 @@
       "outputItems": [
         {
           "guid": "productA",
-          "type": "product",
+          "type": "conveyor_product",
           "metadata": {
             "quantity": 1,
             "state": "state_1"
@@ -19,7 +19,7 @@
       "inputItems": [
         {
           "guid": "productA",
-          "type": "product",
+          "type": "conveyor_product",
           "metadata": {
             "quantity": 1,
             "state": "state_1"

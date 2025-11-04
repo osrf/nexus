@@ -1,16 +1,6 @@
-pick_from_conveyor:
-  inputs: [
-    {
-      type: product,
-      station: workcell_2_right
-    }
-  ]
+workcell_2_right:
+  inputs: [conveyor_product]
   outputs: []
-pick_from_amr:
-  inputs: [
-    {
-      type: product,
-      station: workcell_2_front
-    }
-  ]
+workcell_2_front:
+  inputs: [amr_product]
   outputs: []

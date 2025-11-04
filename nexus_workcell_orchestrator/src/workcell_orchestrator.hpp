@@ -29,8 +29,6 @@
 #include <nexus_common/bt_store.hpp>
 #include <nexus_common/task_remapper.hpp>
 
-#include <nexus_orchestrator_msgs/msg/workcell_task_description.hpp>
-
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
 
@@ -62,8 +60,6 @@ private: using CallbackReturn =
 public: using GoalHandlePtr =
     std::shared_ptr<rclcpp_action::ServerGoalHandle<endpoints::WorkcellRequestAction::ActionType>>;
 public: using WorkcellState = endpoints::WorkcellStateTopic::MessageType;
-public: using WorkcellTaskDescription =
-    nexus_orchestrator_msgs::msg::WorkcellTaskDescription;
 
 public: WorkcellOrchestrator(
     const rclcpp::NodeOptions& options = rclcpp::NodeOptions{});
@@ -173,7 +169,10 @@ private: void _handle_task_doable(
 
 private: int _max_parallel_jobs = 1;
 
-private: std::unordered_map<std::string, WorkcellTaskDescription> _task_description_map;
+private: std::unordered_map<std::string, std::string> _input_item_type_to_station_map;
+
+private: std::unordered_map<std::string, std::string> _output_item_type_to_station_map;
+
 };
 
 }
