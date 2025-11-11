@@ -127,7 +127,7 @@ def launch_setup(context, *args, **kwargs):
     bt_logging_blocklist : List[str] = ["IsPauseTriggered"]
 
     rviz_config_filename = "nexus_panel.rviz"
-    if (use_multiple_transporters.perform(context).lower() == "true"):
+    if IfCondition(use_multiple_transporters).evaluate(context):
         rviz_config_filename = "nexus_panel_rmf.rviz"
 
     nexus_rviz_config = os.path.join(
