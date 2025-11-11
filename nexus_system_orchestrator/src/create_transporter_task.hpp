@@ -41,7 +41,6 @@ namespace nexus::system_orchestrator {
  *
  * Input Ports:
  *   workcell_task |WorkcellTask| The task that the workcell is trying to execute, used to get its input items
- *   destination |std::string| The workcell name to transport to
  */
 class CreateTransporterTask : public BT::SyncActionNode
 {
@@ -51,8 +50,6 @@ public: static BT::PortsList providedPorts()
   {
     return { BT::InputPort<WorkcellTask>("workcell_task",
         "The task that the workcell is trying to execute."),
-      BT::InputPort<std::string>(
-        "destination", "Name of the workcell to transport to."),
       BT::OutputPort<std::optional<TransportationRequest>>(
          "result", "The result transportation task, or std::nullopt if it's not needed") };
   }

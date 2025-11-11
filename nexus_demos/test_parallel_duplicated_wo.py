@@ -47,7 +47,7 @@ class ParallelWoTest(NexusTestCase):
 
         await self.wait_for_workcells("workcell_1", "workcell_2")
         print("all workcells are ready")
-        await self.wait_for_transporters("transporter_node")
+        await self.wait_for_transporters("mock_transporter_node")
         print("all transporters are ready")
 
         # create action client to send work order
@@ -66,7 +66,7 @@ class ParallelWoTest(NexusTestCase):
         """
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place_conveyor.json") as f:
             goal_msg.order.work_order = f.read()
         goal_handle = cast(
             ClientGoalHandle, await self.action_client.send_goal_async(goal_msg)
@@ -75,7 +75,7 @@ class ParallelWoTest(NexusTestCase):
 
         goal_msg_2 = ExecuteWorkOrder.Goal()
         goal_msg_2.order.work_order_id = "2"
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place_conveyor.json") as f:
             goal_msg_2.order.work_order = f.read()
         goal_handle_2 = cast(
             ClientGoalHandle, await self.action_client.send_goal_async(goal_msg_2)

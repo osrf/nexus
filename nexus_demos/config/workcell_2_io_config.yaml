@@ -1,0 +1,6 @@
+workcell_2_right:
+  inputs: [conveyor_product]
+  outputs: []
+workcell_2_front:
+  inputs: [amr_product]
+  outputs: []

@@ -20,12 +20,15 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <nexus_orchestrator_msgs/msg/item_description.hpp>
+
 #include <memory>
 #include <string>
 
 //==============================================================================
 namespace nexus {
 
+using ItemDescription = nexus_orchestrator_msgs::msg::ItemDescription;
 using TaskData = YAML::Node;
 
 struct Task
@@ -33,6 +36,8 @@ struct Task
 public: std::string work_order_id;
 public: std::string task_id;
 public: std::string type;
+public: std::vector<ItemDescription> input_items;
+public: std::vector<ItemDescription> output_items;
 public: TaskData data;
 public: YAML::Node previous_results;
 };

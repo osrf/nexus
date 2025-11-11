@@ -18,11 +18,13 @@ set(action_files
 )
 
 set(msg_files
+  "msg/ItemAtStation.msg"
+  "msg/ItemDescription.msg"
+  "msg/ItemTypeToStationAssignment.msg"
   "msg/TaskProgress.msg"
   "msg/TaskState.msg"
   "msg/WorkcellDescription.msg"
   "msg/WorkcellState.msg"
-  "msg/WorkcellStation.msg"
   "msg/WorkcellTask.msg"
   "msg/WorkOrder.msg"
   "msg/WorkOrderState.msg"

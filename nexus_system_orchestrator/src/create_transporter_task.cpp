@@ -22,8 +22,6 @@
 
 namespace nexus::system_orchestrator {
 
-using Task = nexus_orchestrator_msgs::msg::WorkcellTask;
-
 BT::NodeStatus CreateTransporterTask::tick()
 {
   std::optional<TransportationRequest> result;
@@ -47,14 +45,6 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  // Get the source as the location of the input SKU
-  if (workcell_task->input_item_id.size() == 0)
-  {
-    // We actually don't need to transport anything here, just return success
-    // and a nullopt transportation task
-    return BT::NodeStatus::SUCCESS;
-  }
-
   const auto maybe_workcell_id =
     this->_ctx->get_workcell_task_assignment(workcell_task->task_id);
   if (!maybe_workcell_id.has_value())
@@ -68,9 +58,27 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  const auto input_station =
-    this->_ctx->get_workcell_task_input_station(workcell_task->task_id);
-  if (!input_station.has_value())
+  if (workcell_task->input_items.empty())
+  {
+    // We actually don't need to transport anything here, just return success
+    // and a nullopt transportation task
+    return BT::NodeStatus::SUCCESS;
+  }
+
+  // TODO(ac): support tasks that require more than 1 inputs
+  if (workcell_task->input_items.size() > 1)
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(),
+      "%s: only support creating transporter tasks for one input per step",
+      this->name().c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  const auto input_item_id = workcell_task->input_items[0].item_id;
+  const auto designated_inputs =
+    this->_ctx->get_workcell_task_inputs(workcell_task->task_id);
+  if (designated_inputs.empty())
   {
     RCLCPP_ERROR(
       this->_ctx->get_node().get_logger(),
@@ -80,18 +88,48 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  // TODO(luca) Implement a node that tracks the location of SKUs and query it
-  // for the location, rather than using a context variable
-  const auto sku_position =
-    this->_ctx->get_sku_location(workcell_task->input_item_id);
-  if (sku_position == std::nullopt)
+  std::optional<std::string> input_station_id = std::nullopt;
+  for (const auto& input : designated_inputs)
   {
-    // The item cannot be found, fail
+    if (input.item_id == input_item_id)
+    {
+      input_station_id = input.assignment.station_id;
+      break;
+    }
+  }
+  if (!input_station_id.has_value())
+  {
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(),
+      "%s: workcell task [%s] expects input item [%s] to be at a station, "
+      "however no station was provided.",
+      this->name().c_str(),
+      workcell_task->task_id.c_str(),
+      input_item_id.c_str());
     return BT::NodeStatus::FAILURE;
   }
-  if (sku_position.value() == input_station.value())
+
+  // TODO(luca) Implement a node that tracks the location of SKUs and query it
+  // for the location, rather than using a context variable
+  const auto sku_position = this->_ctx->get_sku_location(input_item_id);
+  if (sku_position == std::nullopt)
   {
-    // The item is already in its destination, do nothing
+    RCLCPP_ERROR(
+      this->_ctx->get_node().get_logger(),
+      "%s: cannot find location of SKU [%s], cannot create transporter task.",
+      this->name().c_str(),
+      input_item_id.c_str());
+    return BT::NodeStatus::FAILURE;
+  }
+  if (sku_position.value() == *input_station_id)
+  {
+    RCLCPP_DEBUG(
+      this->_ctx->get_node().get_logger(),
+      "%s: input item [%s] is already at the target station [%s], no "
+      "transporter task needed.",
+      this->name().c_str(),
+      input_item_id.c_str(),
+      input_station_id->c_str());
     return BT::NodeStatus::SUCCESS;
   }
 
@@ -108,7 +146,7 @@ BT::NodeStatus CreateTransporterTask::tick()
   );
   result->destinations.emplace_back(
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
-      .name(input_station.value())
+      .name(*input_station_id)
       .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
       .params("")
   );

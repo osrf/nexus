@@ -46,7 +46,7 @@ class PickAndPlaceRMFTest(NexusTestCase):
                      "nexus_demos",
                      "launch.py",
                      "sim_update_rate:=10000",
-                     "use_rmf_transporter:=true"
+                     "use_multiple_transporters:=true"
                  ),
         )
         self.proc.__enter__()
@@ -75,7 +75,7 @@ class PickAndPlaceRMFTest(NexusTestCase):
         self.action_client.wait_for_server()
         goal_msg = ExecuteWorkOrder.Goal()
         goal_msg.order.work_order_id = "1"
-        with open(f"{os.path.dirname(__file__)}/config/pick_and_place.json") as f:
+        with open(f"{os.path.dirname(__file__)}/config/pick_and_place_amr.json") as f:
             goal_msg.order.work_order = f.read()
         feedbacks: list[ExecuteWorkOrder.Feedback] = []
         fb_fut = Future()
@@ -102,10 +102,10 @@ class PickAndPlaceRMFTest(NexusTestCase):
             self.assertEqual(len(msg.task_states), 2)
             state: TaskState = msg.task_states[0]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_1")
-            self.assertEqual(state.task_id, "1/place_on_conveyor/0")
+            self.assertEqual(state.task_id, "1/place_on_amr/0")
             state: TaskState = msg.task_states[1]  # type: ignore
             self.assertEqual(state.workcell_id, "workcell_2")
-            self.assertEqual(state.task_id, "1/pick_from_conveyor/1")
+            self.assertEqual(state.task_id, "1/pick_from_amr/1")
 
         state: TaskState = feedbacks[-1].task_states[0]  # type: ignore
         self.assertEqual(state.status, TaskState.STATUS_FINISHED)

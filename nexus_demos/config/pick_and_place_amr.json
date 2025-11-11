@@ -2,10 +2,11 @@
   "workInstructionName": "Pick and Place",
   "steps": [
     {
-      "processId": "place_on_conveyor",
+      "processId": "place_on_amr",
       "outputItems": [
         {
           "guid": "productA",
+          "type": "amr_product",
           "metadata": {
             "quantity": 1,
             "state": "state_1"
@@ -14,10 +15,11 @@
       ]
     },
     {
-      "processId": "pick_from_conveyor",
+      "processId": "pick_from_amr",
       "inputItems": [
         {
           "guid": "productA",
+          "type": "amr_product",
           "metadata": {
             "quantity": 1,
             "state": "state_1"

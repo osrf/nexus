@@ -7,11 +7,9 @@ string task_id
 # Type of the task
 string type
 
-# TODO(luca) make this an Item object, possibly a vector of items
-string input_item_id
+ItemDescription[] input_items
 
-# TODO(luca) make this an Item object, possibly a vector of items
-string output_item_id
+ItemDescription[] output_items
 
 # YAML of the payload data
 string payload

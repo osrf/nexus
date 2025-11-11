@@ -17,5 +17,6 @@ geometry_msgs/Pose location
 # Capabilities of the workcell, see README for nexus_workcell_orchestrator for list of capabilities supported
 string[] capabilities
 
-# A list of I/O stations for the workcell
-WorkcellStation[] io_stations
+# Input and output definitions
+ItemTypeToStationAssignment[] inputs
+ItemTypeToStationAssignment[] outputs

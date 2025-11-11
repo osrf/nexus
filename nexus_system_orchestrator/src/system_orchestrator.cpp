@@ -33,6 +33,8 @@
 #include <nexus_common/models/work_order.hpp>
 #include <nexus_common/pausable_sequence.hpp>
 #include <nexus_common/sync_service_client.hpp>
+#include <nexus_orchestrator_msgs/msg/item_description.hpp>
+#include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/task_state.hpp>
 #include <nexus_orchestrator_msgs/msg/task_progress.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_description.hpp>
@@ -676,17 +678,17 @@ void SystemOrchestrator::_init_job(
           job.ctx->set_workcell_task_assignment(
             task_id,
             maybe_assignment->workcell_id);
-          if (maybe_assignment->input_station.has_value())
+          if (!maybe_assignment->details->inputs.empty())
           {
-            job.ctx->set_workcell_task_input_station(
+            job.ctx->set_workcell_task_inputs(
               task_id,
-              maybe_assignment->input_station.value());
+              maybe_assignment->details->inputs);
           }
-          if (maybe_assignment->output_station.has_value())
+          if (!maybe_assignment->details->outputs.empty())
           {
-            job.ctx->set_workcell_task_output_station(
+            job.ctx->set_workcell_task_outputs(
               task_id,
-              maybe_assignment->output_station.value());
+              maybe_assignment->details->outputs);
           }
           auto task_state = TaskState();
           task_state.workcell_id = maybe_assignment->workcell_id;
@@ -716,9 +718,11 @@ void SystemOrchestrator::_init_job(
           }
           catch (const common::TimeoutError& e)
           {
-            RCLCPP_ERROR(this->get_logger(),
-            "Failed to assign task [%s] to workcell [%s]: %s", task_id.c_str(),
-            maybe_assignment->workcell_id.c_str(), e.what());
+            RCLCPP_ERROR(
+              this->get_logger(),
+              "Failed to assign task [%s] to workcell [%s]: %s",
+              task_id.c_str(),
+              maybe_assignment->workcell_id.c_str(), e.what());
             this->_halt_fail_and_remove_job(work_order_id);
             return;
           }
@@ -769,17 +773,20 @@ _parse_wo(const std::string& work_order_id, const common::WorkOrder& work_order)
     task.task_id =
       this->_generate_task_id(work_order_id, step.process_id(), step_index++);
     task.type = step.process_id();
-    const auto& input_items = step.input_items();
-    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
-    if (input_items.size() > 0)
+
+    for (const auto& ii : step.input_items())
     {
-      task.input_item_id = input_items[0].guid();
+      task.input_items.emplace_back(
+        nexus_orchestrator_msgs::build<nexus_orchestrator_msgs::msg::ItemDescription>()
+          .item_id(ii.guid())
+          .item_type(ii.type()));
     }
-    const auto& output_items = step.output_items();
-    // TODO(luca) case for > 1 as well, but this probably shouldn't be a vector right now
-    if (output_items.size() > 0)
+    for (const auto& oi : step.output_items())
     {
-      task.output_item_id = output_items[0].guid();
+      task.output_items.emplace_back(
+        nexus_orchestrator_msgs::build<nexus_orchestrator_msgs::msg::ItemDescription>()
+          .item_id(oi.guid())
+          .item_type(oi.type()));
     }
 
     // Inject metadata into payload for workcell.
@@ -885,13 +892,19 @@ void SystemOrchestrator::_handle_register_workcell(
   resp->success = true;
 
   std::stringstream ss;
-  for (const auto& station : added.first->second->description.io_stations)
+  ss << "inputs:\n  ";
+  for (const auto& input_desc : added.first->second->description.inputs)
   {
-    ss << station.name << ",";
+    ss << input_desc.item_type << ": " << input_desc.station_id << ", ";
+  }
+  ss << "\noutputs:\n  ";
+  for (const auto& output_desc : added.first->second->description.outputs)
+  {
+    ss << output_desc.item_type << ": " << output_desc.station_id << ", ";
   }
   RCLCPP_INFO(
     this->get_logger(),
-    "Registered workcell [%s] with stations: [%s]",
+    "Registered workcell [%s] with item types mapped to stations:\n%s",
     workcell_id.c_str(),
     ss.str().c_str());
 }
@@ -1112,8 +1125,7 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
       std::string>>();
   std::unordered_map<std::string,
     common::BatchServiceReq<IsTaskDoableService>> batch;
-  auto req =
-    std::make_shared<endpoints::IsTaskDoableService::ServiceType::Request>();
+  auto req = std::make_shared<IsTaskDoableService::Request>();
   req->task = task;
   for (const auto& [wc_id, s] : this->_workcell_sessions)
   {
@@ -1128,9 +1140,8 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
     common::BatchServiceResult<IsTaskDoableService>>&
     results)
     {
-      std::string assigned;
-      std::optional<std::string> input_station = std::nullopt;
-      std::optional<std::string> output_station = std::nullopt;
+      std::optional<std::string> assigned = std::nullopt;
+      IsTaskDoableService::Response::SharedPtr resp = nullptr;
       for (const auto& [wc_id, result] : results)
       {
         if (!result.success)
@@ -1143,41 +1154,23 @@ void SystemOrchestrator::_assign_workcell_task(const WorkcellTask& task,
         {
           // TODO(kp): assign based on some heuristics
           assigned = wc_id;
-          if (!result.resp->input_station.empty())
-          {
-            input_station = result.resp->input_station;
-            RCLCPP_INFO(
-              this->get_logger(),
-              "Assigned task to [%s] with input [%s]",
-              wc_id.c_str(),
-              result.resp->input_station.c_str());
-          }
-          if (!result.resp->output_station.empty())
-          {
-            output_station = result.resp->output_station;
-            RCLCPP_INFO(
-              this->get_logger(),
-              "Assigned task to [%s] with output [%s]",
-              wc_id.c_str(),
-              result.resp->output_station.c_str());
-          }
+          resp  = result.resp;
+          break;
         }
       }
-      if (assigned.empty())
+
+      if (!assigned.has_value() || !resp)
       {
         RCLCPP_ERROR(this->get_logger(),
         "No workcell is able perform task [%s]", task.task_id.c_str());
         on_done(std::nullopt);
+        return;
       }
-      else
-      {
-        RCLCPP_INFO(
-          this->get_logger(), "Task [%s] assigned to workcell [%s]",
-          task.task_id.c_str(), assigned.c_str());
-        on_done(
-          WorkcellTaskAssignment{
-            task.task_id, assigned, input_station, output_station});
-      }
+
+      RCLCPP_INFO(
+        this->get_logger(), "Task [%s] assigned to workcell [%s]",
+        task.task_id.c_str(), assigned->c_str());
+      on_done(WorkcellTaskAssignment{task.task_id, *assigned, resp});
     });
 }
 

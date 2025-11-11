@@ -6,6 +6,7 @@
       "outputItems": [
         {
           "guid": "productA",
+          "type": "conveyor_product",
           "metadata": {
             "quantity": 1,
             "state": "state_1"

@@ -49,7 +49,7 @@ class InvalidPlaceOnConveyorTest(NexusTestCase):
 
         await self.wait_for_workcells("workcell_1", "workcell_2")
         print("all workcells are ready")
-        await self.wait_for_transporters("transporter_node")
+        await self.wait_for_transporters("mock_transporter_node")
         print("all transporters are ready")
 
         # give some time for discovery to happen

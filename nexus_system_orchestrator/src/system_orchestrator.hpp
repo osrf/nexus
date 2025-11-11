@@ -27,6 +27,7 @@
 #include <nexus_common/task_remapper.hpp>
 #include <nexus_endpoints.hpp>
 #include <nexus_lifecycle_manager/lifecycle_manager.hpp>
+#include <nexus_orchestrator_msgs/msg/item_at_station.hpp>
 #include <nexus_orchestrator_msgs/msg/workcell_task.hpp>
 #include <nexus_orchestrator_msgs/msg/work_order_state.hpp>
 
@@ -49,6 +50,7 @@ class SystemOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
 public:
+  using ItemAtStation = nexus_orchestrator_msgs::msg::ItemAtStation;
   using WorkOrderAction = nexus::endpoints::WorkOrderAction;
   using WorkOrderActionType = WorkOrderAction::ActionType;
   using WorkOrderGoalHandle =
@@ -71,8 +73,7 @@ public:
   {
     std::string task_id;
     std::string workcell_id;
-    std::optional<std::string> input_station;
-    std::optional<std::string> output_station;
+    endpoints::IsTaskDoableService::ServiceType::Response::SharedPtr details;
   };
 
 private:
