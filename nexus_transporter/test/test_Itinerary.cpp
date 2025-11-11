@@ -31,6 +31,7 @@ SCENARIO("Test Itinerary")
     nexus_transporter_msgs::build<Destination>()
     .name("workcell_1")
     .action(Destination::ACTION_PICKUP)
+    .items({})
     .params("")
   );
   const std::string transporter_name = "pallet_1";
@@ -52,6 +53,7 @@ SCENARIO("Test Itinerary")
   CHECK(destinations_.size() == 1);
   CHECK(destinations_[0].name == "workcell_1");
   CHECK(destinations_[0].action == Destination::ACTION_PICKUP);
+  CHECK(destinations_[0].items.empty());
   CHECK(destinations_[0].params == "");
   CHECK(itinerary.transporter_name() == transporter_name);
   CHECK(itinerary.estimated_finish_time() == finish_time);
@@ -70,6 +72,7 @@ SCENARIO("Test Itinerary")
       nexus_transporter_msgs::build<Destination>()
       .name("workcell_2")
       .action(Destination::ACTION_DROPOFF)
+      .items({})
       .params("")
     );
     itinerary.destinations(std::move(new_destinations));
@@ -77,6 +80,7 @@ SCENARIO("Test Itinerary")
     CHECK(new_destinations_.size() == 1);
     CHECK(new_destinations_[0].name == "workcell_2");
     CHECK(new_destinations_[0].action == Destination::ACTION_DROPOFF);
+    CHECK(destinations_[0].items.empty());
     CHECK(new_destinations_[0].params == "");
   }
   WHEN("Setting new transporter_name")
