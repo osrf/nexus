@@ -17,6 +17,7 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 
+#include <nexus_orchestrator_msgs/msg/item_description.hpp>
 #include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <rmf_utils/catch.hpp>
