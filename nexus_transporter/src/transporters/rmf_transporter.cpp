@@ -211,6 +211,14 @@ private:
       p["payload"] = nlohmann::json::array();
       a["description"] = p;
       activity["description"]["activities"].push_back(a);
+
+      for (const auto& item : d.items)
+      {
+        nlohmann::json payload;
+        payload["sku"] = item.item_id;
+        payload["quantity"] = 1;
+        p["payload"].push_back(payload);
+      }
     }
     nlohmann::json act_obj;
     act_obj["activity"] = activity;
