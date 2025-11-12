@@ -75,7 +75,8 @@ BT::NodeStatus CreateTransporterTask::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  const auto input_item_id = workcell_task->input_items[0].item_id;
+  const auto input_item = workcell_task->input_items[0];
+  const auto input_item_id = input_item.item_id;
   const auto designated_inputs =
     this->_ctx->get_workcell_task_inputs(workcell_task->task_id);
   if (designated_inputs.empty())
@@ -142,12 +143,14 @@ BT::NodeStatus CreateTransporterTask::tick()
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
       .name(sku_position.value())
       .action(nexus_transporter_msgs::msg::Destination::ACTION_PICKUP)
+      .items({input_item})
       .params("")
   );
   result->destinations.emplace_back(
     nexus_transporter_msgs::build<nexus_transporter_msgs::msg::Destination>()
       .name(*input_station_id)
       .action(nexus_transporter_msgs::msg::Destination::ACTION_DROPOFF)
+      .items({input_item})
       .params("")
   );
 

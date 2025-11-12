@@ -209,6 +209,13 @@ private:
       // For now the assumption is that a location has only one handler
       p["handler"] = d.name;
       p["payload"] = nlohmann::json::array();
+      for (const auto& item : d.items)
+      {
+        nlohmann::json payload;
+        payload["sku"] = item.item_id;
+        payload["quantity"] = 1;
+        p["payload"].push_back(payload);
+      }
       a["description"] = p;
       activity["description"]["activities"].push_back(a);
     }

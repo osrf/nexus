@@ -17,11 +17,13 @@
 
 #include <nexus_transporter/Itinerary.hpp>
 
+#include <nexus_orchestrator_msgs/msg/item_description.hpp>
 #include <nexus_transporter_msgs/msg/destination.hpp>
 
 #include <rmf_utils/catch.hpp>
 
 using Destination = nexus_transporter::Destination;
+using ItemDescription = nexus_orchestrator_msgs::msg::ItemDescription;
 //==============================================================================
 SCENARIO("Test Itinerary")
 {
@@ -31,6 +33,9 @@ SCENARIO("Test Itinerary")
     nexus_transporter_msgs::build<Destination>()
     .name("workcell_1")
     .action(Destination::ACTION_PICKUP)
+    .items({nexus_orchestrator_msgs::build<ItemDescription>()
+      .item_id("item_1")
+      .item_type("item")})
     .params("")
   );
   const std::string transporter_name = "pallet_1";
@@ -52,6 +57,9 @@ SCENARIO("Test Itinerary")
   CHECK(destinations_.size() == 1);
   CHECK(destinations_[0].name == "workcell_1");
   CHECK(destinations_[0].action == Destination::ACTION_PICKUP);
+  CHECK(destinations_[0].items.size() == 1);
+  CHECK(destinations_[0].items[0].item_id == "item_1");
+  CHECK(destinations_[0].items[0].item_type == "item");
   CHECK(destinations_[0].params == "");
   CHECK(itinerary.transporter_name() == transporter_name);
   CHECK(itinerary.estimated_finish_time() == finish_time);
@@ -70,6 +78,9 @@ SCENARIO("Test Itinerary")
       nexus_transporter_msgs::build<Destination>()
       .name("workcell_2")
       .action(Destination::ACTION_DROPOFF)
+      .items({nexus_orchestrator_msgs::build<ItemDescription>()
+        .item_id("item_1")
+        .item_type("item")})
       .params("")
     );
     itinerary.destinations(std::move(new_destinations));
@@ -77,6 +88,9 @@ SCENARIO("Test Itinerary")
     CHECK(new_destinations_.size() == 1);
     CHECK(new_destinations_[0].name == "workcell_2");
     CHECK(new_destinations_[0].action == Destination::ACTION_DROPOFF);
+    CHECK(destinations_[0].items.size() == 1);
+    CHECK(destinations_[0].items[0].item_id == "item_1");
+    CHECK(destinations_[0].items[0].item_type == "item");
     CHECK(new_destinations_[0].params == "");
   }
   WHEN("Setting new transporter_name")
