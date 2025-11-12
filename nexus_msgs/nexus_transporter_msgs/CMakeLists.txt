@@ -12,6 +12,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nexus_orchestrator_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(msg_files
@@ -36,6 +37,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     action_msgs
     builtin_interfaces
     geometry_msgs
+    nexus_orchestrator_msgs
     std_msgs
 )
 

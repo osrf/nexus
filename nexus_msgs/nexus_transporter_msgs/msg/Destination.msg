@@ -10,5 +10,8 @@ uint8 ACTION_DROPOFF=3
 # The type of action to perform at the destination.
 uint8 action
 
+# The items to be handled at this destination
+nexus_orchestrator_msgs/ItemDescription[] items
+
 # Additional parameters.
 string params
