@@ -22,7 +22,7 @@ TODO: Consider adding this dep back for L turtle if Ubuntu 26.04 has the newer.
 cargo and rustc pkgs.
 
 ```bash
-sudo apt update && sudo apt install curl rustup
+sudo apt update && sudo apt install rustup
 rustup default stable
 ```
 
