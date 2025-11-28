@@ -54,50 +54,6 @@
 
 namespace nexus::workcell_orchestrator {
 
-// bool is C1 < C2, smallest gets on top
-bool priority_comparator(std::shared_ptr<Context> c1, std::shared_ptr<Context> c2) {
-  using TaskState = nexus_orchestrator_msgs::msg::TaskState;
-  const auto s1 = c1->get_task_state().status;
-  const auto s2 = c2->get_task_state().status;
-  if (s1 == s2)
-  {
-    // For equal task state, prioritize earlier transition time to make sure
-    // tasks that started earlier are first in the queue
-    return c1->state_transition_time < c2->state_transition_time;
-  }
-  // An executing task will always have priority over a non executing task
-  if (s1 == TaskState::STATUS_RUNNING)
-  {
-    return true;
-  }
-  if (s1 == TaskState::STATUS_QUEUED)
-  {
-    if (s2 == TaskState::STATUS_RUNNING)
-    {
-      // Prioritize the running task
-      return false;
-    }
-    // Prioritize queued task
-    return true;
-  }
-  if (s1 == TaskState::STATUS_FINISHED || s1 == TaskState::STATUS_FAILED)
-  {
-    // Push to end of queue
-    return false;
-  }
-  if (s1 == TaskState::STATUS_ASSIGNED)
-  {
-    if (s2 == TaskState::STATUS_RUNNING || s2 == TaskState::STATUS_QUEUED)
-    {
-      // Prioritize tasks that have been requested or are running already
-      return false;
-    }
-    return true;
-  }
-  // Undefined, push to end
-  return false;
-}
-
 class WorkcellOrchestrator : public
   rclcpp_lifecycle::LifecycleNode
 {
@@ -169,7 +125,7 @@ private: rclcpp::Service<endpoints::RemovePendingTaskService::ServiceType>::
   SharedPtr
     _remove_pending_task_srv;
 private: std::atomic<bool> _paused;
-private: std::set<std::shared_ptr<Context>, decltype(priority_comparator)*> _ctxs{priority_comparator};
+private: ContextSet _ctxs;
 private: std::shared_ptr<ContextManager> _ctx_mgr;
 private: std::unique_ptr<lifecycle_manager::LifecycleManager<>> _lifecycle_mgr{
     nullptr};
@@ -185,7 +141,7 @@ private: CallbackReturn _configure(
   /**
    * Tick a behavior tree.
    */
-private: void _tick_bt(const std::shared_ptr<Context>& ctx);
+private: void _tick_bt(Context& ctx);
 
 private: void _tick_all_bts();
 
@@ -208,9 +164,9 @@ private: void _process_signal(
    */
 private: BT::Tree _create_bt(const std::shared_ptr<Context>& ctx);
 
-private: void _handle_command_success(const std::shared_ptr<Context>& ctx);
+private: void _handle_command_success(Context& ctx);
 
-private: void _handle_command_failed(const std::shared_ptr<Context>& ctx);
+private: void _handle_command_failed(Context& ctx);
 
 private: void _handle_task_doable(
     endpoints::IsTaskDoableService::ServiceType::Request::ConstSharedPtr req,

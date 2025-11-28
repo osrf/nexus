@@ -54,6 +54,14 @@ if(BUILD_TESTING)
   #  MAX_LINE_LENGTH 80
   #  LANGUAGE CPP
   #)
+
+  ament_add_catch2(context_test src/context_test.cpp)
+  target_link_libraries(context_test PRIVATE
+    ${PROJECT_NAME}
+    nexus_common::nexus_common
+    nexus_common::nexus_common_test
+    rmf_utils::rmf_utils
+  )
 endif()
 
 include(GNUInstallDirs)

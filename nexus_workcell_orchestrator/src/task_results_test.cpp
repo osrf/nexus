@@ -34,7 +34,7 @@ namespace nexus::workcell_orchestrator::test {
 TEST_CASE("get and set results") {
   auto fixture = common::test::RosFixture<rclcpp_lifecycle::LifecycleNode>{};
   auto ctx_mgr = std::make_shared<ContextManager>();
-  auto ctx = std::make_shared<Context>(Context{*fixture.node});
+  auto ctx = Context::make(*fixture.node);
   ctx_mgr->set_active_context(ctx);
   BT::BehaviorTreeFactory bt_factory;
 
