@@ -1,0 +1,93 @@
+<policy version="0.2.0">
+  <enclaves>
+    <enclave path="/">
+      <profiles>
+        <profile node="main" ns="/">
+          <services reply="ALLOW">
+            <!-- system_orchestrator -->
+            <service>get_work_order_state</service>
+            <service>list_transporters</service>
+            <service>list_workcells</service>
+            <service>pause</service>
+            <service>register_transporter</service>
+            <service>register_workcell</service>
+            <service>~/change_state</service>
+            <service>~/describe_parameters</service>
+            <service>~/execute_order/_action/cancel_goal</service>
+            <service>~/execute_order/_action/get_result</service>
+            <service>~/execute_order/_action/send_goal</service>
+            <service>~/get_available_states</service>
+            <service>~/get_available_transitions</service>
+            <service>~/get_parameter_types</service>
+            <service>~/get_parameters</service>
+            <service>~/get_state</service>
+            <service>~/get_transition_graph</service>
+            <service>~/get_type_description</service>
+            <service>~/list_parameters</service>
+            <service>~/set_parameters</service>
+            <service>~/set_parameters_atomically</service>
+            <!-- building_map_server -->
+            <service>get_building_map</service>
+            <!-- mock_emergency_alarm -->
+            <service>/test/set_estop</service>
+            <!-- mock_transporter_node -->
+            <service>~/available</service>
+            <service>~/signal</service>
+            <service>~/transport/_action/cancel_goal</service>
+            <service>~/transport/_action/get_result</service>
+            <service>~/transport/_action/send_goal</service>
+            <!-- rviz_lifecycle_manager -->
+            <service>~/is_active</service>
+            <service>~/manage_nodes</service>
+          </services>
+          <services request="ALLOW">
+            <!-- system_orchestrator -->
+            <service>/mock_transporter_node/available</service>
+            <service>/mock_transporter_node/signal</service>
+            <!-- mock_transporter_node -->
+            <service>register_transporter</service>
+            <!-- nexus_dialog_action_client -->
+            <service>/rviz_lifecycle_manager/is_active</service>
+            <service>/rviz_lifecycle_manager/manage_nodes</service>
+            <service>/system_orchestrator/execute_order/_action/cancel_goal</service>
+            <service>pause</service>
+            <!-- system_orchestrator_lifecycle_client_37012893 -->
+            <service>/system_orchestrator/change_state</service>
+            <service>/system_orchestrator/get_state</service>
+          </services>
+          <topics subscribe="ALLOW">
+            <!-- system_orchestrator -->
+            <topic>estop</topic>
+            <topic>clock</topic>
+            <topic>parameter_events</topic>
+            <!-- transform_listener_impl_55a9ceaae210 -->
+            <topic>tf</topic>
+            <topic>tf_static</topic>
+          </topics>
+          <topics publish="ALLOW">
+            <!-- system_orchestrator -->
+            <topic>parameter_events</topic>
+            <topic>rosout</topic>
+            <topic>work_order_states</topic>
+            <topic>~/execute_order/_action/feedback</topic>
+            <topic>~/execute_order/_action/status</topic>
+            <topic>~/transition_event</topic>
+            <!-- building_map_server -->
+            <topic>map</topic>
+            <topic>site_map</topic>
+            <!-- mock_emergency_alarm -->
+            <topic>estop</topic>
+            <!-- mock_transporter_node -->
+            <topic>tf</topic>
+            <topic>~/transport/_action/feedback</topic>
+            <topic>~/transport/_action/status</topic>
+            <!-- nexus_panel -->
+            <topic>clicked_point</topic>
+            <topic>goal_pose</topic>
+            <topic>initialpose</topic>
+          </topics>
+        </profile>
+      </profiles>
+    </enclave>
+  </enclaves>
+</policy>

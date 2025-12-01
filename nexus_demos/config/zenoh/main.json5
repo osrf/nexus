@@ -1,0 +1,648 @@
+{
+  "access_control": {
+    "default_permission": "deny",
+    "enabled": true,
+    "policies": [
+      {
+        "id": null,
+        "rules": [
+          "liveliness_tokens"
+        ],
+        "subjects": [
+          "router"
+        ]
+      },
+      {
+        "id": null,
+        "rules": [
+          "incoming_queries",
+          "outgoing_queryables_replies",
+          "outgoing_queries",
+          "incoming_queryables_replies",
+          "outgoing_publications",
+          "incoming_subscriptions",
+          "outgoing_publications_transient_local_queryable",
+          "incoming_subscriptions_transient_local_query",
+          "outgoing_subscriptions",
+          "incoming_publications",
+          "outgoing_subscriptions_transient_local_query",
+          "incoming_subscriptions_transient_local_queryable",
+          "liveliness_tokens"
+        ],
+        "subjects": [
+          "main"
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_queries",
+        "key_exprs": [
+          "0/get_building_map/*/*",
+          "0/get_work_order_state/*/*",
+          "0/list_transporters/*/*",
+          "0/list_workcells/*/*",
+          "0/main/available/*/*",
+          "0/main/change_state/*/*",
+          "0/main/describe_parameters/*/*",
+          "0/main/execute_order/_action/cancel_goal/*/*",
+          "0/main/execute_order/_action/get_result/*/*",
+          "0/main/execute_order/_action/send_goal/*/*",
+          "0/main/get_available_states/*/*",
+          "0/main/get_available_transitions/*/*",
+          "0/main/get_parameter_types/*/*",
+          "0/main/get_parameters/*/*",
+          "0/main/get_state/*/*",
+          "0/main/get_transition_graph/*/*",
+          "0/main/get_type_description/*/*",
+          "0/main/is_active/*/*",
+          "0/main/list_parameters/*/*",
+          "0/main/manage_nodes/*/*",
+          "0/main/set_parameters/*/*",
+          "0/main/set_parameters_atomically/*/*",
+          "0/main/signal/*/*",
+          "0/main/transport/_action/cancel_goal/*/*",
+          "0/main/transport/_action/get_result/*/*",
+          "0/main/transport/_action/send_goal/*/*",
+          "0/pause/*/*",
+          "0/register_transporter/*/*",
+          "0/register_workcell/*/*",
+          "0/test/set_estop/*/*"
+        ],
+        "messages": [
+          "query"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_queryables_replies",
+        "key_exprs": [
+          "0/get_building_map/*/*",
+          "0/get_work_order_state/*/*",
+          "0/list_transporters/*/*",
+          "0/list_workcells/*/*",
+          "0/main/available/*/*",
+          "0/main/change_state/*/*",
+          "0/main/describe_parameters/*/*",
+          "0/main/execute_order/_action/cancel_goal/*/*",
+          "0/main/execute_order/_action/get_result/*/*",
+          "0/main/execute_order/_action/send_goal/*/*",
+          "0/main/get_available_states/*/*",
+          "0/main/get_available_transitions/*/*",
+          "0/main/get_parameter_types/*/*",
+          "0/main/get_parameters/*/*",
+          "0/main/get_state/*/*",
+          "0/main/get_transition_graph/*/*",
+          "0/main/get_type_description/*/*",
+          "0/main/is_active/*/*",
+          "0/main/list_parameters/*/*",
+          "0/main/manage_nodes/*/*",
+          "0/main/set_parameters/*/*",
+          "0/main/set_parameters_atomically/*/*",
+          "0/main/signal/*/*",
+          "0/main/transport/_action/cancel_goal/*/*",
+          "0/main/transport/_action/get_result/*/*",
+          "0/main/transport/_action/send_goal/*/*",
+          "0/pause/*/*",
+          "0/register_transporter/*/*",
+          "0/register_workcell/*/*",
+          "0/test/set_estop/*/*"
+        ],
+        "messages": [
+          "declare_queryable",
+          "reply"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_queries",
+        "key_exprs": [
+          "0/mock_transporter_node/available/*/*",
+          "0/mock_transporter_node/signal/*/*",
+          "0/pause/*/*",
+          "0/register_transporter/*/*",
+          "0/rviz_lifecycle_manager/is_active/*/*",
+          "0/rviz_lifecycle_manager/manage_nodes/*/*",
+          "0/system_orchestrator/change_state/*/*",
+          "0/system_orchestrator/execute_order/_action/cancel_goal/*/*",
+          "0/system_orchestrator/get_state/*/*"
+        ],
+        "messages": [
+          "query"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_queryables_replies",
+        "key_exprs": [
+          "0/mock_transporter_node/available/*/*",
+          "0/mock_transporter_node/signal/*/*",
+          "0/pause/*/*",
+          "0/register_transporter/*/*",
+          "0/rviz_lifecycle_manager/is_active/*/*",
+          "0/rviz_lifecycle_manager/manage_nodes/*/*",
+          "0/system_orchestrator/change_state/*/*",
+          "0/system_orchestrator/execute_order/_action/cancel_goal/*/*",
+          "0/system_orchestrator/get_state/*/*"
+        ],
+        "messages": [
+          "declare_queryable",
+          "reply"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_publications",
+        "key_exprs": [
+          "0/clicked_point/*/*",
+          "0/estop/*/*",
+          "0/goal_pose/*/*",
+          "0/initialpose/*/*",
+          "0/main/execute_order/_action/feedback/*/*",
+          "0/main/execute_order/_action/status/*/*",
+          "0/main/transition_event/*/*",
+          "0/main/transport/_action/feedback/*/*",
+          "0/main/transport/_action/status/*/*",
+          "0/map/*/*",
+          "0/parameter_events/*/*",
+          "0/rosout/*/*",
+          "0/site_map/*/*",
+          "0/tf/*/*",
+          "0/work_order_states/*/*"
+        ],
+        "messages": [
+          "put",
+          "reply"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_subscriptions",
+        "key_exprs": [
+          "0/clicked_point/*/*",
+          "0/estop/*/*",
+          "0/goal_pose/*/*",
+          "0/initialpose/*/*",
+          "0/main/execute_order/_action/feedback/*/*",
+          "0/main/execute_order/_action/status/*/*",
+          "0/main/transition_event/*/*",
+          "0/main/transport/_action/feedback/*/*",
+          "0/main/transport/_action/status/*/*",
+          "0/map/*/*",
+          "0/parameter_events/*/*",
+          "0/rosout/*/*",
+          "0/site_map/*/*",
+          "0/tf/*/*",
+          "0/work_order_states/*/*"
+        ],
+        "messages": [
+          "declare_subscriber"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_publications_transient_local_queryable",
+        "key_exprs": [
+          "0/clicked_point/*/*/@adv/pub/*/*/_",
+          "0/estop/*/*/@adv/pub/*/*/_",
+          "0/goal_pose/*/*/@adv/pub/*/*/_",
+          "0/initialpose/*/*/@adv/pub/*/*/_",
+          "0/main/execute_order/_action/feedback/*/*/@adv/pub/*/*/_",
+          "0/main/execute_order/_action/status/*/*/@adv/pub/*/*/_",
+          "0/main/transition_event/*/*/@adv/pub/*/*/_",
+          "0/main/transport/_action/feedback/*/*/@adv/pub/*/*/_",
+          "0/main/transport/_action/status/*/*/@adv/pub/*/*/_",
+          "0/map/*/*/@adv/pub/*/*/_",
+          "0/parameter_events/*/*/@adv/pub/*/*/_",
+          "0/rosout/*/*/@adv/pub/*/*/_",
+          "0/site_map/*/*/@adv/pub/*/*/_",
+          "0/tf/*/*/@adv/pub/*/*/_",
+          "0/work_order_states/*/*/@adv/pub/*/*/_"
+        ],
+        "messages": [
+          "declare_queryable",
+          "liveliness_token"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_subscriptions_transient_local_query",
+        "key_exprs": [
+          "0/clicked_point/*/*/@adv/**",
+          "0/estop/*/*/@adv/**",
+          "0/goal_pose/*/*/@adv/**",
+          "0/initialpose/*/*/@adv/**",
+          "0/main/execute_order/_action/feedback/*/*/@adv/**",
+          "0/main/execute_order/_action/status/*/*/@adv/**",
+          "0/main/transition_event/*/*/@adv/**",
+          "0/main/transport/_action/feedback/*/*/@adv/**",
+          "0/main/transport/_action/status/*/*/@adv/**",
+          "0/map/*/*/@adv/**",
+          "0/parameter_events/*/*/@adv/**",
+          "0/rosout/*/*/@adv/**",
+          "0/site_map/*/*/@adv/**",
+          "0/tf/*/*/@adv/**",
+          "0/work_order_states/*/*/@adv/**"
+        ],
+        "messages": [
+          "query"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_subscriptions",
+        "key_exprs": [
+          "0/clock/*/*",
+          "0/estop/*/*",
+          "0/parameter_events/*/*",
+          "0/tf/*/*",
+          "0/tf_static/*/*"
+        ],
+        "messages": [
+          "declare_subscriber"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_publications",
+        "key_exprs": [
+          "0/clock/*/*",
+          "0/estop/*/*",
+          "0/parameter_events/*/*",
+          "0/tf/*/*",
+          "0/tf_static/*/*"
+        ],
+        "messages": [
+          "put",
+          "reply"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "egress"
+        ],
+        "id": "outgoing_subscriptions_transient_local_query",
+        "key_exprs": [
+          "0/clock/*/*/@adv/**",
+          "0/estop/*/*/@adv/**",
+          "0/parameter_events/*/*/@adv/**",
+          "0/tf/*/*/@adv/**",
+          "0/tf_static/*/*/@adv/**"
+        ],
+        "messages": [
+          "query",
+          "declare_liveliness_subscriber"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress"
+        ],
+        "id": "incoming_subscriptions_transient_local_queryable",
+        "key_exprs": [
+          "0/clock/*/*/@adv/pub/*/*/_",
+          "0/estop/*/*/@adv/pub/*/*/_",
+          "0/parameter_events/*/*/@adv/pub/*/*/_",
+          "0/tf/*/*/@adv/pub/*/*/_",
+          "0/tf_static/*/*/@adv/pub/*/*/_"
+        ],
+        "messages": [
+          "declare_queryable",
+          "liveliness_token"
+        ],
+        "permission": "allow"
+      },
+      {
+        "flows": [
+          "ingress",
+          "egress"
+        ],
+        "id": "liveliness_tokens",
+        "key_exprs": [
+          "@ros2_lv/0/**"
+        ],
+        "messages": [
+          "liveliness_token",
+          "liveliness_query",
+          "declare_liveliness_subscriber",
+          "reply"
+        ],
+        "permission": "allow"
+      }
+    ],
+    "subjects": [
+      {
+        "cert_common_names": null,
+        "id": "router",
+        "interfaces": null,
+        "link_protocols": null,
+        "usernames": null,
+        "zids": null
+      },
+      {
+        "cert_common_names": null,
+        "id": "main",
+        "interfaces": null,
+        "link_protocols": null,
+        "usernames": null,
+        "zids": null
+      }
+    ]
+  },
+  "adminspace": {
+    "enabled": true,
+    "permissions": {
+      "read": true,
+      "write": false
+    }
+  },
+  "aggregation": {
+    "publishers": [],
+    "subscribers": []
+  },
+  "connect": {
+    "endpoints": [
+      "tcp/localhost:7447"
+    ],
+    "exit_on_failure": {
+      "client": true,
+      "peer": false,
+      "router": false
+    },
+    "retry": {
+      "period_increase_factor": 2,
+      "period_init_ms": 1000,
+      "period_max_ms": 4000
+    },
+    "timeout_ms": {
+      "client": 0,
+      "peer": -1,
+      "router": -1
+    }
+  },
+  "downsampling": [],
+  "id": null,
+  "listen": {
+    "endpoints": [
+      "tcp/localhost:0"
+    ],
+    "exit_on_failure": true,
+    "retry": {
+      "period_increase_factor": 2,
+      "period_init_ms": 1000,
+      "period_max_ms": 4000
+    },
+    "timeout_ms": 0
+  },
+  "low_pass_filter": [],
+  "metadata": null,
+  "mode": "peer",
+  "namespace": null,
+  "open": {
+    "return_conditions": {
+      "connect_scouted": true,
+      "declares": true
+    }
+  },
+  "plugins": {},
+  "plugins_loading": {
+    "enabled": false,
+    "search_dirs": [
+      {
+        "kind": "current_exe_parent",
+        "value": null
+      },
+      ".",
+      "~/.zenoh/lib",
+      "/opt/homebrew/lib",
+      "/usr/local/lib",
+      "/usr/lib"
+    ]
+  },
+  "qos": {
+    "network": [],
+    "publication": []
+  },
+  "queries_default_timeout": 600000,
+  "routing": {
+    "interests": {
+      "timeout": 10000
+    },
+    "peer": {
+      "linkstate": {
+        "transport_weights": []
+      },
+      "mode": "peer_to_peer"
+    },
+    "router": {
+      "linkstate": {
+        "transport_weights": []
+      },
+      "peers_failover_brokering": true
+    }
+  },
+  "scouting": {
+    "delay": 500,
+    "gossip": {
+      "autoconnect": {
+        "peer": [
+          "router",
+          "peer"
+        ],
+        "router": []
+      },
+      "autoconnect_strategy": {
+        "peer": {
+          "to_peer": "greater-zid",
+          "to_router": "always"
+        }
+      },
+      "enabled": true,
+      "multihop": false,
+      "target": {
+        "peer": [
+          "router"
+        ],
+        "router": [
+          "router",
+          "peer"
+        ]
+      }
+    },
+    "multicast": {
+      "address": "224.0.0.224:7446",
+      "autoconnect": {
+        "client": [
+          "router"
+        ],
+        "peer": [
+          "router",
+          "peer"
+        ],
+        "router": []
+      },
+      "autoconnect_strategy": {
+        "peer": {
+          "to_peer": "greater-zid",
+          "to_router": "always"
+        }
+      },
+      "enabled": false,
+      "interface": "auto",
+      "listen": true,
+      "ttl": 1
+    },
+    "timeout": 3000
+  },
+  "timestamping": {
+    "drop_future_timestamp": false,
+    "enabled": {
+      "client": true,
+      "peer": true,
+      "router": true
+    }
+  },
+  "transport": {
+    "auth": {
+      "pubkey": {
+        "key_size": null,
+        "known_keys_file": null,
+        "private_key_file": null,
+        "private_key_pem": null,
+        "public_key_file": null,
+        "public_key_pem": null
+      },
+      "usrpwd": {
+        "dictionary_file": null,
+        "password": null,
+        "user": null
+      }
+    },
+    "link": {
+      "protocols": null,
+      "rx": {
+        "buffer_size": 65535,
+        "max_message_size": 1073741824
+      },
+      "tcp": {
+        "so_rcvbuf": null,
+        "so_sndbuf": null
+      },
+      "tls": {
+        "close_link_on_expiration": false,
+        "connect_certificate": null,
+        "connect_private_key": null,
+        "enable_mtls": false,
+        "listen_certificate": null,
+        "listen_private_key": null,
+        "root_ca_certificate": null,
+        "so_rcvbuf": null,
+        "so_sndbuf": null,
+        "verify_name_on_connect": true
+      },
+      "tx": {
+        "batch_size": 65535,
+        "keep_alive": 2,
+        "lease": 60000,
+        "queue": {
+          "allocation": {
+            "mode": "lazy"
+          },
+          "batching": {
+            "enabled": true,
+            "time_limit": 1
+          },
+          "congestion_control": {
+            "block": {
+              "wait_before_close": 60000000
+            },
+            "drop": {
+              "max_wait_before_drop_fragments": 50000,
+              "wait_before_drop": 1000
+            }
+          },
+          "size": {
+            "background": 2,
+            "control": 2,
+            "data": 2,
+            "data_high": 2,
+            "data_low": 2,
+            "interactive_high": 2,
+            "interactive_low": 2,
+            "real_time": 2
+          }
+        },
+        "sequence_number_resolution": "32bit",
+        "threads": 16
+      },
+      "unixpipe": {
+        "file_access_mask": null
+      }
+    },
+    "multicast": {
+      "compression": {
+        "enabled": false
+      },
+      "join_interval": 2500,
+      "max_sessions": 1000,
+      "qos": {
+        "enabled": false
+      }
+    },
+    "shared_memory": {
+      "enabled": false,
+      "mode": "lazy",
+      "transport_optimization": {
+        "enabled": true,
+        "message_size_threshold": 3072,
+        "pool_size": 16777216
+      }
+    },
+    "unicast": {
+      "accept_pending": 10000,
+      "accept_timeout": 60000,
+      "compression": {
+        "enabled": false
+      },
+      "lowlatency": false,
+      "max_links": 1,
+      "max_sessions": 10000,
+      "open_timeout": 60000,
+      "qos": {
+        "enabled": true
+      }
+    }
+  }
+}
