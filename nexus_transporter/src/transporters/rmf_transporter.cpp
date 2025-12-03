@@ -952,13 +952,16 @@ public:
               (int)last_destination.action);
             return;
           }
-          RCLCPP_INFO(
-            n->get_logger(),
-            "Ingestor result received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
-            msg->request_guid.c_str());
-          // We are at the last step and it is marked as a pickup, this means we arrived
-          it->second.completed_cb(true);
-          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          if (msg->status == IngestorResult::SUCCESS)
+          {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Ingestor result received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
+              msg->request_guid.c_str());
+            // We are at the last step and it is marked as a pickup, this means we arrived
+            it->second.completed_cb(true);
+            _rmf_task_id_to_ongoing_itinerary.erase(it);
+          }
         });
     }
 
