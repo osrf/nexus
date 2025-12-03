@@ -961,6 +961,14 @@ public:
             // We are at the last step and it is marked as a pickup, this means we arrived
             it->second.completed_cb(true);
             _rmf_task_id_to_ongoing_itinerary.erase(it);
+          } else if (msg->status == IngestorResult::FAILED) {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Ingestor result failed for RMF task. Failing the transportation task.",
+              msg->request_guid.c_str());
+            // We are at the last step and it is marked as a pickup, this means we arrived
+            it->second.completed_cb(false);
+            _rmf_task_id_to_ongoing_itinerary.erase(it);
           }
         });
     }
