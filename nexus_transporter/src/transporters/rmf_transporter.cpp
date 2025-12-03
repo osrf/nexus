@@ -1085,7 +1085,7 @@ public:
 
       std::stringstream ss;
       ss << "cancellation.nexus-" << itinerary.id() << "-" << it->first;
-      _cancel_rmf_task(itinerary.id(), ss.str());
+      _cancel_rmf_task(it->first, ss.str());
       return true;
     }
 
