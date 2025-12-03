@@ -44,7 +44,6 @@
   <exec_depend>nexus_rviz_plugins</exec_depend>
   <exec_depend>nexus_system_orchestrator</exec_depend>
   <exec_depend>nexus_workcell_orchestrator</exec_depend>
-  <exec_depend>nexus_zenoh_bridge_dds_vendor</exec_depend>
 
   <!-- Open-RMF dependencies. -->
   <exec_depend>rmf_building_map_tools</exec_depend>

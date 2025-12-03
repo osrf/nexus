@@ -111,9 +111,9 @@ def launch_setup(context, *args, **kwargs):
     ros_domain_id = LaunchConfiguration("ros_domain_id")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     use_multiple_transporters = LaunchConfiguration("use_multiple_transporters")
-    use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
-    zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    zenoh_router_config_filename = LaunchConfiguration("zenoh_router_config_filename")
+    zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
     activate_system_orchestrator = LaunchConfiguration("activate_system_orchestrator")
     headless = LaunchConfiguration("headless")
     main_bt_filename = LaunchConfiguration("main_bt_filename")
@@ -230,7 +230,7 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(headless),
     )
 
-    zenoh_bridge = GroupAction(
+    zenoh_router = GroupAction(
         [
             IncludeLaunchDescription(
                 [
@@ -238,18 +238,17 @@ def launch_setup(context, *args, **kwargs):
                         [
                             FindPackageShare("nexus_demos"),
                             "launch",
-                            "zenoh_bridge.launch.py",
+                            "zenoh_router.launch.py",
                         ]
                     )
                 ],
                 launch_arguments={
                     "zenoh_config_package": zenoh_config_package,
-                    "zenoh_config_filename": zenoh_config_filename,
+                    "zenoh_router_config_filename": zenoh_router_config_filename,
                     "ros_domain_id": ros_domain_id.perform(context),
                 }.items(),
             )
-        ],
-        condition=IfCondition(use_zenoh_bridge),
+        ]
     )
 
     activate_system_orchestrator = GroupAction(
@@ -261,6 +260,16 @@ def launch_setup(context, *args, **kwargs):
 
     return [
         SetEnvironmentVariable("ROS_DOMAIN_ID", ros_domain_id),
+        zenoh_router,
+        SetEnvironmentVariable(
+            "ZENOH_SESSION_CONFIG_URI",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(zenoh_config_package),
+                    zenoh_session_config_filename,
+                ]
+            )
+        ),
         system_orchestrator_node,
         building_map_node,
         rmf_transporter,
@@ -268,7 +277,6 @@ def launch_setup(context, *args, **kwargs):
         rmf_transporter_node,
         mock_emergency_alarm_node,
         nexus_panel,
-        zenoh_bridge,
         activate_system_orchestrator,
         activate_mock_transporter_node,
         activate_rmf_transporter_node,
@@ -297,19 +305,19 @@ def generate_launch_description():
                 between workcells.",
             ),
             DeclareLaunchArgument(
-                "use_zenoh_bridge",
-                default_value="true",
-                description="Set true to launch the Zenoh DDS Bridge",
-            ),
-            DeclareLaunchArgument(
                 name="zenoh_config_package",
                 default_value="nexus_demos",
                 description="Package containing Zenoh DDS bridge configurations",
             ),
             DeclareLaunchArgument(
-                name="zenoh_config_filename",
-                default_value="config/zenoh/system_orchestrator.json5",
-                description="Zenoh DDS bridge configuration filepath",
+                name="zenoh_router_config_filename",
+                default_value="config/zenoh/system_orchestrator_router_config.json5",
+                description="RMW Zenoh router configuration filepath",
+            ),
+            DeclareLaunchArgument(
+                name="zenoh_session_config_filename",
+                default_value="config/zenoh/system_orchestrator_session_config.json5",
+                description="RMW Zenoh session configuration filepath",
             ),
             DeclareLaunchArgument(
                 "activate_system_orchestrator",
