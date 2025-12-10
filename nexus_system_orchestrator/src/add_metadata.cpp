@@ -97,6 +97,7 @@ BT::NodeStatus AddMetadata::tick()
       task.task_id.c_str(), task.payload.c_str());
   }
 
+  this->_ctx->set_tasks(tasks);
   return BT::NodeStatus::SUCCESS;
 }
 
