@@ -19,6 +19,7 @@ find_package(yaml-cpp REQUIRED)
 set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
 
 add_library(${PROJECT_NAME}_plugin SHARED
+  src/add_metadata.cpp
   src/bid_transporter.cpp
   src/create_transporter_task.cpp
   src/execute_task.cpp
