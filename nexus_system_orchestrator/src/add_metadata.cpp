@@ -15,6 +15,7 @@
  *
 */
 
+#include <nexus_common/models/work_order.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include "add_metadata.hpp"
@@ -56,10 +57,10 @@ BT::NodeStatus AddMetadata::tick()
       "payload of [%s] before:\n%s",
       task.task_id.c_str(), task.payload.c_str());
 
-    YAML::Node payload;
+    std::optional<nexus::common::WorkOrder::Step> step = std::nullopt;
     try
     {
-      payload = YAML::Load(task.payload);
+      step = YAML::Load(task.payload).as<nexus::common::WorkOrder::Step>();
     }
     catch (YAML::ParserException& e)
     {
@@ -69,12 +70,21 @@ BT::NodeStatus AddMetadata::tick()
         task.task_id.c_str(), e.what());
       return BT::NodeStatus::FAILURE;
     }
-
-    if (!payload["metadata"] || payload["metadata"].IsNull())
+    if (!step.has_value())
     {
-      payload["metadata"] = YAML::Node(YAML::NodeType::Map);
+      RCLCPP_ERROR(
+        this->_ctx->get_node().get_logger(),
+        "Failed to parse payload of workcell task [%s] into WorkOrder::Step",
+        task.task_id.c_str());
+      return BT::NodeStatus::FAILURE;
     }
-    else if (!payload["metadata"].IsMap())
+
+    auto metadata = step.value().metadata();
+    if (!metadata.has_value() || metadata.value().yaml.IsNull())
+    {
+      step.value().yaml["metadata"] = YAML::Node(YAML::NodeType::Map);
+    }
+    else if (!metadata.value().yaml.IsMap())
     {
       RCLCPP_ERROR(
         this->_ctx->get_node().get_logger(),
@@ -84,10 +94,10 @@ BT::NodeStatus AddMetadata::tick()
     }
 
     assignment_result["current_index"] = static_cast<int>(i);
-    payload["metadata"]["assignment_result"] = assignment_result;
+    step.value().yaml["metadata"]["assignment_result"] = assignment_result;
 
     YAML::Emitter out;
-    out << payload;
+    out << step.value().yaml;
     task.payload = out.c_str();
 
     // TODO debug
