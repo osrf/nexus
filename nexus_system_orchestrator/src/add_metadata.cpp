@@ -69,8 +69,12 @@ BT::NodeStatus AddMetadata::tick()
         task.task_id.c_str(), e.what());
       return BT::NodeStatus::FAILURE;
     }
-    YAML::Node metadata = payload["metadata"];
-    if (!metadata.IsMap())
+
+    if (!payload["metadata"] || payload["metadata"].IsNull())
+    {
+      payload["metadata"] = YAML::Node(YAML::NodeType::Map);
+    }
+    else if (!payload["metadata"].IsMap())
     {
       RCLCPP_ERROR(
         this->_ctx->get_node().get_logger(),
@@ -80,7 +84,7 @@ BT::NodeStatus AddMetadata::tick()
     }
 
     assignment_result["current_index"] = static_cast<int>(i);
-    metadata["assignment_result"] = assignment_result;
+    payload["metadata"]["assignment_result"] = assignment_result;
 
     YAML::Emitter out;
     out << payload;
