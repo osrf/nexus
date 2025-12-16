@@ -15,8 +15,8 @@
  *
 */
 
-#ifndef NEXUS_SYSTEM_ORCHESTRATOR__ADD_METADATA__HPP
-#define NEXUS_SYSTEM_ORCHESTRATOR__ADD_METADATA__HPP
+#ifndef NEXUS_SYSTEM_ORCHESTRATOR__ADD_TASK_ASSIGNMENTS_TO_METADATA__HPP
+#define NEXUS_SYSTEM_ORCHESTRATOR__ADD_TASK_ASSIGNMENTS_TO_METADATA__HPP
 
 #include "context.hpp"
 
@@ -27,10 +27,10 @@ namespace nexus::system_orchestrator {
 /**
  * Adds metadata to all assigned tasks.
  */
-class AddMetadata : public BT::SyncActionNode
+class AddTaskAssignmentsToMetadata : public BT::SyncActionNode
 {
 
-public: AddMetadata(const std::string& name,
+public: AddTaskAssignmentsToMetadata(const std::string& name,
     const BT::NodeConfiguration& config, std::shared_ptr<Context> ctx)
   : BT::SyncActionNode(name, config), _ctx(std::move(ctx)) {}
 
@@ -41,4 +41,4 @@ private: std::shared_ptr<Context> _ctx;
 
 }  // namespace nexus::system_orchestrator
 
-#endif  // NEXUS_SYSTEM_ORCHESTRATOR__ADD_METADATA__HPP
+#endif  // NEXUS_SYSTEM_ORCHESTRATOR__ADD_TASK_ASSIGNMENTS_TO_METADATA__HPP
