@@ -96,6 +96,7 @@ private:
 
   int _bidding_time_window_seconds = 2;
   int _itinerary_expiration_seconds = 60;
+  bool _complete_on_ingestor_request = true;
 
   std::shared_ptr<rmf_task_ros2::bidding::Auctioneer> _auctioneer = nullptr;
 
@@ -134,11 +135,14 @@ private:
   // Dispenser and ingestor interface
   // Used for signaling transporter completion. The transporter will report completion
   // as soon as the robot reaches its last destination and publishes an ingestor request,
-  // to request the workcell to pickup its item.
+  // to request the workcell to pickup its item if the complete_on_ingestor_request
+  // parameter is set, otherwise it will do so when receiving an ingestor_result.
   // A mock dispenser interface is optionally provided for dispensing from workcells,
   // useful for validating transportation if the logic to dispense item on robots
   // from workcells is not implemented
   rclcpp::Subscription<IngestorRequest>::SharedPtr _ingestor_request_sub =
+    nullptr;
+  rclcpp::Subscription<IngestorResult>::SharedPtr _ingestor_result_sub =
     nullptr;
   rclcpp::Publisher<IngestorResult>::SharedPtr _ingestor_result_pub = nullptr;
   rclcpp::Subscription<DispenserRequest>::SharedPtr
@@ -462,6 +466,7 @@ public:
       _itinerary_expiration_seconds
     );
 
+    // Sets whether to include a mock dispenser interface that always succeeds
     const bool mock_dispenser = n->declare_parameter(
       "mock_dispenser_interface",
       true);
@@ -470,6 +475,13 @@ public:
       "RmfTransporter mock_dispenser_interface set to [%s].",
       mock_dispenser ? "true" : "false"
     );
+
+    // Sets whether to complete the transport request when receiving an ingestor request
+    // If set to true, transportation will be completed when a RMF ingestor request is received.
+    // If set to false, it will complete when an ingestor result is received instead.
+    _complete_on_ingestor_request = n->declare_parameter(
+        "complete_on_ingestor_request",
+        true);
 
     // The internal node is used to run any interactions with RMF without
     // being blocked by the transporter node's actions and services
@@ -784,90 +796,182 @@ public:
         }
       });
 
-    _ingestor_request_sub =
-      _internal_node->create_subscription<IngestorRequest>(
-      "/ingestor_requests",
-      reliable_qos,
-      [&](IngestorRequest::SharedPtr msg)
-      {
-        auto n = _node.lock();
-        if (!n)
+    if (_complete_on_ingestor_request)
+    {
+      // Transportation will be completed when ingestor request is received
+      _ingestor_request_sub =
+        _internal_node->create_subscription<IngestorRequest>(
+        "/ingestor_requests",
+        reliable_qos,
+        [&](IngestorRequest::SharedPtr msg)
         {
-          std::cerr << "RmfTransporter::_ingestor_request_sub - invalid node"
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr << "RmfTransporter::_ingestor_request_sub - invalid node"
 
-                    << std::endl;
-          return;
-        }
+                      << std::endl;
+            return;
+          }
 
-        // Check if the AMR is processing a cancelled work order.
-        const auto work_order_id = _get_work_order_id_from_rmf_task_id(
-          msg->request_guid);
-        if (work_order_id.has_value() &&
-          _cancelled_wo.count(work_order_id.value()) > 0)
-        {
+          // Check if the AMR is processing a cancelled work order.
+          const auto work_order_id = _get_work_order_id_from_rmf_task_id(
+            msg->request_guid);
+          if (work_order_id.has_value() &&
+            _cancelled_wo.count(work_order_id.value()) > 0)
+          {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Received IngestorRequest message from %s for request_guid %s and "
+              "target_guid %s while the work order %s for this task has been "
+              "cancelled. Cancelling RMF task...",
+              msg->transporter_type.c_str(),
+              msg->request_guid.c_str(),
+              msg->target_guid.c_str(),
+              work_order_id.value().c_str());
+
+            IngestorResult ingestor_result_msg;
+            ingestor_result_msg.request_guid = msg->request_guid;
+            ingestor_result_msg.source_guid = msg->target_guid;
+            ingestor_result_msg.status = IngestorResult::FAILED;
+            _ingestor_result_pub->publish(std::move(ingestor_result_msg));
+
+            // Also cancel the RMF task.
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            std::stringstream ss;
+            ss << std::chrono::duration_cast<std::chrono::nanoseconds>
+              (now).count();
+            _cancel_rmf_task(msg->request_guid, ss.str());
+            _cancelled_wo.erase(work_order_id.value());
+            return;
+          }
+
+          auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
+          if (it == _rmf_task_id_to_ongoing_itinerary.end())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Ingestor request received for RMF task [%s] but it is not in an itinerary.",
+              msg->request_guid.c_str());
+            return;
+          }
+          if (it->second.itinerary.destinations().empty())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] has no destinations",
+              it->second.itinerary.id().c_str());
+            return;
+          }
+          const auto& last_destination =
+          it->second.itinerary.destinations().back();
+          if (last_destination.action != Destination::ACTION_DROPOFF)
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] does not end in a dropoff but a dropoff was requested, it ends with [%d] instead.",
+              it->second.itinerary.id().c_str(),
+              (int)last_destination.action);
+            return;
+          }
           RCLCPP_INFO(
             n->get_logger(),
-            "Received IngestorRequest message from %s for request_guid %s and "
-            "target_guid %s while the work order %s for this task has been "
-            "cancelled. Cancelling RMF task...",
-            msg->transporter_type.c_str(),
-            msg->request_guid.c_str(),
-            msg->target_guid.c_str(),
-            work_order_id.value().c_str());
-
-          IngestorResult ingestor_result_msg;
-          ingestor_result_msg.request_guid = msg->request_guid;
-          ingestor_result_msg.source_guid = msg->target_guid;
-          ingestor_result_msg.status = IngestorResult::FAILED;
-          _ingestor_result_pub->publish(std::move(ingestor_result_msg));
-
-          // Also cancel the RMF task.
-          auto now = std::chrono::steady_clock::now().time_since_epoch();
-          std::stringstream ss;
-          ss << std::chrono::duration_cast<std::chrono::nanoseconds>
-            (now).count();
-          _cancel_rmf_task(msg->request_guid, ss.str());
-          _cancelled_wo.erase(work_order_id.value());
-          return;
-        }
-
-        auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
-        if (it == _rmf_task_id_to_ongoing_itinerary.end())
-        {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Ingestor request received for RMF task [%s] but it is not in an itinerary.",
+            "Ingestor request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
             msg->request_guid.c_str());
-          return;
-        }
-        if (it->second.itinerary.destinations().empty())
+          // We are at the last step and it is marked as a pickup, this means we arrived
+          it->second.completed_cb(true);
+          _rmf_task_id_to_ongoing_itinerary.erase(it);
+          _pending_ingestor_task_ids.insert(msg->request_guid);
+        });
+    } else {
+      // Transportation will be completed when ingestor result is received
+      _ingestor_result_sub =
+        _internal_node->create_subscription<IngestorResult>(
+        "/ingestor_results",
+        reliable_qos,
+        [&](IngestorResult::SharedPtr msg)
         {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Itinerary with id [%s] has no destinations",
-            it->second.itinerary.id().c_str());
-          return;
-        }
-        const auto& last_destination =
-        it->second.itinerary.destinations().back();
-        if (last_destination.action != Destination::ACTION_DROPOFF)
-        {
-          RCLCPP_WARN(
-            n->get_logger(),
-            "Itinerary with id [%s] does not end in a dropoff but a dropoff was requested, it ends with [%d] instead.",
-            it->second.itinerary.id().c_str(),
-            (int)last_destination.action);
-          return;
-        }
-        RCLCPP_INFO(
-          n->get_logger(),
-          "Ingestor request received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
-          msg->request_guid.c_str());
-        // We are at the last step and it is marked as a pickup, this means we arrived
-        it->second.completed_cb(true);
-        _rmf_task_id_to_ongoing_itinerary.erase(it);
-        _pending_ingestor_task_ids.insert(msg->request_guid);
-      });
+          auto n = _node.lock();
+          if (!n)
+          {
+            std::cerr << "RmfTransporter::_ingestor_result_sub - invalid node"
+                      << std::endl;
+            return;
+          }
+
+          // Check if the AMR is processing a cancelled work order.
+          const auto work_order_id = _get_work_order_id_from_rmf_task_id(
+            msg->request_guid);
+          if (work_order_id.has_value() &&
+            _cancelled_wo.count(work_order_id.value()) > 0)
+          {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Received IngestorResult message for request_guid %s and "
+              "source_guid %s while the work order %s for this task has been "
+              "cancelled. Cancelling RMF task...",
+              msg->request_guid.c_str(),
+              msg->source_guid.c_str(),
+              work_order_id.value().c_str());
+
+            // Cancel the RMF task.
+            auto now = std::chrono::steady_clock::now().time_since_epoch();
+            std::stringstream ss;
+            ss << std::chrono::duration_cast<std::chrono::nanoseconds>
+              (now).count();
+            _cancel_rmf_task(msg->request_guid, ss.str());
+            _cancelled_wo.erase(work_order_id.value());
+            return;
+          }
+
+          auto it = _rmf_task_id_to_ongoing_itinerary.find(msg->request_guid);
+          if (it == _rmf_task_id_to_ongoing_itinerary.end())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Ingestor result received for RMF task [%s] but it is not in an itinerary.",
+              msg->request_guid.c_str());
+            return;
+          }
+          if (it->second.itinerary.destinations().empty())
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] has no destinations",
+              it->second.itinerary.id().c_str());
+            return;
+          }
+          const auto& last_destination =
+          it->second.itinerary.destinations().back();
+          if (last_destination.action != Destination::ACTION_DROPOFF)
+          {
+            RCLCPP_WARN(
+              n->get_logger(),
+              "Itinerary with id [%s] does not end in a dropoff but a dropoff was requested, it ends with [%d] instead.",
+              it->second.itinerary.id().c_str(),
+              (int)last_destination.action);
+            return;
+          }
+          if (msg->status == IngestorResult::SUCCESS)
+          {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Ingestor result received for RMF task [%s] which is the last step in the itinerary, marking task as completed.",
+              msg->request_guid.c_str());
+            // We are at the last step and it is marked as a pickup, this means we arrived
+            it->second.completed_cb(true);
+            _rmf_task_id_to_ongoing_itinerary.erase(it);
+          } else if (msg->status == IngestorResult::FAILED) {
+            RCLCPP_INFO(
+              n->get_logger(),
+              "Ingestor result failed for RMF task. Failing the transportation task.",
+              msg->request_guid.c_str());
+            // We are at the last step and it is marked as a pickup, this means we arrived
+            it->second.completed_cb(false);
+            _rmf_task_id_to_ongoing_itinerary.erase(it);
+          }
+        });
+    }
 
     _building_map_sub = _internal_node->create_subscription<BuildingMap>(
       "/map",
@@ -1126,13 +1230,17 @@ public:
     }
 
 
-    // Publish the ingestor result
-    IngestorResult res;
-    res.status = IngestorResult::SUCCESS;
-    res.request_guid = task_id;
-    res.source_guid = n->get_name();
-    _ingestor_result_pub->publish(res);
-    _pending_ingestor_task_ids.erase(it);
+    // Only publish the ingestor result if we are set to complete on a successful
+    // request and this transporter is therefore managing ingestor results.
+    if (_complete_on_ingestor_request)
+    {
+      IngestorResult res;
+      res.status = IngestorResult::SUCCESS;
+      res.request_guid = task_id;
+      res.source_guid = n->get_name();
+      _ingestor_result_pub->publish(res);
+      _pending_ingestor_task_ids.erase(it);
+    }
     return true;
   }
 
