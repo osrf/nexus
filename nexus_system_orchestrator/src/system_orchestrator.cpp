@@ -17,6 +17,7 @@
 
 #include "system_orchestrator.hpp"
 
+#include "add_task_assignments_to_metadata.hpp"
 #include "bid_transporter.hpp"
 #include "context.hpp"
 #include "create_transporter_task.hpp"
@@ -582,6 +583,13 @@ BT::Tree SystemOrchestrator::_create_bt(const WorkOrderActionType::Goal& wo,
     [ctx](const std::string& name, const BT::NodeConfiguration& config)
     {
       return std::make_unique<SignalTransporter>(name, config, ctx);
+    });
+
+  bt_factory->registerBuilder<AddTaskAssignmentsToMetadata>(
+    "AddTaskAssignmentsToMetadata",
+    [ctx](const std::string& name, const BT::NodeConfiguration& config)
+    {
+      return std::make_unique<AddTaskAssignmentsToMetadata>(name, config, ctx);
     });
 
   return bt_factory->createTreeFromFile(this->_bt_path / this->_main_bt_filename);

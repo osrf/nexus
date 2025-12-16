@@ -3,6 +3,7 @@
     <ReactiveSequence>
       <IsPauseTriggered paused="{paused}"/>
       <PausableSequence pause="{paused}">
+        <AddTaskAssignmentsToMetadata />
         <ForEachTask task="{task}" workcell="{workcell}">
           <ExecuteTask task="{task}" workcell="{workcell}"/>
         </ForEachTask>

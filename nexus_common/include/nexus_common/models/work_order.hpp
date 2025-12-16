@@ -67,6 +67,15 @@ public: struct Step
 
       return this->yaml["outputItems"].as<std::vector<Item>>();
     }
+
+    std::optional<MetaData> metadata() const
+    {
+      if (this->yaml["metadata"])
+      {
+        return this->yaml["metadata"].as<MetaData>();
+      }
+      return std::nullopt;
+    }
   };
 
 public: YAML::Node yaml;
@@ -85,7 +94,7 @@ public: std::optional<MetaData> metadata() const
   {
     if (this->yaml["metadata"])
     {
-      return this->yaml["metadata"];
+      return this->yaml["metadata"].as<MetaData>();
     }
     return std::nullopt;
   }
