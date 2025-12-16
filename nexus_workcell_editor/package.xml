@@ -5,7 +5,7 @@
   <maintainer email="yadunund@gmail.com">Yadunund</maintainer>
   <license>Apache License 2.0</license>
 
-  <build_depend>cargo</build_depend>
+  <build_depend>rustup</build_depend>
 
   <depend>gtk3</depend>
   <depend>libudev-dev</depend>
