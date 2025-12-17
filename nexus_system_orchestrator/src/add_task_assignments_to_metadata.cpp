@@ -26,26 +26,31 @@ BT::NodeStatus AddTaskAssignmentsToMetadata::tick()
 {
   auto tasks = this->_ctx->get_tasks();
 
-  YAML::Node assignment_result;
-  assignment_result["workcell_assignments"] = YAML::Load("[]");
-  assignment_result["current_index"] = 0;
-
+  YAML::Node workcell_assignments = YAML::Load("[]");
   for (std::size_t i = 0; i < tasks.size(); ++i)
   {
-    auto& task = tasks.at(i);
+    const std::string& workcell_task_id = tasks.at(i).task_id;
     auto assigned_workcell_id = this->_ctx->get_workcell_task_assignment(
-      task.task_id);
+      workcell_task_id);
     if (!assigned_workcell_id.has_value())
     {
       RCLCPP_ERROR(
         this->_ctx->get_node().get_logger(),
         "Workcell task [%s] does not have a workcell assigned",
-        task.task_id.c_str());
+        workcell_task_id.c_str());
       return BT::NodeStatus::FAILURE;
     }
 
-    assignment_result["workcell_assignments"].push_back(
-      assigned_workcell_id.value());
+    workcell_assignments.push_back(assigned_workcell_id.value());
+  }
+
+  YAML::Node assignment_result;
+  assignment_result["workcell_assignments"] = workcell_assignments;
+  assignment_result["current_index"] = 0;
+
+  for (std::size_t i = 0; i < tasks.size(); ++i)
+  {
+    auto& task = tasks.at(i);
     RCLCPP_DEBUG(
       this->_ctx->get_node().get_logger(),
       "payload of [%s] before:\n%s",
