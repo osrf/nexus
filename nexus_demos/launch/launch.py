@@ -95,8 +95,8 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "ros_domain_id": str(inter_workcell_domain_id),
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_router_config_filename": "config/zenoh/system_orchestrator_router_config.json5",
-                    "zenoh_session_config_filename": "config/zenoh/system_orchestrator_session_config.json5",
+                    "zenoh_router_config_filename": "config/zenoh/inter_workcell_router_config.json5",
+                    "zenoh_session_config_filename": "config/zenoh/inter_workcell_session_config.json5",
                     "use_multiple_transporters": use_multiple_transporters,
                     "activate_system_orchestrator": headless,
                     "headless": headless,
@@ -154,6 +154,28 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    launch_workcell_1_bridge_router = GroupAction(
+        [
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_demos"),
+                            "launch",
+                            "zenoh_router.launch.py",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "zenoh_config_package": "nexus_demos",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_1_bridge_config.json5",
+                    "ros_domain_id": str(workcell_1_domain_id),
+                }.items(),
+                condition=IfCondition(run_workcell_1),
+            )
+        ]
+    )
+
     launch_workcell_2 = GroupAction(
         actions=[
             IncludeLaunchDescription(
@@ -200,11 +222,35 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    launch_workcell_2_bridge_router = GroupAction(
+        [
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_demos"),
+                            "launch",
+                            "zenoh_router.launch.py",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "zenoh_config_package": "nexus_demos",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_2_bridge_config.json5",
+                    "ros_domain_id": str(workcell_2_domain_id),
+                }.items(),
+                condition=IfCondition(run_workcell_2),
+            )
+        ]
+    )
+
     return [
         LogInfo(msg=log_msg),
         launch_inter_workcell,
         launch_workcell_1,
+        launch_workcell_1_bridge_router,
         launch_workcell_2,
+        launch_workcell_2_bridge_router,
     ]
 
 

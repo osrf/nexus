@@ -1,8 +1,11 @@
 {
-  mode: "peer",
+  mode: "router",
   connect: {
+    endpoints: [],
+  },
+  listen: {
     endpoints: [
-      "tcp/localhost:7449",
+      "tcp/[::]:7447"
     ],
   },
   scouting: {
