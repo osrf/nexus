@@ -126,6 +126,8 @@ add_test(NAME all_tests COMMAND python3 -m unittest WORKING_DIRECTORY ${CMAKE_CU
 
 ###############################################################################
 
+install(DIRECTORY launch config rviz scripts DESTINATION share/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(rmf_utils REQUIRED)
   find_package(ament_cmake_uncrustify REQUIRED)
