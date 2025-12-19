@@ -8,7 +8,6 @@
   <license>Apache License 2.0</license>
 
   <build_depend>nexus_endpoints</build_depend>
-  <build_depend>nexus_network_configuration</build_depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
