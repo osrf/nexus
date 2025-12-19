@@ -20,7 +20,6 @@ from launch.actions import (
 )
 from launch.conditions import IfCondition
 from launch.substitutions import (
-    FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
 )
@@ -40,7 +39,7 @@ def launch_setup(context, *args, **kwargs):
 
     cmd = [
         ExecutableInPackage(
-            executable="zenoh_bridge_ros2dds",
+            executable="zenoh-bridge-ros2dds",
             package="nexus_zenoh_bridge_dds_vendor",
         ),
         "--config",

@@ -9,7 +9,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-set(ZENOH_VERSION "1.0.3")
+set(ZENOH_VERSION "1.7.1")
 set(BINARY_URL "https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds/releases/download/${ZENOH_VERSION}/zenoh-plugin-ros2dds-${ZENOH_VERSION}-x86_64-unknown-linux-gnu-standalone.zip")
 set(BINARY_DIR "${CMAKE_BINARY_DIR}/download")
 file(DOWNLOAD ${BINARY_URL} ${BINARY_DIR}/zenoh-plugin-ros2dds.zip)
