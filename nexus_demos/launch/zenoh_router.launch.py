@@ -71,7 +71,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name="log_level",
             default_value="zenoh=debug",
-            description="Log level of zenoh DDS Bridge",
+            description="Log level of zenoh router",
         )
     )
 

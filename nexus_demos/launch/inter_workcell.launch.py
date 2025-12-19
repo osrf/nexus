@@ -307,16 +307,16 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="zenoh_config_package",
                 default_value="nexus_demos",
-                description="Package containing Zenoh DDS bridge configurations",
+                description="Package containing Zenoh configurations",
             ),
             DeclareLaunchArgument(
                 name="zenoh_router_config_filename",
-                default_value="config/zenoh/system_orchestrator_router_config.json5",
+                default_value="config/zenoh/inter_workcell_router_config.json5",
                 description="RMW Zenoh router configuration filepath",
             ),
             DeclareLaunchArgument(
                 name="zenoh_session_config_filename",
-                default_value="config/zenoh/system_orchestrator_session_config.json5",
+                default_value="config/zenoh/inter_workcell_session_config.json5",
                 description="RMW Zenoh session configuration filepath",
             ),
             DeclareLaunchArgument(
@@ -336,7 +336,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "remap_task_types",
-                default_value="\"pick_and_place: [place_on_conveyor, pick_from_conveyor]\"",
+                default_value="\"pick_and_place: [place_on_amr, place_on_conveyor, pick_from_amr, pick_from_conveyor]\"",
                 description="A yaml containing a dictionary of task types and an array of remaps",
             ),
             DeclareLaunchArgument(

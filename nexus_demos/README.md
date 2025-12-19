@@ -3,63 +3,72 @@
 ![](../docs/media/nexus_demo.png)
 
 ## Launch system and workcell orchestrators and all mock nodes
-The [launch.py script](launch/launch.py) will launch the system orchestrator and 2 workcells orchestrators (each with a IRB910SC and IRB1300 robot), along with a Zenoh bridge to link selected ROS endpoints between them. These 3 orchestrators and their accompany components will be in different ROS_DOMAIN_IDs. To launch these components individually, use the following examples given.
+The [launch.py script](launch/launch.py) will launch the inter-workcell nodes (including the system orchestrator) and 2 workcells orchestrators (each with a IRB910SC and IRB1300 robot). The inter-workcell system, as well as each workcell's system will also be launched with a Zenoh router, while each workcell will require a Zenoh router that acts as a bridge for specific topics, services and actions. To launch these components individually, use the following examples given.
 
->NOTE: The ROS_DOMAIN_ID occupied by the Zenoh bridges during launch time may be different from the `domain` values in the Zenoh bridge configurations. This is because the launch file overrides the domain ID of the zenoh bridges to ensure that it is same as that of the orchestrator.
-
-### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with Zenoh bridge
-> NOTE: Before running any of these commands, you must set the rmw implmentation to cyclonedds with
-`export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`
+### Method 1: Launch system orchestrator, IRB1300 workcell and IRB910SC Workcell together with designated routers and bridges
+> NOTE: Before running any of these commands, you must set the rmw implmentation to rmw_zenoh_cpp with
+`export RMW_IMPLEMENTATION=rmw_zenoh_cpp`
 (If testing with real hardware, specify the arguments `use_fake_hardware=False`, `robot1_ip=<IP>` and `robot2_ip=<IP>`)
 ```bash
 ros2 launch nexus_demos launch.py headless:=False
 ```
 
-### Method 2: Launch System Orchestrator and 1 Workcell without Zenoh bridge (Same ROS_DOMAIN_ID)
+### Method 2: Launch System Orchestrator and 1 Workcell
 Launch with Workcell 1
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=true run_workcell_2:=false
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=true run_workcell_2:=false
 ```
 
 Launch with Workcell 2
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=false run_workcell_2:=true
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=false run_workcell_2:=true
 ```
 
 Testing with real hardware
 ```bash
-ros2 launch nexus_demos launch.py headless:=False use_zenoh_bridge:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
+ros2 launch nexus_demos launch.py headless:=False run_workcell_1:=True run_workcell_2:=False use_fake_hardware:=False robot1_ip:=<IP_ADDR>
 ```
 
 ## Launch Orchestrators individually
 
 ### System Orchestrator
 ```bash
-ros2 launch nexus_demos control_center.launch.py ros_domain_id:=0 headless:=False
+ros2 launch nexus_demos inter_workcell.launch.py headless:=False
 ```
 
 ### IRB910SC Workcell
 ```bash
-ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_1 ros_domain_id:=1 support_package:=abb_irb910sc_support robot_xacro_file:=irb910sc_3_45.xacro moveit_config_package:=abb_irb910sc_3_45_moveit_config controllers_file:=abb_irb910sc_controllers.yaml moveit_config_file:=abb_irb910sc_3_45.srdf.xacro tf_publisher_launch_file:=irb910sc_tf.launch.py planner_config_package:=nexus_demos planner_config_file:=irb910sc_planner_params.yaml sku_detection_params_file:=irb910sc_detection.yaml zenoh_config_file:=workcell_1.json5 headless:=False
+ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_1 support_package:=abb_irb910sc_support robot_xacro_file:=irb910sc_3_45.xacro moveit_config_package:=abb_irb910sc_3_45_moveit_config controllers_file:=abb_irb910sc_controllers.yaml moveit_config_file:=abb_irb910sc_3_45.srdf.xacro tf_publisher_launch_file:=irb910sc_tf.launch.py planner_config_package:=nexus_demos planner_config_file:=irb910sc_planner_params.yaml sku_detection_params_file:=irb910sc_detection.yaml zenoh_router_config_filename:=config/zenoh/workcell_1_router_config.json5 zenoh_session_config_filename:=config/zenoh/workcell_1_session_config.json5 io_stations_config_file_path:=src/nexus/nexus_demos/config/workcell_1_io_config.yaml headless:=False
+```
+
+Start the bridge router,
+
+```bash
+ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_1_bridge_config.json5
 ```
 
 ### IRB1300 Workcell
 ```bash
-ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_2 ros_domain_id:=2 support_package:=abb_irb1300_support robot_xacro_file:=irb1300_10_115.xacro moveit_config_package:=abb_irb1300_10_115_moveit_config controllers_file:=abb_irb1300_controllers.yaml moveit_config_file:=abb_irb1300_10_115.srdf.xacro tf_publisher_launch_file:=irb1300_tf.launch.py sku_detection_params_file:=irb1300_detection.yaml zenoh_config_file:=workcell_2.json5 headless:=False
+ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_2 support_package:=abb_irb1300_support robot_xacro_file:=irb1300_10_115.xacro moveit_config_package:=abb_irb1300_10_115_moveit_config controllers_file:=abb_irb1300_controllers.yaml moveit_config_file:=abb_irb1300_10_115.srdf.xacro tf_publisher_launch_file:=irb1300_tf.launch.py sku_detection_params_file:=irb1300_detection.yaml zenoh_router_config_filename:=config/zenoh/workcell_2_router_config.json5 zenoh_session_config_filename:=config/zenoh/workcell_2_session_config.json5 io_stations_config_file_path:=src/nexus/nexus_demos/config/workcell_2_io_config.yaml headless:=False
+```
+
+Start the bridge router,
+
+```bash
+ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_2_bridge_config.json5
 ```
 
 ## Submit a job
 
-> Note: Set your ROS_DOMAIN_ID environment variable to that of the system orchestrator before executing the work order
+Modify the values of `work_order_id` and the name of the work orders to these provided values in our examples,
+- `place_on_conveyor`
+- `pick_from_conveyor`, only works if `workcell_2` is launched
+- `pick_and_place_conveyor`, only works if both `workcell_1` and `workcell_2` are launched
+- `pick_and_place_amr`, only works if both `workcell_1` and `workcell_2` are launched, and the demo is started with `use_multiple_transporters:=True`
 
-`place_on_conveyor` work order:
+Using `place_on_conveyor` as an example work order, with ID 23:
 ```bash
 ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {work_order_id: '23', work_order: '$(cat config/place_on_conveyor.json)'}}"
-```
-
-`pick_from_conveyor` work order:
-```bash
-ros2 action send_goal /system_orchestrator/execute_order nexus_orchestrator_msgs/action/ExecuteWorkOrder "{order: {work_order_id: '24', work_order: '$(cat config/pick_from_conveyor.json)'}}"
 ```
 
 ## Debugging

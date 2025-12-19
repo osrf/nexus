@@ -385,7 +385,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name="zenoh_config_package",
             default_value="nexus_demos",
-            description="Package containing Zenoh DDS bridge configurations",
+            description="Package containing Zenoh configurations",
         ),
         DeclareLaunchArgument(
             name="zenoh_router_config_filename",
