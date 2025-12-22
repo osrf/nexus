@@ -51,26 +51,7 @@ def launch_setup(context, *args, **kwargs):
     run_workcell_2 = LaunchConfiguration("run_workcell_2")
     workcell_2_remap_task_types = LaunchConfiguration("workcell_2_remap_task_types")
 
-    inter_workcell_domain_id = 0
-    workcell_1_domain_id = 0
-    workcell_2_domain_id = 0
     log_msg = ""
-
-    if "ROS_DOMAIN_ID" in os.environ:
-        inter_workcell_domain_id = int(os.environ["ROS_DOMAIN_ID"])
-        workcell_1_domain_id = int(os.environ["ROS_DOMAIN_ID"])
-        workcell_2_domain_id = int(os.environ["ROS_DOMAIN_ID"])
-        if not 0 < inter_workcell_domain_id < 230:
-            log_msg += (
-                "ROS_DOMAIN_ID not within the range of 0 to 230, setting it to 0. \n"
-            )
-            inter_workcell_domain_id = 0
-
-    log_msg += f"Inter-workcell has ROS_DOMAIN_ID {inter_workcell_domain_id}\n"
-    if run_workcell_1.perform(context).lower() == "true":
-        log_msg += f"Workcell 1 has ROS_DOMAIN_ID {workcell_1_domain_id}\n"
-    if run_workcell_2.perform(context).lower() == "true":
-        log_msg += f"Workcell 2 has ROS_DOMAIN_ID {workcell_2_domain_id}\n"
 
     main_bt_filename = "main.xml"
     remap_task_types = """{
@@ -93,7 +74,6 @@ def launch_setup(context, *args, **kwargs):
                     )
                 ],
                 launch_arguments={
-                    "ros_domain_id": str(inter_workcell_domain_id),
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_router_config_filename": "config/zenoh/inter_workcell_router_config.json5",
                     "zenoh_session_config_filename": "config/zenoh/inter_workcell_session_config.json5",
@@ -129,7 +109,6 @@ def launch_setup(context, *args, **kwargs):
                     "remap_task_types": workcell_1_remap_task_types,
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "max_jobs": max_workcell_jobs,
-                    "ros_domain_id": str(workcell_1_domain_id),
                     "headless": headless,
                     "controller_config_package": "nexus_demos",
                     "planner_config_package": "nexus_demos",
@@ -169,7 +148,6 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_router_config_filename": "config/zenoh/workcell_1_connection_router_config.json5",
-                    "ros_domain_id": str(workcell_1_domain_id),
                 }.items(),
                 condition=IfCondition(run_workcell_1),
             )
@@ -197,7 +175,6 @@ def launch_setup(context, *args, **kwargs):
                     "remap_task_types": workcell_2_remap_task_types,
                     "task_checker_plugin": "nexus::task_checkers::FilepathChecker",
                     "max_jobs": max_workcell_jobs,
-                    "ros_domain_id": str(workcell_2_domain_id),
                     "headless": headless,
                     "controller_config_package": "nexus_demos",
                     "planner_config_package": "nexus_demos",
@@ -237,7 +214,6 @@ def launch_setup(context, *args, **kwargs):
                 launch_arguments={
                     "zenoh_config_package": "nexus_demos",
                     "zenoh_router_config_filename": "config/zenoh/workcell_2_connection_router_config.json5",
-                    "ros_domain_id": str(workcell_2_domain_id),
                 }.items(),
                 condition=IfCondition(run_workcell_2),
             )

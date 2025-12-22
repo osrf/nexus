@@ -29,7 +29,6 @@ from launch_ros.substitutions import (
 
 
 def launch_setup(context, *args, **kwargs):
-    ros_domain_id = LaunchConfiguration("ros_domain_id")
     log_level = LaunchConfiguration("log_level")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_router_config_filename = LaunchConfiguration("zenoh_router_config_filename")
@@ -45,7 +44,6 @@ def launch_setup(context, *args, **kwargs):
         cmd=cmd,
         shell=True,
         additional_env={
-            "ROS_DOMAIN_ID": ros_domain_id.perform(context),
             "ZENOH_ROUTER_CONFIG_URI": PathJoinSubstitution([
                 FindPackageShare(zenoh_config_package),
                 zenoh_router_config_filename
@@ -57,40 +55,23 @@ def launch_setup(context, *args, **kwargs):
     return [zenoh_router_exec]
 
 def generate_launch_description():
-    declared_arguments = []
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            name="ros_domain_id",
-            default_value="0",
-            description="ROS_DOMAIN_ID environment variable",
-        )
-    )
-
-    declared_arguments.append(
+    declared_arguments = [
         DeclareLaunchArgument(
             name="log_level",
             default_value="zenoh=debug",
             description="Log level of zenoh router",
-        )
-    )
-
-    declared_arguments.append(
+        ),
         DeclareLaunchArgument(
             name="zenoh_config_package",
             default_value="nexus_demos",
             description="Package containing RWM Zenoh configurations",
-        )
-    )
-
-    declared_arguments.append(
+        ),
         DeclareLaunchArgument(
             name="zenoh_router_config_filename",
             default_value="config/zenoh/system_orchestrator_router_config.json5",
             description="RMW Zenoh configuration filepath",
-        )
-    )
-
+        ),
+    ]
     return LaunchDescription(
         declared_arguments + [OpaqueFunction(function=launch_setup)]
     )

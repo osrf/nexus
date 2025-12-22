@@ -23,7 +23,6 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 def launch_setup(context, *args, **kwargs):
     """Publish static TFs.
     """
-    ros_domain_id = LaunchConfiguration("ros_domain_id")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
     zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
 
@@ -157,7 +156,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        SetEnvironmentVariable('ROS_DOMAIN_ID', ros_domain_id),
         SetEnvironmentVariable(
             "ZENOH_SESSION_CONFIG_URI",
             PathJoinSubstitution(
@@ -177,11 +175,6 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     return LaunchDescription(
         [
-            DeclareLaunchArgument(
-                "ros_domain_id",
-                default_value="0",
-                description="ROS_DOMAIN_ID environment variable",
-            ),
             DeclareLaunchArgument(
                 name="zenoh_config_package",
                 default_value="nexus_demos",
