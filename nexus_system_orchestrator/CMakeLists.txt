@@ -49,6 +49,7 @@ target_compile_features(${PROJECT_NAME}_plugin PRIVATE cxx_std_17)
 rclcpp_components_register_node(${PROJECT_NAME}_plugin
   PLUGIN "nexus::system_orchestrator::SystemOrchestrator"
   EXECUTABLE nexus_system_orchestrator
+  EXECUTOR EventsExecutor
 )
 install(TARGETS ${PROJECT_NAME}_plugin DESTINATION lib)
 

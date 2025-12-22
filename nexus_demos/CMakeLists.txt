@@ -32,7 +32,7 @@ target_compile_features(mock_gripper_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_gripper_component
   PLUGIN "nexus_demos::MockGripper"
   EXECUTABLE mock_gripper
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_gripper_component
   EXPORT export_${PROJECT_NAME}
@@ -59,7 +59,7 @@ target_compile_features(mock_detector_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_detector_component
   PLUGIN "nexus_demos::MockDetector"
   EXECUTABLE mock_detector
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_detector_component
   EXPORT export_${PROJECT_NAME}
@@ -80,7 +80,7 @@ target_link_libraries(mock_emergency_alarm_component
 rclcpp_components_register_node(mock_emergency_alarm_component
   PLUGIN "MockEmergencyAlarm"
   EXECUTABLE mock_emergency_alarm
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_emergency_alarm_component
   EXPORT export_${PROJECT_NAME}
@@ -110,7 +110,7 @@ target_compile_features(mock_printer INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_printer
   PLUGIN "MockPrinter"
   EXECUTABLE mock_printer_node
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 
 install(
   TARGETS
