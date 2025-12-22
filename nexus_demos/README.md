@@ -44,7 +44,7 @@ ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_1 support_packa
 Start the bridge router,
 
 ```bash
-ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_1_bridge_config.json5
+ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_1_connection_router_config.json5
 ```
 
 ### IRB1300 Workcell
@@ -55,7 +55,7 @@ ros2 launch nexus_demos workcell.launch.py workcell_id:=workcell_2 support_packa
 Start the bridge router,
 
 ```bash
-ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_2_bridge_config.json5
+ros2 launch nexus_demos zenoh_router.launch.py zenoh_router_config_filename:=config/zenoh/workcell_2_connection_router_config.json5
 ```
 
 ## Submit a job

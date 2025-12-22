@@ -154,7 +154,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    launch_workcell_1_bridge_router = GroupAction(
+    launch_workcell_1_connection_router_router = GroupAction(
         [
             IncludeLaunchDescription(
                 [
@@ -168,7 +168,7 @@ def launch_setup(context, *args, **kwargs):
                 ],
                 launch_arguments={
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_router_config_filename": "config/zenoh/workcell_1_bridge_config.json5",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_1_connection_router_config.json5",
                     "ros_domain_id": str(workcell_1_domain_id),
                 }.items(),
                 condition=IfCondition(run_workcell_1),
@@ -222,7 +222,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    launch_workcell_2_bridge_router = GroupAction(
+    launch_workcell_2_connection_router_router = GroupAction(
         [
             IncludeLaunchDescription(
                 [
@@ -236,7 +236,7 @@ def launch_setup(context, *args, **kwargs):
                 ],
                 launch_arguments={
                     "zenoh_config_package": "nexus_demos",
-                    "zenoh_router_config_filename": "config/zenoh/workcell_2_bridge_config.json5",
+                    "zenoh_router_config_filename": "config/zenoh/workcell_2_connection_router_config.json5",
                     "ros_domain_id": str(workcell_2_domain_id),
                 }.items(),
                 condition=IfCondition(run_workcell_2),
@@ -248,9 +248,9 @@ def launch_setup(context, *args, **kwargs):
         LogInfo(msg=log_msg),
         launch_inter_workcell,
         launch_workcell_1,
-        launch_workcell_1_bridge_router,
+        launch_workcell_1_connection_router_router,
         launch_workcell_2,
-        launch_workcell_2_bridge_router,
+        launch_workcell_2_connection_router_router,
     ]
 
 
