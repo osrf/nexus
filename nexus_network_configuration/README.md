@@ -1,5 +1,7 @@
 # Network Config Generator
 
+> Note: As of December 2025, Nexus has migrated to using `rmw_zenoh_cpp` directly, hence `main` no longer contains any examples of usage. Please reference past commits.
+
 This package simplifies the Zenoh DDS Bridge setup for multiple NEXUS orchestrators through the generation of Zenoh bridge configurations from the following 2 files:
 1. NEXUS Network Configuration: This YAML file describes the properties of different machines such as ROS Domain ID, Zenoh bridge TCP connection endpoints etc. Refer to [Quick Start](#quick-start) for an example
 2. REDF Configuration: This YAML file describes the ROS Endpoints of the NEXUS orchestrators

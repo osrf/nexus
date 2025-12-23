@@ -39,7 +39,7 @@ target_compile_features(nexus_calibration_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(nexus_calibration_component
   PLUGIN "nexus::CalibrationNode"
   EXECUTABLE nexus_calibration_node
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 
 
 #===============================================================================

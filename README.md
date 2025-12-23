@@ -65,7 +65,7 @@ The framework to register capabilities and map them to processes that can be per
 At present, behavior trees can be viewed and modified using [Groot](https://github.com/BehaviorTree/Groot). Once `Groot` is launched, click "Load palette from file" and select [nexus_tree_nodes.xml](./nexus_tree_nodes.xml). Then any of the configured BTs can be loaded via the "Load Tree" button.
 A current limitation of this approach is the need to manually update the palette file when the plugins loaded by a task capability changes. In the future, the goals is to more closely couple the generation of this file and the skill plugins the orchestrators are capable of loading.
 
-### Generating Zenoh bridge configurations
+### Generating Zenoh bridge configurations [deprecated]
 
 The script in `nexus_network_configuration` helps to simplify configuration of Zenoh bridges for multiple machines. The Zenoh bridge files are generated from [NEXUS Network Configuration](nexus_demos/config/zenoh/nexus_network_config.yaml) and [nexus_endpoints.redf.yaml](./nexus_endpoints.redf.yaml). After configuring the [NEXUS Network Configuration](nexus_demos/config/zenoh/nexus_network_config.yaml), you can run `ros2 run nexus_network_configuration nexus_network_configuration -n <PATH_TO_NEXUS_NETWORK_CONFIG> -r <PATH_TO_REDF_CONFIGS> -o <ZENOH_CONFIGS_OUTPUT_DIRECTORY>` to generate the Zenoh bridges.
 

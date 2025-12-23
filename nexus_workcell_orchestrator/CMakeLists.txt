@@ -70,6 +70,7 @@ target_compile_definitions(${PROJECT_NAME}_plugin PUBLIC "COMPOSITION_BUILDING_D
 rclcpp_components_register_node(${PROJECT_NAME}_plugin
   PLUGIN "nexus::workcell_orchestrator::WorkcellOrchestrator"
   EXECUTABLE nexus_workcell_orchestrator
+  EXECUTOR EventsExecutor
 )
 install(TARGETS ${PROJECT_NAME}_plugin DESTINATION lib)
 
