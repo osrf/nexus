@@ -39,4 +39,17 @@ jobs:
     - name: Test - Unit Tests
       run: . ./install/setup.bash && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh colcon test --packages-select nexus_motion_planner --event-handlers=console_direct+
     - name: Test - Integration test
-      run: . ./install/setup.bash && cd nexus_demos && RMW_IMPLEMENTATION=rmw_cyclonedds_cpp /ros_entrypoint.sh python3 -m unittest
+      run: |
+        . ./install/setup.bash
+        cd nexus_demos
+        RMW_IMPLEMENTATION=rmw_zenoh_cpp /ros_entrypoint.sh python3 -m unittest \
+          test_invalid_place_on_conveyor.py \
+          test_parallel_duplicated_wo.py \
+          test_parallel_wo.py \
+          test_pick_and_place.py
+    - name: Test - Integration test with RMF
+      run: |
+        . ./install/setup.bash
+        cd nexus_demos
+        RMW_IMPLEMENTATION=rmw_zenoh_cpp /ros_entrypoint.sh python3 -m unittest \
+          test_pick_and_place_rmf.py

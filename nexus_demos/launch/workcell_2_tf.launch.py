@@ -13,16 +13,18 @@
 # limitations under the License.
 
 
-import rclpy
-import rclpy.node
 from launch_ros.actions import Node
 
 from launch import LaunchDescription
-from launch.actions import GroupAction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
+from launch_ros.substitutions import FindPackageShare
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
-def generate_launch_description():
+def launch_setup(context, *args, **kwargs):
     """Publish static TFs.
     """
+    zenoh_config_package = LaunchConfiguration("zenoh_config_package")
+    zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
 
     # Static TF of robot base_link to world
     static_tf_base_link = Node(
@@ -153,16 +155,36 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription(
-        [
-            GroupAction(
-                actions=[
-                    static_tf_base_link,
-                    static_tf_home,
-                    static_tf_dropoff_goal_pose,
-                    static_tf_sku_detection_camera,
-                    static_tf_pallet,
+    return [
+        SetEnvironmentVariable(
+            "ZENOH_SESSION_CONFIG_URI",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(zenoh_config_package),
+                    zenoh_session_config_filename,
                 ]
             )
+        ),
+        static_tf_base_link,
+        static_tf_home,
+        static_tf_dropoff_goal_pose,
+        static_tf_sku_detection_camera,
+        static_tf_pallet,
+    ]
+
+def generate_launch_description():
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument(
+                name="zenoh_config_package",
+                default_value="nexus_demos",
+                description="Package containing Zenoh configurations",
+            ),
+            DeclareLaunchArgument(
+                name="zenoh_session_config_filename",
+                default_value="config/zenoh/workcell_1_session_config.json5",
+                description="RMW Zenoh session configuration filepath",
+            ),
+            OpaqueFunction(function=launch_setup)
         ]
     )

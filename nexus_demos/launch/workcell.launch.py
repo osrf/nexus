@@ -37,14 +37,13 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from typing import List
 
 
-def activate_node_service(node_name, ros_domain_id):
+def activate_node_service(node_name):
     activate_node_proc = ExecuteProcess(
         cmd=[
             'python3',
             [FindPackageShare('nexus_demos'), "/scripts/activate_node.py"],
             node_name,
-        ],
-        additional_env={'ROS_DOMAIN_ID': ros_domain_id},
+        ]
     )
 
     def check_activate_return_code(event, _):
@@ -77,7 +76,6 @@ def launch_setup(context, *args, **kwargs):
     bt_path = LaunchConfiguration("bt_path")
     task_checker_plugin = LaunchConfiguration("task_checker_plugin")
     max_jobs = LaunchConfiguration("max_jobs")
-    ros_domain_id = LaunchConfiguration("ros_domain_id")
     headless = LaunchConfiguration("headless")
     controller_config_package = LaunchConfiguration("controller_config_package")
     planner_config_package = LaunchConfiguration("planner_config_package")
@@ -92,9 +90,9 @@ def launch_setup(context, *args, **kwargs):
     dispenser_properties = LaunchConfiguration("dispenser_properties")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot_ip = LaunchConfiguration("robot_ip")
-    use_zenoh_bridge = LaunchConfiguration("use_zenoh_bridge")
     zenoh_config_package = LaunchConfiguration("zenoh_config_package")
-    zenoh_config_filename = LaunchConfiguration("zenoh_config_filename")
+    zenoh_router_config_filename = LaunchConfiguration("zenoh_router_config_filename")
+    zenoh_session_config_filename = LaunchConfiguration("zenoh_session_config_filename")
     remap_task_types = LaunchConfiguration("remap_task_types")
     # todo(Yadunund): There is no good way to get a list of strings via CLI and parse it using
     # LaunchConfiguration. The best way to configure this would be via a YAML params which we
@@ -183,8 +181,37 @@ def launch_setup(context, *args, **kwargs):
         arguments=['--ros-args', '--log-level', 'info'],
     )
 
+    zenoh_router = GroupAction(
+        [
+            IncludeLaunchDescription(
+                [
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("nexus_demos"),
+                            "launch",
+                            "zenoh_router.launch.py",
+                        ]
+                    )
+                ],
+                launch_arguments={
+                    "zenoh_config_package": zenoh_config_package,
+                    "zenoh_router_config_filename": zenoh_router_config_filename,
+                }.items(),
+            )
+        ]
+    )
+
     return [
-        SetEnvironmentVariable('ROS_DOMAIN_ID', ros_domain_id),
+        zenoh_router,
+        SetEnvironmentVariable(
+            "ZENOH_SESSION_CONFIG_URI",
+            PathJoinSubstitution(
+                [
+                    FindPackageShare(zenoh_config_package),
+                    zenoh_session_config_filename,
+                ]
+            )
+        ),
         mock_dispenser_node,
         mock_product_detector_node,
         mock_gripper_node,
@@ -244,30 +271,14 @@ def launch_setup(context, *args, **kwargs):
                             'launch',
                             tf_publisher_launch_file,
                         ])
+                    ],
+                    launch_arguments=[
+
                     ]
                 )
             ]
         ),
-        GroupAction(
-            [
-                IncludeLaunchDescription(
-                    [
-                        PathJoinSubstitution([
-                            FindPackageShare('nexus_demos'),
-                            'launch',
-                            'zenoh_bridge.launch.py'
-                        ])
-                    ],
-                    launch_arguments={
-                        'zenoh_config_package': zenoh_config_package,
-                        'zenoh_config_filename': zenoh_config_filename,
-                        'ros_domain_id': ros_domain_id.perform(context),
-                    }.items()
-                )
-            ],
-            condition=IfCondition(use_zenoh_bridge),
-        ),
-        activate_node_service("motion_planner_server", ros_domain_id.perform(context)),
+        activate_node_service("motion_planner_server"),
     ]
 
 
@@ -291,11 +302,6 @@ def generate_launch_description():
             "max_jobs",
             default_value="1",
             description="Maximum number of parallel jobs that this workcell is allowed to handle.",
-        ),
-        DeclareLaunchArgument(
-            "ros_domain_id",
-            default_value="0",
-            description="ROS_DOMAIN_ID environment variable",
         ),
         DeclareLaunchArgument(
             "headless",
@@ -368,19 +374,19 @@ def generate_launch_description():
             description="The IP address of the real robot when use_fake_hardware is False.",
         ),
         DeclareLaunchArgument(
-            "use_zenoh_bridge",
-            default_value="true",
-            description="Set true to launch the Zenoh DDS Bridge",
-        ),
-        DeclareLaunchArgument(
             name="zenoh_config_package",
             default_value="nexus_demos",
-            description="Package containing Zenoh DDS bridge configurations",
+            description="Package containing Zenoh configurations",
         ),
         DeclareLaunchArgument(
-            name="zenoh_config_filename",
-            default_value="config/zenoh/workcell_1.json5",
-            description="Zenoh DDS bridge configuration filepath",
+            name="zenoh_router_config_filename",
+            default_value="config/zenoh/workcell_1_router_config.json5",
+            description="RMW Zenoh router configuration filepath",
+        ),
+        DeclareLaunchArgument(
+            name="zenoh_session_config_filename",
+            default_value="config/zenoh/workcell_1_session_config.json5",
+            description="RMW Zenoh session configuration filepath",
         ),
         DeclareLaunchArgument(
             "remap_task_types",

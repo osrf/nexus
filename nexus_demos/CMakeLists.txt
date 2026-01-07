@@ -32,7 +32,7 @@ target_compile_features(mock_gripper_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_gripper_component
   PLUGIN "nexus_demos::MockGripper"
   EXECUTABLE mock_gripper
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_gripper_component
   EXPORT export_${PROJECT_NAME}
@@ -59,7 +59,7 @@ target_compile_features(mock_detector_component INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_detector_component
   PLUGIN "nexus_demos::MockDetector"
   EXECUTABLE mock_detector
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_detector_component
   EXPORT export_${PROJECT_NAME}
@@ -80,7 +80,7 @@ target_link_libraries(mock_emergency_alarm_component
 rclcpp_components_register_node(mock_emergency_alarm_component
   PLUGIN "MockEmergencyAlarm"
   EXECUTABLE mock_emergency_alarm
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 install(
   TARGETS mock_emergency_alarm_component
   EXPORT export_${PROJECT_NAME}
@@ -110,7 +110,7 @@ target_compile_features(mock_printer INTERFACE cxx_std_17)
 rclcpp_components_register_node(mock_printer
   PLUGIN "MockPrinter"
   EXECUTABLE mock_printer_node
-  EXECUTOR SingleThreadedExecutor)
+  EXECUTOR EventsExecutor)
 
 install(
   TARGETS
@@ -125,19 +125,8 @@ install(
 add_test(NAME all_tests COMMAND python3 -m unittest WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 ###############################################################################
-# Generate zenoh bridge configuration files from a NEXUS network configuration file
-set(nexus_network_cfg_path ${CMAKE_CURRENT_SOURCE_DIR}/config/zenoh/nexus_network_config.yaml)
-set(zenoh_cfg_output_dir ${CMAKE_CURRENT_BINARY_DIR}/config/zenoh)
-
-# Invoke the nexus_network_configuration script and generate config json within the build directory.
-add_custom_target(generate_zenoh_bridge_configs ALL
-  COMMAND ros2 run nexus_network_configuration nexus_network_configuration -n ${nexus_network_cfg_path} -o ${zenoh_cfg_output_dir}
-)
 
 install(DIRECTORY launch config rviz scripts DESTINATION share/${PROJECT_NAME})
-# Install the zenoh config directory containing generated configs.
-message("zenoh_cfg_output_dir: " ${zenoh_cfg_output_dir})
-install(DIRECTORY ${zenoh_cfg_output_dir} DESTINATION share/${PROJECT_NAME}/config/)
 
 if(BUILD_TESTING)
   find_package(rmf_utils REQUIRED)
